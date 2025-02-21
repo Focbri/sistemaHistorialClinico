@@ -12,6 +12,7 @@ export default function Welcome() {
                         <img src={logoVO} alt="" className='rounded-lg'/>
                     </div>
                     {/* Botón que redirige al login usando Link */}
+                    {/*texto de prueba*/}
                     <Link
                         href="/login" // Ruta del login
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
