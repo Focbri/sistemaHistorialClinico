@@ -16,7 +16,7 @@ class Paciente extends Model
      *
      * @var array
      */
-    protected $fillable = [
+    protected $fillable = [ 
         'apellido_paterno',
         'apellido_materno',
         'nombres',
@@ -49,7 +49,7 @@ class Paciente extends Model
      */
     public function getNombreCompletoAttribute(): string
     {
-        return $this->nombre . ' ' . $this->apellido;
+        return "{$this->nombres} {$this->apellido_paterno} {$this->apellido_materno}";
     }
 
     /**

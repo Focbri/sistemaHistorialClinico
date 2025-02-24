@@ -14,5 +14,13 @@ export default defineConfig({
         hmr: {
             host: 'localhost',
         },
+        proxy: {
+            // Redirige todas las solicitudes que comiencen con "/consultas" al backend de Laravel
+            '/consultas': {
+                target: 'http://localhost:8000', // URL de tu backend Laravel
+                changeOrigin: true, // Cambia el origen de la solicitud al backend
+                secure: false, // Desactiva la verificación de certificados SSL (útil en desarrollo)
+            },
+        },
     },
 });

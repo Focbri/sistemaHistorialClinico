@@ -43,13 +43,30 @@ class Consulta extends Model
         'updated_at' => 'datetime',
     ];
 
-    /**
-     * Relación con el modelo Paciente (una consulta pertenece a un paciente).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function paciente(): BelongsTo
+    public static function rules(): array
     {
-        return $this->belongsTo(Paciente::class);
+        return [
+            'paciente_id' => 'required|exists:pacientes,id',
+            'codigo_consulta' => 'required|string|max:50',
+            'antecedentes_personales_hta' => 'nullable|string',
+            'antecedentes_personales_alergias' => 'nullable|string',
+            'antecedentes_personales_dm' => 'nullable|string',
+            'antecedentes_personales_otros' => 'nullable|string',
+            'antecedentes_patologicos_familiares' => 'nullable|string',
+            'cirugias_previas' => 'nullable|string',
+            'motivo_consulta' => 'required|string',
+            'impresion_diagnostica' => 'required|string',
+            'rp' => 'nullable|string',
+            'plan' => 'nullable|string',
+            'examenes_indicados' => 'nullable|string',
+            'evoluciones' => 'nullable|string',
+            'fondo_ojo' => 'nullable|string',
+        ];
+    }
+
+    // Relación con el modelo Paciente
+    public function paciente()
+    {
+        return $this->belongsTo(Paciente::class, 'paciente_id');
     }
 }

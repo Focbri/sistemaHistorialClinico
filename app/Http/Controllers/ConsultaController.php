@@ -13,21 +13,31 @@ class ConsultaController extends Controller
     public function index(Request $request)
     {
         $query = Consulta::with('paciente');
-
+    
         if ($request->has('dni') && $request->dni) {
             $query->whereHas('paciente', function ($q) use ($request) {
                 $q->where('dni', $request->dni);
             });
         }
     
-        $consultas = $query->get();
+        $consultas = $query->paginate(10); // 10 consultas por página
     
-        return inertia('Consultas/Index', compact('consultas'));
+        return inertia('Consultas/Index', [
+            'consultas' => $consultas,
+            'links' => [
+                'first' => $consultas->url(1),
+                'last' => $consultas->url($consultas->lastPage()),
+                'prev' => $consultas->previousPageUrl(),
+                'next' => $consultas->nextPageUrl(),
+            ],
+        ]);
     }
 
     public function create()
     {
-        $pacientes = Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno')->get();
+        $pacientes = Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno')
+        ->orderBy('nombres')
+        ->get();
         return inertia('Consultas/Create', compact('pacientes'));
     }
 
@@ -57,8 +67,20 @@ class ConsultaController extends Controller
         $antecedentesPersonalesAlergias = $request->antecedentes_personales_alergias ? 'ALERGIAS' : '';
         $antecedentesPersonalesDm = $request->antecedentes_personales_dm ? 'DM' : '';
 
-        // Generar el código de consulta automáticamente
-        $codigoConsulta = 'CONS-' . now()->format('Ymd-His');
+        // Obtener la fecha actual en formato YYYYMMDD
+        $fechaActual = now()->format('Ymd');
+
+        // Obtener el número de consultas creadas hoy
+        $numeroConsultaHoy = Consulta::where('codigo_consulta', 'like', 'HCL-' . $fechaActual . '-%')->count();
+
+        // Incrementar el número para la nueva consulta
+        $numeroConsultaHoy++;
+
+        // Formatear el número con ceros a la izquierda (ejemplo: 001, 002, ..., 010, etc.)
+        $numeroFormateado = str_pad($numeroConsultaHoy, 3, '0', STR_PAD_LEFT);
+
+        // Generar el código de consulta
+        $codigoConsulta = 'HCL-' . $fechaActual . '-' . $numeroFormateado;
 
         // Crear la consulta
         $consulta = Consulta::create([
@@ -169,11 +191,20 @@ class ConsultaController extends Controller
         $paciente = Paciente::where('dni', $dni)->first();
 
         if ($paciente) {
-            // Formatear los datos del paciente en un solo string
-            $pacienteInfo = "Nombres: {$paciente->nombres}\nApellido Paterno: {$paciente->apellido_paterno}\nApellido Materno: {$paciente->apellido_materno}\nDNI: {$paciente->dni}";
-            return response()->json(['paciente_info' => $pacienteInfo]);
+            return response()->json([
+                'success' => true,
+                'paciente' => [
+                    'id' => $paciente->id,
+                    'nombres' => $paciente->nombres,
+                    'apellido_paterno' => $paciente->apellido_paterno,
+                    'apellido_materno' => $paciente->apellido_materno,
+                    'dni' => $paciente->dni,
+                    'telefono' => $paciente->telefono,
+                    'email' => $paciente->email,
+                ],
+            ]);
         }
-
-        return response()->json(['paciente_info' => 'Paciente no encontrado'], 404);
+        
+        return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
     }
 }

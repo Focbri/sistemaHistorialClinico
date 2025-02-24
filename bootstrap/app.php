@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         //
+        // Middleware de CORS
+        //$middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

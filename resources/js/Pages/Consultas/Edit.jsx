@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import fondoOjo from '../../../assets/fondo_ojo.png'; // Importar la imagen de fondo de ojo
+import fondoOjo from '../../../assets/fondo_ojo.png';
 import { useEffect } from 'react';
 
 export default function ConsultasEdit({ auth }) {
@@ -28,7 +28,7 @@ export default function ConsultasEdit({ auth }) {
     // Función para manejar el envío del formulario
     const handleSubmit = (e) => {
         e.preventDefault();
-    
+
         // Transformar los valores de los checkboxes a strings
         const formData = {
             ...data,
@@ -36,9 +36,9 @@ export default function ConsultasEdit({ auth }) {
             antecedentes_personales_alergias: data.antecedentes_personales_alergias ? 'ALERGIAS' : '',
             antecedentes_personales_dm: data.antecedentes_personales_dm ? 'DM' : '',
         };
-    
+
         console.log('Datos enviados:', formData); // Depuración
-    
+
         // Enviar los datos actualizados al servidor
         put(route('consultas.update', consulta.id), formData);
     };
@@ -55,16 +55,33 @@ export default function ConsultasEdit({ auth }) {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <form onSubmit={handleSubmit}>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700">Fecha de Consulta</label>
+                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{new Date(consulta.created_at).toLocaleDateString()}</p>
+                            </div>
+                                {/* Mostrar información del paciente */}
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Paciente (DNI)</label>
-                                    <input
-                                        type="text"
-                                        value={consulta.paciente.dni}
-                                        readOnly
-                                        className="mt-1 block w-full rounded-md bg-gray-100 p-2"
-                                    />
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Paciente</label>
+                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                            {consulta.paciente.nombres} {consulta.paciente.apellido_paterno} {consulta.paciente.apellido_materno}
+                                        </p>
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">DNI del Paciente</label>
+                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{consulta.paciente.dni}</p>
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Teléfono del Paciente</label>
+                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{consulta.paciente.telefono}</p>
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Email del Paciente</label>
+                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{consulta.paciente.email}</p>
+                                    </div>
                                 </div>
 
+                                {/* Resto del formulario */}
                                 <div className="mb-4">
                                     <label className="block text-xl font-medium text-gray-700">Antecedentes Personales</label>
                                     <p className="text-sm text-gray-500">Marque las opciones que correspondan</p>

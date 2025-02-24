@@ -2,7 +2,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function ConsultasIndex({ auth, consultas }) {
+export default function ConsultasIndex({ auth, consultas, links }) {
+    console.log('Consultas recibidas:', consultas); // Depuración
+    console.log('Enlaces de paginación:', links); // Depuración
+    
     const [searchDni, setSearchDni] = useState('');
 
     // Función para buscar consultas por DNI del paciente
@@ -62,19 +65,21 @@ export default function ConsultasIndex({ auth, consultas }) {
                                         <th className="px-4 py-2">Código Consulta</th>
                                         <th className="px-4 py-2">DNI</th>
                                         <th className="px-4 py-2">Paciente</th>
+                                        <th className="px-4 py-2">Email</th>
                                         <th className="px-4 py-2">Fecha Creada</th>
                                         <th className="px-4 py-2">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {consultas.length > 0 ? (
-                                        consultas.map((consulta) => (
+                                    {consultas.data.length > 0 ? (
+                                        consultas.data.map((consulta) => (
                                             <tr key={consulta.id}>
                                                 <td className="px-4 py-2">{consulta.codigo_consulta}</td>
                                                 <td className="px-4 py-2">{consulta.paciente.dni}</td>
                                                 <td className="px-4 py-2">
                                                     {consulta.paciente.nombres} {consulta.paciente.apellido_paterno} {consulta.paciente.apellido_materno}
                                                 </td>
+                                                <td className="px-4 py-2">{consulta.paciente.email}</td>
                                                 <td className="px-4 py-2">
                                                     {new Date(consulta.created_at).toLocaleDateString()}
                                                 </td>
@@ -102,13 +107,35 @@ export default function ConsultasIndex({ auth, consultas }) {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="4" className="px-4 py-2 text-center">
+                                            <td colSpan="6" className="px-4 py-2 text-center">
                                                 No se encontraron consultas.
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
+
+                            {/* Paginación */}
+                            <div className="mt-4">
+                                <nav className="flex justify-between">
+                                    {links.prev && (
+                                        <Link
+                                            href={links.prev}
+                                            className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                        >
+                                            Anterior
+                                        </Link>
+                                    )}
+                                    {links.next && (
+                                        <Link
+                                            href={links.next}
+                                            className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                        >
+                                            Siguiente
+                                        </Link>
+                                    )}
+                                </nav>
+                            </div>
                         </div>
                     </div>
                 </div>

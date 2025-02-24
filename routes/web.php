@@ -37,6 +37,8 @@ Route::middleware('auth')->group(function () {
     
     // Rutas para Consultas
     Route::resource('consultas', ConsultaController::class);
+
+    Route::post('/consultas/buscar-paciente', [ConsultaController::class, 'buscarPacientePorDNI']);
 });
 
 // Rutas de autenticación (login, registro, etc.)

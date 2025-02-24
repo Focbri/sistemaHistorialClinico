@@ -3,9 +3,15 @@ import { Head, Link, useForm } from '@inertiajs/react'; // Importar useForm de I
 import fondoOjo from '../../../assets/fondo_ojo.png'; // Importar la imagen de fondo de ojo
 import { useState } from 'react';
 
-export default function ConsultasCreate({ auth, pacientes }) {
-    const { data, setData, post, errors } = useForm({
-        paciente_id: '', // Este campo puede ser necesario para la relación con el paciente
+export default function ConsultasCreate({ auth }) {
+    const { data, setData, post, errors, processing } = useForm({
+        paciente_id: '',
+        dni: '',
+        nombres: '',
+        apellido_paterno: '',
+        apellido_materno: '',
+        telefono: '',
+        email: '',
         antecedentes_personales_hta: false,
         antecedentes_personales_alergias: false,
         antecedentes_personales_dm: false,
@@ -21,10 +27,47 @@ export default function ConsultasCreate({ auth, pacientes }) {
         fondo_ojo: '',
     });
 
+    const [pacienteEncontrado, setPacienteEncontrado] = useState(false);
+
+    const buscarPaciente = async () => {
+        if (!data.dni) return;
+
+        try {
+            const response = await fetch('/consultas/buscar-paciente', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ dni: data.dni }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Paciente no encontrado');
+            }
+
+            const { paciente } = await response.json();
+
+            setData({
+                ...data,
+                paciente_id: paciente.id,
+                nombres: paciente.nombres,
+                apellido_paterno: paciente.apellido_paterno,
+                apellido_materno: paciente.apellido_materno,
+                telefono: paciente.telefono,
+                email: paciente.email,
+            });
+
+            setPacienteEncontrado(true);
+        } catch (error) {
+            alert(error.message);
+            setPacienteEncontrado(false);
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Transformar los valores de los checkboxes
         const formData = {
             ...data,
             antecedentes_personales_hta: data.antecedentes_personales_hta ? 'HTA' : '',
@@ -32,9 +75,6 @@ export default function ConsultasCreate({ auth, pacientes }) {
             antecedentes_personales_dm: data.antecedentes_personales_dm ? 'DM' : '',
         };
 
-        console.log('Datos enviados:', formData); // Depuración
-
-        // Enviar los datos transformados
         post(route('consultas.store'), formData);
     };
 
@@ -50,22 +90,53 @@ export default function ConsultasCreate({ auth, pacientes }) {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <form onSubmit={handleSubmit}>
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700">Paciente (DNI)</label>
-                                        <select
-                                            value={data.paciente_id}
-                                            onChange={(e) => setData('paciente_id', e.target.value)}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        >
-                                            <option value="">Selecciona un paciente</option>
-                                            {pacientes.map((paciente) => (
-                                                <option key={paciente.id} value={paciente.id}>
-                                                    {paciente.dni} - {paciente.nombres} {paciente.apellido_paterno} {paciente.apellido_materno}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {errors.paciente_id && <p className="text-sm text-red-500">{errors.paciente_id}</p>}
+                                {/* Campo para ingresar el DNI y buscar paciente */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">DNI del Paciente</label>
+                                    <input
+                                        type="text"
+                                        value={data.dni}
+                                        onChange={(e) => setData('dni', e.target.value)}
+                                        disabled={pacienteEncontrado}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={buscarPaciente}
+                                        disabled={pacienteEncontrado}
+                                        className="mt-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                    >
+                                        Buscar Paciente
+                                    </button>
+                                    {errors.dni && <p className="text-sm text-red-500">{errors.dni}</p>}
+                                </div>
+
+                                {/* Mostrar datos del paciente encontrado */}
+                                {pacienteEncontrado && (
+                                    <div className="mb-4 p-4 border border-gray-200 rounded-md">
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Nombres:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.nombres}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Apellido Paterno:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.apellido_paterno}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Apellido Materno:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.apellido_materno}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Teléfono:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.telefono}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Email:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.email}</p>
+                                        </div>
                                     </div>
+                                )}
+
                                 {/* Resto del formulario */}
                                 <div className="mb-4">
                                     <label className="block text-xl font-medium text-gray-700">Antecedentes Personales</label>
@@ -238,6 +309,7 @@ export default function ConsultasCreate({ auth, pacientes }) {
                                     <button
                                         type="submit"
                                         className="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                        disabled={processing} // Deshabilitar el botón mientras se procesa el envío
                                     >
                                         Guardar
                                     </button>
