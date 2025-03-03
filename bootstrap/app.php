@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         //
         // Middleware de CORS
         //$middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+        // Registrar el middleware personalizado como un alias
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

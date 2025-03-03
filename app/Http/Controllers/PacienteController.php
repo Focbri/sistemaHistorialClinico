@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use \App\Models\Paciente;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class PacienteController extends Controller
 {
@@ -56,10 +57,13 @@ class PacienteController extends Controller
         ]);
 
         // Crear el paciente
-        Paciente::create($request->all());
+        $paciente = Paciente::create($request->all());
 
-        // Redirigir a la lista de pacientes con un mensaje de éxito
-        return redirect()->route('pacientes.index')->with('success', 'Paciente creado correctamente.');
+        // Crear carpeta para el paciente
+        $carpetaPaciente = 'pacientes/' . $request->dni;
+        Storage::makeDirectory($carpetaPaciente);
+
+        return redirect()->route('pacientes.index')->with('success', 'Paciente registrado exitosamente.');
     }
 
     /**

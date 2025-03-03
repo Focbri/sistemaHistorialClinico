@@ -18,8 +18,8 @@ export default function AuthenticatedLayout({ header, children }) {
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
+                                <Link href="/" className='flex items-center h-14'>
+                                    <ApplicationLogo />
                                 </Link>
                             </div>
 
@@ -30,20 +30,27 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
-                                {/* Nueva pestaña para Pacientes */}
                                 <NavLink
                                     href={route('pacientes.index')}
                                     active={route().current('pacientes.index')}
                                 >
                                     Pacientes
                                 </NavLink>
-                                {/* Nueva pestaña para Consultas */}
                                 <NavLink
                                     href={route('consultas.index')}
                                     active={route().current('consultas.index')}
                                 >
                                     Consultas
-                                </NavLink>                                
+                                </NavLink>
+                                {/* Mostrar opción de "Crear Usuario" solo para administradores */}
+                                {(user.role === 'admin' || user.role === 'root') && (
+                                    <NavLink
+                                        href={route('admin.users.index')}
+                                        active={route().current('admin.users.index')}
+                                    >
+                                        Crear Usuario
+                                    </NavLink>
+                                )}
                             </div>
                         </div>
 
@@ -148,20 +155,27 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Dashboard
                         </ResponsiveNavLink>
-                        {/* Nueva pestaña para Pacientes (versión móvil) */}
                         <ResponsiveNavLink
                             href={route('pacientes.index')}
                             active={route().current('pacientes.index')}
                         >
                             Pacientes
                         </ResponsiveNavLink>
-                        {/* Nueva pestaña para Consultas (versión móvil) */}
                         <ResponsiveNavLink
                             href={route('consultas.index')}
                             active={route().current('consultas.index')}
                         >
                             Consultas
                         </ResponsiveNavLink>
+                        {/* Mostrar opción de "Crear Usuario" solo para administradores */}
+                        {(user.role === 'admin' || user.role === 'root') && (
+                            <ResponsiveNavLink
+                                href={route('admin.users.index')}
+                                active={route().current('admin.users.index')}
+                            >
+                                Crear Usuario
+                            </ResponsiveNavLink>
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">

@@ -30,18 +30,18 @@ export default function PacientesIndex({ auth, pacientes }) {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
                             {/* Barra de búsqueda y botón "Crear Nuevo Paciente" */}
-                            <div className="flex justify-between items-center mb-4">
-                                <form onSubmit={handleSearch} className="flex items-center">
+                            <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0 mb-6">
+                                <form onSubmit={handleSearch} className="flex items-center w-full md:w-auto">
                                     <input
                                         type="text"
                                         placeholder="Buscar por DNI"
                                         value={searchDni}
                                         onChange={(e) => setSearchDni(e.target.value)}
-                                        className="px-4 py-2 border rounded-l focus:outline-none"
+                                        className="px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
                                     />
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-blue-500 text-white rounded-r hover:bg-blue-600"
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-r hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     >
                                         Buscar
                                     </button>
@@ -49,58 +49,65 @@ export default function PacientesIndex({ auth, pacientes }) {
 
                                 <Link
                                     href={route('pacientes.create')}
-                                    className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600"
+                                    className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                                 >
                                     Crear Nuevo Paciente
                                 </Link>
                             </div>
 
                             {/* Tabla de pacientes */}
-                            <table className="min-w-full">
-                                <thead>
-                                    <tr>
-                                        <th className="px-4 py-2">DNI</th>
-                                        <th className="px-4 py-2">Nombre</th>
-                                        <th className="px-4 py-2">Apellido Paterno</th>
-                                        <th className="px-4 py-2">Apellido Materno</th>
-                                        <th className="px-4 py-2">Telefono</th>
-                                        <th className="px-4 py-2">Email</th>
-                                        <th className="px-4 py-2">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {pacientes.map((paciente) => (
-                                        <tr key={paciente.id}>
-                                            <td className="px-4 py-2">{paciente.dni}</td>
-                                            <td className="px-4 py-2">{paciente.nombres}</td>
-                                            <td className="px-4 py-2">{paciente.apellido_paterno}</td>
-                                            <td className="px-4 py-2">{paciente.apellido_materno}</td>
-                                            <td className="px-4 py-2">{paciente.telefono}</td>
-                                            <td className="px-4 py-2">{paciente.email}</td>
-                                            <td className="px-4 py-2 flex items-center gap-2">
-                                                <Link
-                                                    href={route('pacientes.show', paciente.id)}
-                                                    className="px-4 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                                                >
-                                                    Ver
-                                                </Link>
-                                                <Link
-                                                    href={route('pacientes.edit', paciente.id)}
-                                                    className="px-2 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600"
-                                                >
-                                                    Editar
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDelete(paciente.id)}
-                                                    className="px-2 py-1 text-white bg-red-500 rounded hover:bg-red-600"
-                                                >
-                                                    Eliminar
-                                                </button>
-                                            </td>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full border border-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido Paterno</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido Materno</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {pacientes.map((paciente) => (
+                                            <tr key={paciente.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.dni}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.nombres}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.apellido_paterno}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.apellido_materno}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.telefono}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.email}</td>
+                                                <td className="px-4 py-4 h-full">
+                                                    <div className="flex items-center space-x-2 h-full">
+                                                        <Link
+                                                            href={route('pacientes.show', paciente.id)}
+                                                            className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        >
+                                                            Ver
+                                                        </Link>
+                                                        <Link
+                                                            href={route('pacientes.edit', paciente.id)}
+                                                            className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                                        >
+                                                            Editar
+                                                        </Link>
+
+                                                        {(auth.user.role === 'admin' || auth.user.role === 'root') && (
+                                                            <button
+                                                                onClick={() => handleDelete(paciente.id)}
+                                                                className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                                            >
+                                                                Eliminar
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

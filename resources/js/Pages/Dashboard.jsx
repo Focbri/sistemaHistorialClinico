@@ -14,12 +14,12 @@ export default function Dashboard({auth}) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            Te has Logeado
+                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg p-4">
+                        <div className="p-6 text-gray-900 font-bold">
+                            <h1>Bienvenido, {auth.user.name}</h1>
                         </div>
-                        <h1>Bienvenido, {auth.user.name}</h1>
                         <p>Este es tu panel de control personalizado.</p>
+                        <p>Aquí verás gráficos estadísticos sobre pacientes nuevos registrados por mes y consultas diarias/semanales u otros datos necesarios</p>
                     </div>
                 </div>
             </div>

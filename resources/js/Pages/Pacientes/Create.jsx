@@ -93,8 +93,14 @@ export default function PacientesCreate({ auth }) {
                                                     <input required
                                                         type="number"
                                                         min={0}
+                                                        max={999}
+                                                        maxLength={3}
                                                         value={data.edad}
-                                                        onChange={(e) => setData('edad', e.target.value)}
+                                                        onChange={(e) => {
+                                                            if (e.target.value.length <= 3) {
+                                                                setData('edad', e.target.value);
+                                                            }
+                                                        }}
                                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                                     />
                                                     {errors.edad && <p className="text-sm text-red-500">{errors.edad}</p>}
@@ -105,9 +111,15 @@ export default function PacientesCreate({ auth }) {
                                                     <input
                                                         type="number"
                                                         min={0}
+                                                        max={999.99}
                                                         value={data.peso}
                                                         step={0.01}
-                                                        onChange={(e) => setData('peso', e.target.value)}
+                                                        onChange={(e) => {
+                                                            // Limitar a 6 caracteres (incluyendo el punto decimal)
+                                                            if (e.target.value.length <= 6) {
+                                                                setData('peso', e.target.value);
+                                                            }
+                                                        }}
                                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                                     />
                                                     {errors.peso && <p className="text-sm text-red-500">{errors.peso}</p>}
@@ -194,6 +206,7 @@ export default function PacientesCreate({ auth }) {
                                             <label className="block text-sm font-medium text-gray-700">Teléfono</label>
                                             <input required
                                                 type="text"
+                                                maxLength={9}
                                                 value={data.telefono}
                                                 onChange={(e) => setData('telefono', e.target.value)}
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
