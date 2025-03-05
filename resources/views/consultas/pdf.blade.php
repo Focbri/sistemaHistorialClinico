@@ -150,8 +150,8 @@
         </div>
 
         <div class="section">
-            <label>RP</label>
-            <p>{{ $consulta->rp }}</p>
+            <label>Tratamiento</label>
+            <p>{{ $consulta->tratamiento }}</p>
         </div>
 
         <div class="section">

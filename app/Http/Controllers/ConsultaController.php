@@ -26,7 +26,7 @@ class ConsultaController extends Controller
     
         $consultas = $query->paginate(10); // 10 consultas por página
     
-        return inertia('Consultas/Index', [
+        return inertia::render('Consultas/Index', [
             'consultas' => $consultas,
             'links' => [
                 'first' => $consultas->url(1),
@@ -42,7 +42,7 @@ class ConsultaController extends Controller
         $pacientes = Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno')
         ->orderBy('nombres')
         ->get();
-        return inertia('Consultas/Create', compact('pacientes'));
+        return inertia::render('Consultas/Create', compact('pacientes'));
     }
 
     public function store(Request $request)
@@ -59,7 +59,7 @@ class ConsultaController extends Controller
             'cirugias_previas' => 'nullable|string',
             'motivo_consulta' => 'nullable|string',
             'impresion_diagnostica' => 'nullable|string',
-            'rp' => 'nullable|string',
+            'tratamiento' => 'nullable|string',
             'plan' => 'nullable|string',
             'examenes_indicados' => 'nullable|string',
             'evoluciones' => 'nullable|string',
@@ -98,7 +98,7 @@ class ConsultaController extends Controller
             'cirugias_previas' => $request->cirugias_previas,
             'motivo_consulta' => $request->motivo_consulta,
             'impresion_diagnostica' => $request->impresion_diagnostica,
-            'rp' => $request->rp,
+            'tratamiento' => $request->tratamiento,
             'plan' => $request->plan,
             'examenes_indicados' => $request->examenes_indicados,
             'evoluciones' => $request->evoluciones,
@@ -152,7 +152,7 @@ class ConsultaController extends Controller
             'cirugias_previas' => 'nullable|string',
             'motivo_consulta' => 'nullable|string',
             'impresion_diagnostica' => 'nullable|string',
-            'rp' => 'nullable|string',
+            'tratamiento' => 'nullable|string',
             'plan' => 'nullable|string',
             'examenes_indicados' => 'nullable|string',
             'evoluciones' => 'nullable|string',
@@ -177,7 +177,7 @@ class ConsultaController extends Controller
             'cirugias_previas' => $request->cirugias_previas,
             'motivo_consulta' => $request->motivo_consulta,
             'impresion_diagnostica' => $request->impresion_diagnostica,
-            'rp' => $request->rp,
+            'tratamiento' => $request->tratamiento,
             'plan' => $request->plan,
             'examenes_indicados' => $request->examenes_indicados,
             'evoluciones' => $request->evoluciones,
@@ -188,29 +188,32 @@ class ConsultaController extends Controller
     }
 
     public function buscarPacientePorDNI(Request $request)
-    {
-        $dni = $request->input('dni'); // Obtener el DNI del request
+{
+    $dni = trim($request->input('dni')); // Eliminar espacios en blanco
+    Log::info('Buscando paciente con DNI:', ['dni' => $dni]);
 
-        // Buscar el paciente por DNI
-        $paciente = Paciente::where('dni', $dni)->first();
+    // Buscar el paciente por DNI
+    $paciente = Paciente::where('dni', $dni)->first();
 
-        if ($paciente) {
-            return response()->json([
-                'success' => true,
-                'paciente' => [
-                    'id' => $paciente->id,
-                    'nombres' => $paciente->nombres,
-                    'apellido_paterno' => $paciente->apellido_paterno,
-                    'apellido_materno' => $paciente->apellido_materno,
-                    'dni' => $paciente->dni,
-                    'telefono' => $paciente->telefono,
-                    'email' => $paciente->email,
-                ],
-            ]);
-        }
-        
-        return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
+    if ($paciente) {
+        Log::info('Paciente encontrado:', ['paciente' => $paciente]);
+        return response()->json([
+            'success' => true,
+            'paciente' => [
+                'id' => $paciente->id,
+                'nombres' => $paciente->nombres,
+                'apellido_paterno' => $paciente->apellido_paterno,
+                'apellido_materno' => $paciente->apellido_materno,
+                'dni' => $paciente->dni,
+                'telefono' => $paciente->telefono,
+                'email' => $paciente->email,
+            ],
+        ]);
     }
+    
+    Log::warning('Paciente no encontrado para DNI:', ['dni' => $dni]);
+    return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
+}
 
     public function generarPDF($id)
     {
@@ -275,12 +278,19 @@ class ConsultaController extends Controller
             Storage::put($carpetaPaciente . '/' . $nombreArchivo, $pdf->output());
             Log::info('PDF guardado correctamente.');
 
-            // Descargar el PDF
-            return $pdf->download($nombreArchivo);
+            // Retornar una respuesta JSON o redirigir
+            return response()->json([
+                'success' => true,
+                'message' => 'PDF generado y guardado correctamente.',
+                'path' => $carpetaPaciente . '/' . $nombreArchivo,
+            ]);
         } catch (\Exception $e) {
             // Manejar errores
             Log::error('Error al generar el PDF:', ['error' => $e->getMessage()]);
-            return redirect()->back()->with('error', 'Error al generar el PDF: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al generar el PDF: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

@@ -31,7 +31,7 @@ export default function ConsultasCreate({ auth }) {
 
     const buscarPaciente = async () => {
         if (!data.dni) return;
-
+    
         try {
             const response = await fetch('/consultas/buscar-paciente', {
                 method: 'POST',
@@ -39,26 +39,30 @@ export default function ConsultasCreate({ auth }) {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
-                body: JSON.stringify({ dni: data.dni }),
+                body: JSON.stringify({ dni: data.dni.trim() }), // Asegúrate de que el DNI esté limpio
             });
-
+    
             if (!response.ok) {
                 throw new Error('Paciente no encontrado');
             }
-
-            const { paciente } = await response.json();
-
-            setData({
-                ...data,
-                paciente_id: paciente.id,
-                nombres: paciente.nombres,
-                apellido_paterno: paciente.apellido_paterno,
-                apellido_materno: paciente.apellido_materno,
-                telefono: paciente.telefono,
-                email: paciente.email,
-            });
-
-            setPacienteEncontrado(true);
+    
+            const result = await response.json();
+    
+            if (result.success) {
+                setData({
+                    ...data,
+                    paciente_id: result.paciente.id,
+                    nombres: result.paciente.nombres,
+                    apellido_paterno: result.paciente.apellido_paterno,
+                    apellido_materno: result.paciente.apellido_materno,
+                    telefono: result.paciente.telefono,
+                    email: result.paciente.email,
+                });
+    
+                setPacienteEncontrado(true);
+            } else {
+                throw new Error(result.message || 'Paciente no encontrado');
+            }
         } catch (error) {
             alert(error.message);
             setPacienteEncontrado(false);
@@ -256,14 +260,14 @@ export default function ConsultasCreate({ auth }) {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">RP</label>
+                                    <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
                                     <input
                                         type="text"
-                                        value={data.rp}
+                                        value={data.tratamiento}
                                         onChange={(e) => setData('rp', e.target.value)}
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                     />
-                                    {errors.rp && <p className="text-sm text-red-500">{errors.rp}</p>}
+                                    {errors.tratamiento && <p className="text-sm text-red-500">{errors.tratamiento}</p>}
                                 </div>
 
                                 <div className="mb-4">

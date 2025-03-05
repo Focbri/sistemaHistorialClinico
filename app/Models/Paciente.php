@@ -30,6 +30,9 @@ class Paciente extends Model
         'direccion',
         'telefono',
         'email',
+        'procedencia',
+        'acompañante',
+        'referido',
     ];
 
     /**

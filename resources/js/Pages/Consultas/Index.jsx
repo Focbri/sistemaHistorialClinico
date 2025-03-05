@@ -21,6 +21,22 @@ export default function ConsultasIndex({ auth, consultas, links }) {
         }
     };
 
+    const descargarPDF = async (id) => {
+        try {
+            const response = await fetch(route('consultas.generarPDF', id));
+            const result = await response.json();
+    
+            if (result.success) {
+                alert('PDF generado y guardado correctamente.');
+            } else {
+                alert(result.message || 'Error al generar el PDF');
+            }
+        } catch (error) {
+            console.error('Error al generar el PDF:', error);
+            alert('Error al generar el PDF');
+        }
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -107,7 +123,7 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                                                 </button>
                                                             )}
                                                             <button
-                                                                onClick={() => router.get(route('consultas.generarPDF', consulta.id))}
+                                                                onClick={() => descargarPDF(consulta.id)}
                                                                 className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                                                             >
                                                                 PDF

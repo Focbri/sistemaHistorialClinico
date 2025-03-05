@@ -127,8 +127,8 @@ export default function ConsultasShow({ auth, consulta }) {
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700">RP</label>
-                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{consulta.rp}</p>
+                                <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
+                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{consulta.tratamiento}</p>
                             </div>
 
                             <div className="mb-4">

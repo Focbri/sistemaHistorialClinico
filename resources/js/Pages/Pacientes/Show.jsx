@@ -77,6 +77,10 @@ export default function PacientesShow({ auth, paciente }) {
                                         <label className="block text-sm font-medium text-gray-700">Ocupación</label>
                                         <p className="mt-1">{paciente.ocupacion}</p>
                                     </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Procedencia</label>
+                                        <p className="mt-1">{paciente.procedencia}</p>
+                                    </div>
                                 </div>
 
                                 <div className='flex flex-col'>
@@ -88,7 +92,17 @@ export default function PacientesShow({ auth, paciente }) {
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700">Teléfono</label>
                                         <p className="mt-1">{paciente.telefono}</p>
-                                    </div>    
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Acompañante</label>
+                                        <p className="mt-1">{paciente.acompañante}</p>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Referido</label>
+                                        <p className="mt-1">{paciente.referido}</p>
+                                    </div>
 
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700">Email</label>

@@ -54,6 +54,9 @@ class PacienteController extends Controller
             'direccion' => 'required|string|max:255',
             'telefono' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
+            'procedencia' => 'nullable|string|max:255',
+            'acompañante' => 'nullable|string|max:255',
+            'referido' => 'nullable|string|max:255',
         ]);
 
         // Crear el paciente
@@ -108,6 +111,9 @@ class PacienteController extends Controller
             'direccion' => 'required|string|max:255',
             'telefono' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
+            'procedencia' => 'nullable|string|max:255',
+            'acompañante' => 'nullable|string|max:255',
+            'referido' => 'nullable|string|max:255',
         ]);
 
         // Buscar el paciente por su ID

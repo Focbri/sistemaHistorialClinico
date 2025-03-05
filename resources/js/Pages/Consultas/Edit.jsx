@@ -18,7 +18,7 @@ export default function ConsultasEdit({ auth }) {
         cirugias_previas: consulta.cirugias_previas || '',
         motivo_consulta: consulta.motivo_consulta || '',
         impresion_diagnostica: consulta.impresion_diagnostica || '',
-        rp: consulta.rp || '',
+        tratamiento: consulta.tratamiento || '',
         plan: consulta.plan || '',
         examenes_indicados: consulta.examenes_indicados || '',
         evoluciones: consulta.evoluciones || '',
@@ -198,14 +198,14 @@ export default function ConsultasEdit({ auth }) {
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
                                 </div>
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">RP</label>
+                                    <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
                                     <input
                                         type="text"
-                                        value={data.rp}
-                                        onChange={(e) => setData('rp', e.target.value)}
+                                        value={data.tratamiento}
+                                        onChange={(e) => setData('tratamiento', e.target.value)}
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                     />
-                                    {errors.rp && <p className="text-sm text-red-500">{errors.rp}</p>}
+                                    {errors.tratamiento && <p className="text-sm text-red-500">{errors.tratamiento}</p>}
                                 </div>
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Plan</label>

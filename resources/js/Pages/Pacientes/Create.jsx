@@ -16,6 +16,9 @@ export default function PacientesCreate({ auth }) {
         direccion: '',
         telefono: '',
         email: '',
+        procedencia: '',
+        acompañante: '',
+        referido: '',
     });
 
     const handleSubmit = (e) => {
@@ -188,6 +191,17 @@ export default function PacientesCreate({ auth }) {
                                             />
                                             {errors.ocupacion && <p className="text-sm text-red-500">{errors.ocupacion}</p>}
                                         </div>
+
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700">Procedencia</label>
+                                            <input
+                                                type="text"
+                                                value={data.procedencia}
+                                                onChange={(e) => setData('procedencia', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            />
+                                            {errors.procedencia && <p className="text-sm text-red-500">{errors.procedencia}</p>}
+                                        </div>
                                     </div>
 
                                     <div className='flex flex-col'>
@@ -212,7 +226,31 @@ export default function PacientesCreate({ auth }) {
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                             />
                                             {errors.telefono && <p className="text-sm text-red-500">{errors.telefono}</p>}
-                                        </div>    
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700">Acompañante</label>
+                                            <input required
+                                                type="text"
+                                                maxLength={9}
+                                                value={data.acompañante}
+                                                onChange={(e) => setData('acompañante', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            />
+                                            {errors.acompañante && <p className="text-sm text-red-500">{errors.acompañante}</p>}
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700">Referido</label>
+                                            <input required
+                                                type="text"
+                                                maxLength={9}
+                                                value={data.referido}
+                                                onChange={(e) => setData('referido', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            />
+                                            {errors.referido && <p className="text-sm text-red-500">{errors.referido}</p>}
+                                        </div>     
 
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">Email</label>
