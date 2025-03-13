@@ -109,6 +109,8 @@
             <p>{{ $consulta->paciente->nombres }} {{ $consulta->paciente->apellido_paterno }} {{ $consulta->paciente->apellido_materno }}</p>
         </div>
 
+        <!-- Campos específicos para Consulta de Evolución -->
+        @if ($consulta->tipo_consulta === 'inicio')
         <div class="section">
             <label>ANTECEDENTES PERSONALES</label>
             <p>HTA: {{ $consulta->antecedentes_personales_hta ? 'SI' : 'NO' }}</p>
@@ -158,7 +160,10 @@
             <label>PLAN</label>
             <p>{{ $consulta->plan }}</p>
         </div>
+        @endif
 
+        <!-- Campos específicos para Consulta de Evolución -->
+        @if ($consulta->tipo_consulta === 'evolucion')
         <div class="section">
             <label>EXAMENES INDICADOS</label>
             <p>{{ $consulta->examenes_indicados }}</p>
@@ -168,6 +173,7 @@
             <label>EVOLUCIONES</label>
             <p>{{ $consulta->evoluciones }}</p>
         </div>
+        @endif
     </div> <!-- Fin del contenedor principal -->
 </body>
 </html>

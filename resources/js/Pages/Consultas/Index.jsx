@@ -48,7 +48,7 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
-                            {/* Barra de búsqueda y botón "Crear Nueva Consulta" */}
+                            {/* Barra de búsqueda y botones de creación */}
                             <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0 mb-6">
                                 <form onSubmit={handleSearch} className="flex items-center w-full md:w-auto">
                                     <input
@@ -66,12 +66,14 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                     </button>
                                 </form>
 
-                                <Link
-                                    href={route('consultas.create')}
-                                    className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-                                >
-                                    Crear Nueva Consulta
-                                </Link>
+                                <div className="flex space-x-2">
+                                    <Link
+                                        href={route('consultas.create')}
+                                        className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    >
+                                        Crear Nueva Consulta
+                                    </Link>
+                                </div>
                             </div>
 
                             {/* Tabla de consultas */}

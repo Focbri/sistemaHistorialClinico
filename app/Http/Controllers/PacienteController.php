@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use \App\Models\Paciente;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
@@ -140,22 +141,30 @@ class PacienteController extends Controller
     }
 
     public function buscarPacientePorDNI(Request $request)
-    {
-        $dni = $request->input('dni'); // Obtener el DNI del request
+{
+    $dni = trim($request->input('dni')); // Eliminar espacios en blanco
+    Log::info('Buscando paciente con DNI:', ['dni' => $dni]);
 
-        // Buscar el paciente por DNI
-        $paciente = Paciente::where('dni', $dni)->first();
+    // Buscar el paciente por DNI
+    $paciente = Paciente::where('dni', $dni)->first();
 
-        if ($paciente) {
-            // Formatear los datos del paciente en un solo string
-            $pacienteInfo = "Nombres: {$paciente->nombres}\nApellido Paterno: {$paciente->apellido_paterno}\nApellido Materno: {$paciente->apellido_materno}\nDNI: {$paciente->dni}";
-            return Inertia::render('Consultas/Create', [
-                'paciente_info' => $pacienteInfo, // Enviar los datos del paciente al frontend
-            ]);
-        }
-
-        return Inertia::render('Consultas/Create', [
-            'paciente_info' => 'Paciente no encontrado', // Enviar un mensaje de error
+    if ($paciente) {
+        Log::info('Paciente encontrado:', ['paciente' => $paciente]);
+        return response()->json([
+            'success' => true,
+            'paciente' => [
+                'id' => $paciente->id,
+                'nombres' => $paciente->nombres,
+                'apellido_paterno' => $paciente->apellido_paterno,
+                'apellido_materno' => $paciente->apellido_materno,
+                'dni' => $paciente->dni,
+                'telefono' => $paciente->telefono,
+                'email' => $paciente->email,
+            ],
         ]);
     }
+    
+    Log::warning('Paciente no encontrado para DNI:', ['dni' => $dni]);
+    return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
+}
 }

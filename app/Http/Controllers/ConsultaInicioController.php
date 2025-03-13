@@ -11,9 +11,9 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use Illuminate\Support\Str; 
+use Illuminate\Support\Str; // Importar la clase Str
 
-class ConsultaController extends Controller
+class ConsultaInicioController extends Controller
 {
     public function index(Request $request)
     {
@@ -38,31 +38,27 @@ class ConsultaController extends Controller
         ]);
     }
 
-    public function create(Request $request)
-{
-    $pacientes = Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno')
-        ->orderBy('nombres')
-        ->get();
+    public function create()
+    {
+        $pacientes = Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno')
+            ->orderBy('nombres')
+            ->get();
 
-    // Determinar el tipo de consulta (inicio o evolución)
-    $tipoConsulta = $request->query('tipo', 'inicio'); // Por defecto es 'inicio'
+        return Inertia::render('Consultas/Inicio/Create', [
+            'pacientes' => $pacientes,
+        ]);
+    }
 
-    return Inertia::render('Consultas/Create', [
-        'pacientes' => $pacientes,
-        'tipoConsulta' => $tipoConsulta, // Pasar el tipo de consulta a la vista
-    ]);
-}
-
-    // Guardar la consulta de inicio
+    // Guardar una consulta de inicio
     public function store(Request $request)
 {
     try {
         // Validar los datos del formulario
         $request->validate([
             'paciente_id' => 'required|exists:pacientes,id',
-            'antecedentes_personales_hta' => 'nullable|string',
-            'antecedentes_personales_alergias' => 'nullable|string',
-            'antecedentes_personales_dm' => 'nullable|string',
+            'antecedentes_personales_hta' => 'nullable|boolean',
+            'antecedentes_personales_alergias' => 'nullable|boolean',
+            'antecedentes_personales_dm' => 'nullable|boolean',
             'antecedentes_personales_otros' => 'nullable|string',
             'antecedentes_patologicos_familiares' => 'nullable|string',
             'cirugias_previas' => 'nullable|string',
@@ -72,42 +68,7 @@ class ConsultaController extends Controller
             'plan' => 'nullable|string',
             'examenes_indicados' => 'nullable|string',
             'fondo_ojo' => 'nullable|string',
-            'tipo_consulta' => 'required|in:inicio,evolucion', // Asegurar que el tipo de consulta sea 
-            'examen_av_sc_od' => 'nullable|string',
-            'examen_av_cae_od' => 'nullable|string',
-            'examen_av_cae_od' => 'nullable|string',
-            'examen_av_cc_od' => 'nullable|string',
-            'examen_av_sc_oi' => 'nullable|string',
-            'examen_av_cae_oi' => 'nullable|string',
-            'examen_av_cc_oi' => 'nullable|string',
-            'examen_pi_od' => 'nullable|string',
-            'examen_pi_oi' => 'nullable|string',
-            'examen_ar_sph_od' => 'nullable|string',
-            'examen_ar_cyl_od' => 'nullable|string',
-            'examen_ar_ax_od' => 'nullable|string',
-            'examen_ar_sph_oi' => 'nullable|string',
-            'examen_ar_cyl_oi' => 'nullable|string',
-            'examen_ar_ax_oi' => 'nullable|string',
-            'examen_keratometria_qd1_od' => 'nullable|string',
-            'examen_keratometria_qd2_od' => 'nullable|string',
-            'examen_keratometria_eje_od' => 'nullable|string',
-            'examen_keratometria_qd1_oi' => 'nullable|string',
-            'examen_keratometria_qd2_oi' => 'nullable|string',
-            'examen_keratometria_eje_oi' => 'nullable|string',
-            'biomicroscopia_movoculares_od' => 'nullable|string',
-            'biomicroscopia_movoculares_oi' => 'nullable|string',
-            'biomicroscopia_parpados_od' => 'nullable|string',
-            'biomicroscopia_parpados_oi' => 'nullable|string',
-            'biomicroscopia_cornea_od' => 'nullable|string',
-            'biomicroscopia_cornea_oi' => 'nullable|string',
-            'biomicroscopia_corneaconj_od' => 'nullable|string',
-            'biomicroscopia_corneaconj_oi' => 'nullable|string',
-            'biomicroscopia_ca_od' => 'nullable|string',
-            'biomicroscopia_ca_oi' => 'nullable|string',
-            'biomicroscopia_iris_od' => 'nullable|string',
-            'biomicroscopia_iris_oi' => 'nullable|string',
-            'biomicroscopia_cristalino_od' => 'nullable|string',
-            'biomicroscopia_cristalino_oi' => 'nullable|string',
+            'tipo_consulta' => 'required|in:inicio,evolucion', // Asegurar que el tipo de consulta sea válido
         ]);
 
         // Verificar si ya existe una consulta de inicio para este paciente
@@ -129,9 +90,9 @@ class ConsultaController extends Controller
             'codigo_consulta' => $codigoConsulta,
             'paciente_id' => $request->paciente_id,
             'tipo_consulta' => $request->tipo_consulta,
-            'antecedentes_personales_hta' => $request->antecedentes_personales_hta,
-            'antecedentes_personales_alergias' => $request->antecedentes_personales_alergias,
-            'antecedentes_personales_dm' => $request->antecedentes_personales_dm,
+            'antecedentes_personales_hta' => $request->antecedentes_personales_hta ? 'HTA' : '',
+            'antecedentes_personales_alergias' => $request->antecedentes_personales_alergias ? 'ALERGIAS' : '',
+            'antecedentes_personales_dm' => $request->antecedentes_personales_dm ? 'DM' : '',
             'antecedentes_personales_otros' => $request->antecedentes_personales_otros,
             'antecedentes_patologicos_familiares' => $request->antecedentes_patologicos_familiares,
             'cirugias_previas' => $request->cirugias_previas,
@@ -141,40 +102,6 @@ class ConsultaController extends Controller
             'plan' => $request->plan,
             'examenes_indicados' => $request->examenes_indicados,
             'fondo_ojo' => $request->fondo_ojo,
-            'examen_av_sc_od' => $request->examen_av_sc_od,
-            'examen_av_cae_od' => $request->examen_av_cae_od,
-            'examen_av_cc_od' => $request->examen_av_cc_od,
-            'examen_av_sc_oi' => $request->examen_av_sc_oi,
-            'examen_av_cae_oi' => $request->examen_av_cae_oi,
-            'examen_av_cc_oi' => $request->examen_av_cc_oi,
-            'examen_pi_od' => $request->examen_pi_od,
-            'examen_pi_oi' => $request->examen_pi_oi,
-            'examen_ar_sph_od' => $request->examen_ar_sph_od,
-            'examen_ar_cyl_od' => $request->examen_ar_cyl_od,
-            'examen_ar_ax_od' => $request->examen_ar_ax_od,
-            'examen_ar_sph_oi' => $request->examen_ar_sph_oi,
-            'examen_ar_cyl_oi' => $request->examen_ar_cyl_oi,
-            'examen_ar_ax_oi' => $request->examen_ar_ax_oi,
-            'examen_keratometria_qd1_od' => $request->examen_keratometria_qd1_od,
-            'examen_keratometria_qd2_od' => $request->examen_keratometria_qd2_od,
-            'examen_keratometria_eje_od' => $request->examen_keratometria_eje_od,
-            'examen_keratometria_qd1_oi' => $request->examen_keratometria_qd1_oi,
-            'examen_keratometria_qd2_oi' => $request->examen_keratometria_qd2_oi,
-            'examen_keratometria_eje_oi' => $request->examen_keratometria_eje_oi,
-            'biomicroscopia_movoculares_od' => $request->biomicroscopia_movoculares_od,
-            'biomicroscopia_movoculares_oi' => $request->biomicroscopia_movoculares_oi,
-            'biomicroscopia_parpados_od' => $request->biomicroscopia_parpados_od,
-            'biomicroscopia_parpados_oi' => $request->biomicroscopia_parpados_oi,
-            'biomicroscopia_cornea_od' => $request->biomicroscopia_cornea_od,
-            'biomicroscopia_cornea_oi' => $request->biomicroscopia_cornea_oi,
-            'biomicroscopia_corneaconj_od' => $request->biomicroscopia_corneaconj_od,
-            'biomicroscopia_corneaconj_oi' => $request->biomicroscopia_corneaconj_oi,
-            'biomicroscopia_ca_od' => $request->biomicroscopia_ca_od,
-            'biomicroscopia_ca_oi' => $request->biomicroscopia_ca_oi,
-            'biomicroscopia_iris_od' => $request->biomicroscopia_iris_od,
-            'biomicroscopia_iris_oi' => $request->biomicroscopia_iris_oi,
-            'biomicroscopia_cristalino_od' => $request->biomicroscopia_cristalino_od,
-            'biomicroscopia_cristalino_oi' => $request->biomicroscopia_cristalino_oi,
         ]);
 
         return redirect()->route('consultas.index')->with('success', 'Consulta creada correctamente.');
@@ -189,7 +116,6 @@ class ConsultaController extends Controller
     {
         // Cargar la relación con el paciente
         $consulta->load('paciente');
-
         return Inertia::render('Consultas/Show', [
             'consulta' => $consulta,
         ]);
@@ -217,12 +143,11 @@ class ConsultaController extends Controller
 
     public function update(Request $request, $id)
     {
-        Log::info('Datos recibidos:', $request->all());
         // Validar los datos del formulario
         $request->validate([
-            'antecedentes_personales_hta' => 'nullable|string',
-            'antecedentes_personales_alergias' => 'nullable|string',
-            'antecedentes_personales_dm' => 'nullable|string',
+            'antecedentes_personales_hta' => 'nullable|boolean',
+            'antecedentes_personales_alergias' => 'nullable|boolean',
+            'antecedentes_personales_dm' => 'nullable|boolean',
             'antecedentes_personales_otros' => 'nullable|string',
             'antecedentes_patologicos_familiares' => 'nullable|string',
             'cirugias_previas' => 'nullable|string',
@@ -233,49 +158,32 @@ class ConsultaController extends Controller
             'examenes_indicados' => 'nullable|string',
             'evoluciones' => 'nullable|string',
             'fondo_ojo' => 'nullable|string',
-            'examen_av_sc_od' => 'nullable|string',
-            'examen_av_cae_od' => 'nullable|string',
-            'examen_av_cae_od' => 'nullable|string',
-            'examen_av_cc_od' => 'nullable|string',
-            'examen_av_sc_oi' => 'nullable|string',
-            'examen_av_cae_oi' => 'nullable|string',
-            'examen_av_cc_oi' => 'nullable|string',
-            'examen_pi_od' => 'nullable|string',
-            'examen_pi_oi' => 'nullable|string',
-            'examen_ar_sph_od' => 'nullable|string',
-            'examen_ar_cyl_od' => 'nullable|string',
-            'examen_ar_ax_od' => 'nullable|string',
-            'examen_ar_sph_oi' => 'nullable|string',
-            'examen_ar_cyl_oi' => 'nullable|string',
-            'examen_ar_ax_oi' => 'nullable|string',
-            'examen_keratometria_qd1_od' => 'nullable|string',
-            'examen_keratometria_qd2_od' => 'nullable|string',
-            'examen_keratometria_eje_od' => 'nullable|string',
-            'examen_keratometria_qd1_oi' => 'nullable|string',
-            'examen_keratometria_qd2_oi' => 'nullable|string',
-            'examen_keratometria_eje_oi' => 'nullable|string',
-            //
-            'biomicroscopia_movoculares_od' => 'nullable|string',
-            'biomicroscopia_movoculares_oi' => 'nullable|string',
-            'biomicroscopia_parpados_od' => 'nullable|string',
-            'biomicroscopia_parpados_oi' => 'nullable|string',
-            'biomicroscopia_cornea_od' => 'nullable|string',
-            'biomicroscopia_cornea_oi' => 'nullable|string',
-            'biomicroscopia_corneaconj_od' => 'nullable|string',
-            'biomicroscopia_corneaconj_oi' => 'nullable|string',
-            'biomicroscopia_ca_od' => 'nullable|string',
-            'biomicroscopia_ca_oi' => 'nullable|string',
-            'biomicroscopia_iris_od' => 'nullable|string',
-            'biomicroscopia_iris_oi' => 'nullable|string',
-            'biomicroscopia_cristalino_od' => 'nullable|string',
-            'biomicroscopia_cristalino_oi' => 'nullable|string',
         ]);
 
         // Buscar la consulta por su ID
         $consulta = Consulta::findOrFail($id);
 
+        // Transformar los valores de los checkboxes
+        $antecedentesPersonalesHta = $request->antecedentes_personales_hta ? 'HTA' : '';
+        $antecedentesPersonalesAlergias = $request->antecedentes_personales_alergias ? 'ALERGIAS' : '';
+        $antecedentesPersonalesDm = $request->antecedentes_personales_dm ? 'DM' : '';
+
         // Actualizar la consulta
-        $consulta->update($request->all());
+        $consulta->update([
+            'antecedentes_personales_hta' => $antecedentesPersonalesHta,
+            'antecedentes_personales_alergias' => $antecedentesPersonalesAlergias,
+            'antecedentes_personales_dm' => $antecedentesPersonalesDm,
+            'antecedentes_personales_otros' => $request->antecedentes_personales_otros,
+            'antecedentes_patologicos_familiares' => $request->antecedentes_patologicos_familiares,
+            'cirugias_previas' => $request->cirugias_previas,
+            'motivo_consulta' => $request->motivo_consulta,
+            'impresion_diagnostica' => $request->impresion_diagnostica,
+            'tratamiento' => $request->tratamiento,
+            'plan' => $request->plan,
+            'examenes_indicados' => $request->examenes_indicados,
+            'evoluciones' => $request->evoluciones,
+            'fondo_ojo' => $request->fondo_ojo,
+        ]);
 
         return redirect()->route('consultas.index')->with('success', 'Consulta actualizada correctamente.');
     }
@@ -313,12 +221,6 @@ class ConsultaController extends Controller
         try {
             // Obtener la consulta
             $consulta = Consulta::findOrFail($id);
-            
-            if (!$consulta->paciente) {
-                Log::error('La consulta no tiene un paciente asociado:', ['consulta_id' => $id]);
-                return redirect()->back()->with('error', 'La consulta no tiene un paciente asociado.');
-            }
-
             Log::info('Consulta encontrada:', ['consulta' => $consulta]);
 
             // Obtener la fecha actual
@@ -357,7 +259,6 @@ class ConsultaController extends Controller
                 'isHtml5ParserEnabled' => true,
                 'isRemoteEnabled' => true, // Habilitar carga de recursos remotos
                 'defaultFont' => 'sans-serif',
-                'enable_css_float' => true, // Habilitar soporte para CSS float
             ]);
 
             // Ruta de la carpeta del paciente
@@ -391,23 +292,6 @@ class ConsultaController extends Controller
                 'success' => false,
                 'message' => 'Error al generar el PDF: ' . $e->getMessage(),
             ], 500);
-        }
-    }
-
-    // Verificar si existe una consulta de inicio para el paciente
-    public function verificarConsultaInicio($pacienteId)
-    {
-        try {
-            // Verificar si existe una consulta de inicio para el paciente
-            $existe = Consulta::where('paciente_id', $pacienteId)
-                ->where('tipo_consulta', 'inicio')
-                ->exists();
-
-            return response()->json(['existe' => $existe]);
-        } catch (\Exception $e) {
-            // Registrar el error en los logs
-            Log::error('Error al verificar consulta de inicio:', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Error al verificar consulta de inicio'], 500);
         }
     }
 }
