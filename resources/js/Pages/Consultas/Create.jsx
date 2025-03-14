@@ -1,7 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import fondoOjo from '../../../../public/img/fondo_ojo.png'; // Importar imagen de fondo de ojo
 import { useState, useEffect } from 'react';
+
+import Cie10Search from '@/Components/Cie10Search'; // Importa el componente de búsqueda
 
 export default function ConsultasCreate({ auth }) {
     const { data, setData, post, errors, processing } = useForm({
@@ -25,7 +29,6 @@ export default function ConsultasCreate({ auth }) {
         plan: '',
         examenes_indicados: '',
         evoluciones: '',
-        fondo_ojo: '',
         tipo_consulta: 'inicio', // Asegúrate de incluir este campo
         //
         examen_av_sc_od: '',
@@ -63,6 +66,17 @@ export default function ConsultasCreate({ auth }) {
         biomicroscopia_ca_oi: '',
         biomicroscopia_iris_oi: '',
         biomicroscopia_cristalino_oi: '',
+        //
+        fondo_ojo_retina_p_od:'',
+        fondo_ojo_macula_od:'',
+        fondo_ojo_vitreo_od:'',
+        fondo_ojo_disco_o_od:'',
+        fondo_ojo_vasos_od:'',
+        fondo_ojo_macula_oi:'',
+        fondo_ojo_vitreo_oi:'',
+        fondo_ojo_disco_o_oi:'',
+        fondo_ojo_vasos_oi:'',
+        fondo_ojo_retina_p_oi:'',
     });
 
     const [showHTAText, setShowHTAText] = useState(false);
@@ -91,6 +105,194 @@ export default function ConsultasCreate({ auth }) {
         const planSeleccionado = nuevasOpciones.find(opcion => opcion.seleccionado)?.nombre || '';
         setData('plan', planSeleccionado);
     };
+
+     // Estado para controlar el marcador activo
+     const [marcadorActivo, setMarcadorActivo] = useState(null);
+     // Estado para controlar el marcador activo OJO IZQUIERDO
+     const [marcadorActivoOI, setMarcadorActivoOI] = useState(null);
+
+     // Definir los marcadores OJO DERECHO
+     const marcadores = [
+        {
+            id: 1,
+            top: 'bottom-3', // Posición vertical
+            left: 'left-24', // Posición horizontal
+            campo: 'fondo_ojo_vitreo_od', // Campo asociado en el estado `data` VITREO
+            color: 'blue', // Color del marcador
+            subtitulo: 'Vítreo',
+            opciones: [
+                { id: 1, nombre: 'VITREO 1' },
+                { id: 2, nombre: 'VITREO 2' },
+                { id: 3, nombre: 'VITREO 3' },
+            ],
+        },
+        {
+            id: 2,
+            top: 'bottom-20',
+            left: 'left-24',
+            campo: 'fondo_ojo_macula_od',
+            color: 'red', // Color del marcador
+            subtitulo: 'Mácula',
+            opciones: [
+                { id: 1, nombre: 'MACULA A' },
+                { id: 2, nombre: 'MACULA B' },
+            ],
+        },
+        {
+            id: 3,
+            top: 'top-16',
+            left: 'left-6',
+            campo: 'fondo_ojo_retina_p_od',
+            color: 'green', // Color del marcador
+            subtitulo: 'Retina Periférica',
+            opciones: [
+                { id: 1, nombre: 'RETINA P. 1' },
+                { id: 2, nombre: 'RETINA P. 2' },
+            ],
+        },
+        {
+        id: 4,
+        top: 'top-20',
+        left: 'left-36',
+        campo: 'fondo_ojo_disco_o_od',
+        color: 'purple', // Color del marcador
+        subtitulo: 'Disco Óptico',
+        opciones: [
+            { id: 1, nombre: 'DISCO OPT. P' },
+            { id: 2, nombre: 'DISCO OPT. G' },
+        ],
+    },
+    {
+        id: 5,
+        top: 'top-14',
+        left: 'left-32',
+        campo: 'fondo_ojo_vasos_od',
+        color: 'orange', // Color del marcador
+        subtitulo: 'Vasos Sanguíneos',
+        opciones: [
+            { id: 1, nombre: 'VASOS X' },
+            { id: 2, nombre: 'VASOS Y' },
+        ],
+    },
+    ];
+
+    // Definir los marcadores OJO IZQUIERDO
+    const marcadoresOI = [
+        {
+            id: 1,
+            top: 'bottom-3', // Posición vertical
+            right: 'right-24', // Posición horizontal
+            campo: 'fondo_ojo_vitreo_oi', // Campo asociado en el estado `data` VITREO
+            color: 'blue', // Color del marcador
+            subtitulo: 'Vítreo OI',
+            opciones: [
+                { id: 1, nombre: 'OI VITREO 1' },
+                { id: 2, nombre: 'OI VITREO 2' },
+                { id: 3, nombre: 'OI VITREO 3' },
+            ],
+        },
+        {
+            id: 2,
+            top: 'bottom-20',
+            right: 'right-24',
+            campo: 'fondo_ojo_macula_oi',
+            color: 'red', // Color del marcador
+            subtitulo: 'Mácula',
+            opciones: [
+                { id: 1, nombre: 'OI MACULA A' },
+                { id: 2, nombre: 'OI MACULA B' },
+            ],
+        },
+        {
+            id: 3,
+            top: 'top-16',
+            right: 'right-6',
+            campo: 'fondo_ojo_retina_p_oi',
+            color: 'green', // Color del marcador
+            subtitulo: 'Retina Periférica',
+            opciones: [
+                { id: 1, nombre: 'OI RETINA P. 1' },
+                { id: 2, nombre: 'OI RETINA P. 2' },
+            ],
+        },
+        {
+        id: 4,
+        top: 'top-20',
+        right: 'right-36',
+        campo: 'fondo_ojo_disco_o_oi',
+        color: 'purple', // Color del marcador
+        subtitulo: 'Disco Óptico',
+        opciones: [
+            { id: 1, nombre: 'OI DISCO OPT. P' },
+            { id: 2, nombre: 'OI DISCO OPT. G' },
+        ],
+    },
+    {
+        id: 5,
+        top: 'top-14',
+        right: 'right-32',
+        campo: 'fondo_ojo_vasos_oi',
+        color: 'orange', // Color del marcador
+        subtitulo: 'Vasos Sanguíneos',
+        opciones: [
+            { id: 1, nombre: 'OI VASOS X' },
+            { id: 2, nombre: 'OI VASOS Y' },
+        ],
+    },
+    ];
+
+     // Manejar clic en el marcador
+    const handleMarkerClick = (marcador) => {
+        setMarcadorActivo(marcador.id === marcadorActivo ? null : marcador.id);
+    };
+
+     // Manejar clic en el marcador OJO IZQUIERDO
+     const handleMarkerClickOI = (marcadorOI) => {
+        setMarcadorActivoOI(marcadorOI.id === marcadorActivoOI ? null : marcadorOI.id);
+    };
+
+    // Manejar selección de una opción
+    const handleSeleccionOpcion = (opcion) => {
+        if (marcadorActivo) {
+            const marcador = marcadores.find(m => m.id === marcadorActivo);
+            setData(marcador.campo, opcion.nombre); // Actualiza el campo correspondiente en el estado `data`
+            setMarcadorActivo(null); // Cierra el contenedor de opciones
+        }
+    };
+
+    // Manejar selección de una opción OJO IZQUIERDO
+    const handleSeleccionOpcionOI = (opcionOI) => {
+        if (marcadorActivoOI) {
+            const marcadorOI = marcadoresOI.find(mOI => mOI.id === marcadorActivoOI);
+            setData(marcadorOI.campo, opcionOI.nombre); // Actualiza el campo correspondiente en el estado `data`
+            setMarcadorActivoOI(null); // Cierra el contenedor de opciones
+        }
+    };
+
+    // Cerrar el contenedor de opciones al hacer clic fuera
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (marcadorActivo && !e.target.closest('.opciones-container')) {
+                setMarcadorActivo(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [marcadorActivo]);
+
+    // Cerrar el contenedor de opciones al hacer clic fuera OJO IZQUIERDO
+    useEffect(() => {
+        const handleClickOutsideOI = (e) => {
+            if (marcadorActivoOI && !e.target.closest('.opciones-container')) {
+                setMarcadorActivoOI(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutsideOI);
+        return () => document.removeEventListener('mousedown', handleClickOutsideOI);
+    }, [marcadorActivoOI]);
+
 
     // Función para buscar paciente
     const buscarPaciente = async () => {
@@ -158,15 +360,21 @@ export default function ConsultasCreate({ auth }) {
         }
     };
 
-    // Función para enviar el formulario
+    const handleSelectResult = (result) => {
+        // Aquí puedes manejar el resultado seleccionado
+        setData('impresion_diagnostica', result.colera); // Por ejemplo, guardar el valor en el campo "impresion_diagnostica"
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-
+    
+        console.log('Datos a enviar:', data); // Verificar que `fondo_ojo_vitreo_od` esté correctamente asignado
+    
         const formData = {
             ...data,
             tipo_consulta: tipoConsulta, // Asegúrate de enviar el tipo de consulta
         };    
-
+    
         post(route('consultas.store'), formData);
     };
 
@@ -650,23 +858,119 @@ export default function ConsultasCreate({ auth }) {
                                     </div>
                                 </div>
 
+                                {/* Fondo de Ojo */}
                                 <div className='flex flex-col justify-center items-center w-full gap-4'>
                                     <label className="block text-xl font-medium text-gray-700">Fondo de Ojo</label>
                                     <div className='flex gap-4'>
-                                        <div>
+                                        <div className='relative inline-block'>
                                             <img src={fondoOjo} alt="Fondo de Ojo" className="w-full h-auto" />
-                                        </div>                                    
+                                            
+                                                {marcadores.map((marcador) => (
+                                                    <span
+                                                        key={marcador.id}
+                                                        className={`text-2xl absolute cursor-pointer ${marcador.top} ${marcador.left}`}
+                                                        onClick={() => handleMarkerClick(marcador)}
+                                                    >
+                                                        <FontAwesomeIcon
+                                                            icon={faMapMarkerAlt}
+                                                            style={{ color: marcador.color, fontSize: '24px' }} // Aplica el color dinámico
+                                                        />
+                                                    </span>
+                                                ))}
+
+                                            {marcadorActivo && (
+                                                <div
+                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
+                                                    style={{
+                                                        top: '0', // Posiciona el contenedor debajo del marcador
+                                                        left: '-50%', // Centra horizontalmente
+                                                        transform: 'translateX(-10%)', // Ajusta el centrado
+                                                    }}
+                                                >
+                                                    {marcadores.find(m => m.id === marcadorActivo).subtitulo && (
+                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
+                                                                {marcadores.find(m => m.id === marcadorActivo).subtitulo}
+                                                            </span>
+                                                        )}
+                                                    <label className='text-sm text-gray-500'>
+                                                        (Selecciona una opción:)
+                                                        
+                                                    </label>
+                                                    <div className='space-y-2'>
+                                                        {marcadores.find(m => m.id === marcadorActivo).opciones.map((opcion) => (
+                                                            <div
+                                                                key={opcion.id}
+                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
+                                                                    data[marcadores.find(m => m.id === marcadorActivo).campo] === opcion.nombre
+                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
+                                                                        : 'bg-white' // Estilo por defecto
+                                                                }`}
+                                                                onClick={() => handleSeleccionOpcion(opcion)}
+                                                            >
+                                                                {opcion.nombre}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Contenedor de opciones OI */}                
+                                                {marcadoresOI.map((marcadorOI) => (
+                                                    <span
+                                                        key={marcadorOI.id}
+                                                        className={`text-2xl absolute cursor-pointer ${marcadorOI.top} ${marcadorOI.right}`}
+                                                        onClick={() => handleMarkerClickOI(marcadorOI)}
+                                                    >
+                                                        <FontAwesomeIcon
+                                                            icon={faMapMarkerAlt}
+                                                            style={{ color: marcadorOI.color, fontSize: '24px' }} // Aplica el color dinámico
+                                                        />
+                                                    </span>
+                                                ))}
+
+                                            {marcadorActivoOI && (
+                                                <div
+                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
+                                                    style={{
+                                                        top: '0', // Posiciona el contenedor debajo del marcador
+                                                        right: '-50%', // Centra horizontalmente
+                                                        transform: 'translateX(10%)', // Ajusta el centrado
+                                                    }}
+                                                >
+                                                    {marcadoresOI.find(mOI=> mOI.id === marcadorActivoOI).subtitulo && (
+                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
+                                                                {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).subtitulo}
+                                                            </span>
+                                                        )}
+                                                    <label className='text-sm text-gray-500'>
+                                                        (Selecciona una opción:)
+                                                        
+                                                    </label>
+                                                    <div className='space-y-2'>
+                                                        {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).opciones.map((opcionOI) => (
+                                                            <div
+                                                                key={opcionOI.id}
+                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
+                                                                    data[marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).campo] === opcionOI.nombre
+                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
+                                                                        : 'bg-white' // Estilo por defecto
+                                                                }`}
+                                                                onClick={() => handleSeleccionOpcionOI(opcionOI)}
+                                                            >
+                                                                {opcionOI.nombre}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>                                        
                                     </div>
                                 </div>
 
+                                {/* Integra el componente de búsqueda */}
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica</label>
-                                    <input
-                                        type="text"
-                                        value={data.impresion_diagnostica}
-                                        onChange={(e) => setData('impresion_diagnostica', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (Buscar en CIE10)</label>
+                                    <Cie10Search onSelectResult={handleSelectResult} />
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
                                 </div>
 
@@ -767,37 +1071,119 @@ export default function ConsultasCreate({ auth }) {
                                     {errors.motivo_consulta && <p className="text-sm text-red-500">{errors.motivo_consulta}</p>}
                                 </div>
 
+                                {/* Fondo de Ojo */}
                                 <div className='flex flex-col justify-center items-center w-full gap-4'>
                                     <label className="block text-xl font-medium text-gray-700">Fondo de Ojo</label>
                                     <div className='flex gap-4'>
-                                        <div>
+                                        <div className='relative inline-block'>
                                             <img src={fondoOjo} alt="Fondo de Ojo" className="w-full h-auto" />
-                                        </div>
-                                        <div className="mb-4">
-                                            <textarea
-                                                type="text"
-                                                value={data.fondo_ojo}
-                                                onChange={(e) => setData('fondo_ojo', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                style={{
-                                                    width: '20rem',
-                                                    height: '12rem',
-                                                    resize: 'none'
-                                                }}
-                                            />
-                                            {errors.fondo_ojo && <p className="text-sm text-red-500">{errors.fondo_ojo}</p>}
-                                        </div>
+                                            
+                                            {marcadores.map((marcador) => (
+                                                <span
+                                                    key={marcador.id}
+                                                    className={`text-2xl absolute cursor-pointer ${marcador.top} ${marcador.left}`}
+                                                    onClick={() => handleMarkerClick(marcador)}
+                                                >
+                                                    <FontAwesomeIcon
+                                                        icon={faMapMarkerAlt}
+                                                        style={{ color: marcador.color, fontSize: '24px' }} // Aplica el color dinámico
+                                                    />
+                                                </span>
+                                            ))}
+
+                                            {marcadorActivo && (
+                                                <div
+                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
+                                                    style={{
+                                                        top: '0', // Posiciona el contenedor debajo del marcador
+                                                        left: '-50%', // Centra horizontalmente
+                                                        transform: 'translateX(-10%)', // Ajusta el centrado
+                                                    }}
+                                                >
+                                                    {marcadores.find(m => m.id === marcadorActivo).subtitulo && (
+                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
+                                                                {marcadores.find(m => m.id === marcadorActivo).subtitulo}
+                                                            </span>
+                                                        )}
+                                                    <label className='text-sm text-gray-500'>
+                                                        (Selecciona una opción:)
+                                                        
+                                                    </label>
+                                                    <div className='space-y-2'>
+                                                        {marcadores.find(m => m.id === marcadorActivo).opciones.map((opcion) => (
+                                                            <div
+                                                                key={opcion.id}
+                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
+                                                                    data[marcadores.find(m => m.id === marcadorActivo).campo] === opcion.nombre
+                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
+                                                                        : 'bg-white' // Estilo por defecto
+                                                                }`}
+                                                                onClick={() => handleSeleccionOpcion(opcion)}
+                                                            >
+                                                                {opcion.nombre}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Contenedor de opciones OI */}                
+                                            {marcadoresOI.map((marcadorOI) => (
+                                                    <span
+                                                        key={marcadorOI.id}
+                                                        className={`text-2xl absolute cursor-pointer ${marcadorOI.top} ${marcadorOI.right}`}
+                                                        onClick={() => handleMarkerClickOI(marcadorOI)}
+                                                    >
+                                                        <FontAwesomeIcon
+                                                            icon={faMapMarkerAlt}
+                                                            style={{ color: marcadorOI.color, fontSize: '24px' }} // Aplica el color dinámico
+                                                        />
+                                                    </span>
+                                                ))}
+
+                                            {marcadorActivoOI && (
+                                                <div
+                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
+                                                    style={{
+                                                        top: '0', // Posiciona el contenedor debajo del marcador
+                                                        right: '-50%', // Centra horizontalmente
+                                                        transform: 'translateX(10%)', // Ajusta el centrado
+                                                    }}
+                                                >
+                                                    {marcadoresOI.find(mOI=> mOI.id === marcadorActivoOI).subtitulo && (
+                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
+                                                                {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).subtitulo}
+                                                            </span>
+                                                        )}
+                                                    <label className='text-sm text-gray-500'>
+                                                        (Selecciona una opción:)
+                                                        
+                                                    </label>
+                                                    <div className='space-y-2'>
+                                                        {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).opciones.map((opcionOI) => (
+                                                            <div
+                                                                key={opcionOI.id}
+                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
+                                                                    data[marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).campo] === opcionOI.nombre
+                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
+                                                                        : 'bg-white' // Estilo por defecto
+                                                                }`}
+                                                                onClick={() => handleSeleccionOpcionOI(opcionOI)}
+                                                            >
+                                                                {opcionOI.nombre}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>                                        
                                     </div>
                                 </div>
 
+                                {/* Integra el componente de búsqueda */}
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica</label>
-                                    <input
-                                        type="text"
-                                        value={data.impresion_diagnostica}
-                                        onChange={(e) => setData('impresion_diagnostica', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (Buscar en CIE10)</label>
+                                    <Cie10Search onSelectResult={handleSelectResult} />
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
                                 </div>
 

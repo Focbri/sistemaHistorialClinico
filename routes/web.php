@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\ConsultaInicioController;
 use App\Http\Controllers\ConsultaController; // Controlador común para funcionalidades compartidas
+use App\Http\Controllers\Cie10Controller;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +43,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
      // Ruta para listar consultas
      Route::resource('consultas', ConsultaController::class);
+
+     Route::get('/cie10/search', [Cie10Controller::class, 'search']);
 
     // Rutas para Consultas de Inicio
     //Route::get('/consultas/create', [ConsultaController::class, 'create'])->name('consultas.create');

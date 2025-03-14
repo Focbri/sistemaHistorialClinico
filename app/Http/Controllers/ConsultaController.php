@@ -71,7 +71,6 @@ class ConsultaController extends Controller
             'tratamiento' => 'nullable|string',
             'plan' => 'nullable|string',
             'examenes_indicados' => 'nullable|string',
-            'fondo_ojo' => 'nullable|string',
             'tipo_consulta' => 'required|in:inicio,evolucion', // Asegurar que el tipo de consulta sea 
             'examen_av_sc_od' => 'nullable|string',
             'examen_av_cae_od' => 'nullable|string',
@@ -108,6 +107,18 @@ class ConsultaController extends Controller
             'biomicroscopia_iris_oi' => 'nullable|string',
             'biomicroscopia_cristalino_od' => 'nullable|string',
             'biomicroscopia_cristalino_oi' => 'nullable|string',
+            //
+            'fondo_ojo_retina_p_od' => 'nullable|string',
+            'fondo_ojo_macula_od' => 'nullable|string',
+            'fondo_ojo_vitreo_od' => 'nullable|string',
+            'fondo_ojo_disco_o_od' => 'nullable|string',
+            'fondo_ojo_vasos_od' => 'nullable|string',
+            'fondo_ojo_retina_p_oi' => 'nullable|string',
+            'fondo_ojo_macula_oi' => 'nullable|string',
+            'fondo_ojo_vitreo_oi' => 'nullable|string',
+            'fondo_ojo_disco_o_oi' => 'nullable|string',
+            'fondo_ojo_vasos_oi' => 'nullable|string',
+
         ]);
 
         // Verificar si ya existe una consulta de inicio para este paciente
@@ -140,7 +151,6 @@ class ConsultaController extends Controller
             'tratamiento' => $request->tratamiento,
             'plan' => $request->plan,
             'examenes_indicados' => $request->examenes_indicados,
-            'fondo_ojo' => $request->fondo_ojo,
             'examen_av_sc_od' => $request->examen_av_sc_od,
             'examen_av_cae_od' => $request->examen_av_cae_od,
             'examen_av_cc_od' => $request->examen_av_cc_od,
@@ -175,6 +185,17 @@ class ConsultaController extends Controller
             'biomicroscopia_iris_oi' => $request->biomicroscopia_iris_oi,
             'biomicroscopia_cristalino_od' => $request->biomicroscopia_cristalino_od,
             'biomicroscopia_cristalino_oi' => $request->biomicroscopia_cristalino_oi,
+            //
+            'fondo_ojo_retina_p_od' => $request->fondo_ojo_retina_p_od,
+            'fondo_ojo_macula_od' => $request->fondo_ojo_macula_od,
+            'fondo_ojo_vitreo_od' => $request->fondo_ojo_vitreo_od,
+            'fondo_ojo_disco_o_od' => $request->fondo_ojo_disco_o_od,
+            'fondo_ojo_vasos_od' => $request->fondo_ojo_vasos_od,
+            'fondo_ojo_retina_p_oi' => $request->fondo_ojo_retina_p_oi,
+            'fondo_ojo_macula_oi' => $request->fondo_ojo_macula_oi,
+            'fondo_ojo_vitreo_oi' => $request->fondo_ojo_vitreo_oi,
+            'fondo_ojo_disco_o_oi' => $request->fondo_ojo_disco_o_oi,
+            'fondo_ojo_vasos_oi' => $request->fondo_ojo_vasos_oi,
         ]);
 
         return redirect()->route('consultas.index')->with('success', 'Consulta creada correctamente.');
@@ -232,7 +253,6 @@ class ConsultaController extends Controller
             'plan' => 'nullable|string',
             'examenes_indicados' => 'nullable|string',
             'evoluciones' => 'nullable|string',
-            'fondo_ojo' => 'nullable|string',
             'examen_av_sc_od' => 'nullable|string',
             'examen_av_cae_od' => 'nullable|string',
             'examen_av_cae_od' => 'nullable|string',
@@ -269,6 +289,17 @@ class ConsultaController extends Controller
             'biomicroscopia_iris_oi' => 'nullable|string',
             'biomicroscopia_cristalino_od' => 'nullable|string',
             'biomicroscopia_cristalino_oi' => 'nullable|string',
+            //
+            'fondo_ojo_retina_p_od' => 'nullable|string',
+            'fondo_ojo_macula_od' => 'nullable|string',
+            'fondo_ojo_vitreo_od' => 'nullable|string',
+            'fondo_ojo_disco_o_od' => 'nullable|string',
+            'fondo_ojo_vasos_od' => 'nullable|string',
+            'fondo_ojo_retina_p_oi' => 'nullable|string',
+            'fondo_ojo_macula_oi' => 'nullable|string',
+            'fondo_ojo_vitreo_oi' => 'nullable|string',
+            'fondo_ojo_disco_o_oi' => 'nullable|string',
+            'fondo_ojo_vasos_oi' => 'nullable|string',
         ]);
 
         // Buscar la consulta por su ID

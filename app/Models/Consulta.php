@@ -30,7 +30,6 @@ class Consulta extends Model
         'plan',
         'examenes_indicados',
         'evoluciones',
-        'fondo_ojo',
         'tipo_consulta',
         'examen_av_sc_od',
         'examen_av_cae_od',
@@ -66,6 +65,16 @@ class Consulta extends Model
         'biomicroscopia_ca_oi',
         'biomicroscopia_iris_oi',
         'biomicroscopia_cristalino_oi',
+        'fondo_ojo_retina_p_od',
+        'fondo_ojo_macula_od',
+        'fondo_ojo_vitreo_od',
+        'fondo_ojo_disco_o_od',
+        'fondo_ojo_vasos_od',
+        'fondo_ojo_macula_oi',
+        'fondo_ojo_vitreo_oi',
+        'fondo_ojo_disco_o_oi',
+        'fondo_ojo_vasos_oi',
+        'fondo_ojo_retina_p_oi',
     ];
 
     /**
@@ -130,6 +139,15 @@ class Consulta extends Model
             'biomicroscopia_ca_oi',
             'biomicroscopia_iris_oi',
             'biomicroscopia_cristalino_oi',
+            'fondo_ojo_retina_p_od',
+            'fondo_ojo_macula_od',
+            'fondo_ojo_vitreo_od',
+            'fondo_ojo_disco_o_od',
+            'fondo_ojo_vasos_od',
+            'fondo_ojo_macula_oi',
+            'fondo_ojo_vitreo_oi',
+            'fondo_ojo_disco_o_oi',
+            'fondo_ojo_vasos_oi',
         ];
     }
 
