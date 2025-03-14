@@ -160,6 +160,8 @@ class PacienteController extends Controller
                 'dni' => $paciente->dni,
                 'telefono' => $paciente->telefono,
                 'email' => $paciente->email,
+                'fecha_nacimiento' => $paciente->fecha_nacimiento,
+                'edad' => $paciente->edad,
             ],
         ]);
     }

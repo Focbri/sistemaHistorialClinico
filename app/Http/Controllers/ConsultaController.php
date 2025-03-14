@@ -331,6 +331,16 @@ class ConsultaController extends Controller
                 'dni' => $paciente->dni,
                 'telefono' => $paciente->telefono,
                 'email' => $paciente->email,
+                'fecha_nacimiento' => $paciente->fecha_nacimiento,
+                'edad' => $paciente->edad,
+                'sexo' => $paciente->sexo,
+                'procedencia' => $paciente->procedencia,
+                'acompañante' => $paciente->acompañante,
+                'referido' => $paciente->referido,
+                'peso' => $paciente->peso,
+                'estado_civil' => $paciente->estado_civil,
+                'ocupacion' => $paciente->ocupacion,
+                'direccion' => $paciente->direccion,
             ],
         ]);
     }

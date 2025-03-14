@@ -3,7 +3,9 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import fondoOjo from '../../../assets/fondo_ojo.png';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+
+import Cie10Search from '@/Components/Cie10Search'; // Importa el componente de búsqueda
 
 export default function ConsultasEdit({ auth }) {
     // Obtener la consulta actual desde las props
@@ -85,6 +87,21 @@ export default function ConsultasEdit({ auth }) {
     const [marcadorActivo, setMarcadorActivo] = useState(null);
     // Estado para controlar el marcador activo OJO IZQUIERDO
     const [marcadorActivoOI, setMarcadorActivoOI] = useState(null);
+
+    const [selectedResults, setSelectedResults] = useState([]);
+
+    // Manejar la selección de resultados
+    const handleSelectResult = useCallback((results) => {
+        setSelectedResults(results); // Actualizar el estado de resultados seleccionados
+        setData('impresion_diagnostica', results.join(', ')); // Combinar las opciones en una cadena
+    }, [setData]);
+
+    // Inicializar selectedResults con los valores de impresion_diagnostica
+    useEffect(() => {
+        if (data.impresion_diagnostica) {
+            setSelectedResults(data.impresion_diagnostica.split(', '));
+        }
+    }, [data.impresion_diagnostica]);
 
     // Definir los marcadores
     const marcadores = [
@@ -881,15 +898,23 @@ export default function ConsultasEdit({ auth }) {
                                     </div>
                                 </div>
 
+                                {/* Campo de búsqueda CIE10 */}
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica</label>
-                                    <input
-                                        type="text"
-                                        value={data.impresion_diagnostica}
-                                        onChange={(e) => setData('impresion_diagnostica', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
+                                    <Cie10Search onSelectResult={handleSelectResult} />
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
+                                </div>
+
+                                {/* Mostrar las opciones seleccionadas */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Opciones Seleccionadas</label>
+                                    <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                        {selectedResults.map((result, index) => (
+                                            <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                <span>{result}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="mb-4">
@@ -1357,15 +1382,23 @@ export default function ConsultasEdit({ auth }) {
                                     </div>
                                 </div>
 
+                                {/* Campo de búsqueda CIE10 */}
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica</label>
-                                    <input
-                                        type="text"
-                                        value={data.impresion_diagnostica}
-                                        onChange={(e) => setData('impresion_diagnostica', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
+                                    <Cie10Search onSelectResult={handleSelectResult} />
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
+                                </div>
+
+                                {/* Mostrar las opciones seleccionadas */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Opciones Seleccionadas</label>
+                                    <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                        {selectedResults.map((result, index) => (
+                                            <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                <span>{result}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="mb-4">
@@ -1380,14 +1413,37 @@ export default function ConsultasEdit({ auth }) {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Plan</label>
-                                    <input
-                                        type="text"
-                                        value={data.plan}
-                                        onChange={(e) => setData('plan', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.plan && <p className="text-sm text-red-500">{errors.plan}</p>}
+                                    <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
+                                        <label className="block text-sm font-medium text-gray-700">Plan</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPlanText(!showPlanText)}
+                                            className="text-sm text-blue-500 hover:text-blue-700 focus:outline-none"
+                                        >
+                                            {showPlanText ? '▲' : '▼'} {/* Flecha hacia arriba/abajo */}
+                                        </button>
+                                    </div>
+                                    {showPlanText && (
+                                        <div className="mt-2 space-y-2">
+                                        {opcionesPlan.map((opcion) => (
+                                            <div key={opcion.id} className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`plan-${opcion.id}`}
+                                                    checked={opcion.seleccionado}
+                                                    onChange={() => handleSeleccionPlan(opcion.id)}
+                                                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                                />
+                                                <label
+                                                    htmlFor={`plan-${opcion.id}`}
+                                                    className="ml-2 text-sm text-gray-700"
+                                                >
+                                                    {opcion.nombre}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>                                                                            
+                                    )}
                                 </div>
 
                                 <div className="mb-4">

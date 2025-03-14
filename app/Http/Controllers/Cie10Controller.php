@@ -11,16 +11,30 @@ class Cie10Controller extends Controller
         $query = $request->input('query');
 
         // Buscar en cada columna y combinar los resultados en un solo array
-        $coleraResults = Cie10::where('colera', 'LIKE', "%{$query}%")->pluck('colera');
-        $fiebresResults = Cie10::where('fiebres_tifoidea_paratifoidea', 'LIKE', "%{$query}%")->pluck('fiebres_tifoidea_paratifoidea');
-        $salmonellaResults = Cie10::where('otras_infecciones_debidas_salmonella', 'LIKE', "%{$query}%")->pluck('otras_infecciones_debidas_salmonella');
-        $shigelosisResults = Cie10::where('shigelosis', 'LIKE', "%{$query}%")->pluck('shigelosis');
+        $a00Results = Cie10::where('a00', 'LIKE', "%{$query}%")->pluck('a00');
+        $a01Results = Cie10::where('a01', 'LIKE', "%{$query}%")->pluck('a01');
+        $a02Results = Cie10::where('a02', 'LIKE', "%{$query}%")->pluck('a02');
+        $a03Results = Cie10::where('a03', 'LIKE', "%{$query}%")->pluck('a03');
+        $a04Results = Cie10::where('a04', 'LIKE', "%{$query}%")->pluck('a04');
+        $a05Results = Cie10::where('a05', 'LIKE', "%{$query}%")->pluck('a05');
+        $a06Results = Cie10::where('a06', 'LIKE', "%{$query}%")->pluck('a06');
+        $a07Results = Cie10::where('a07', 'LIKE', "%{$query}%")->pluck('a07');
+        $a08Results = Cie10::where('a08', 'LIKE', "%{$query}%")->pluck('a08');
+        $a09Results = Cie10::where('a09', 'LIKE', "%{$query}%")->pluck('a09');
+        $a15Results = Cie10::where('a15', 'LIKE', "%{$query}%")->pluck('a15');
 
         // Combinar todos los resultados en un solo array y eliminar duplicados
-        $allResults = $coleraResults
-            ->concat($fiebresResults)
-            ->concat($salmonellaResults)
-            ->concat($shigelosisResults)
+        $allResults = $a00Results
+            ->concat($a01Results)
+            ->concat($a02Results)
+            ->concat($a03Results)
+            ->concat($a04Results)
+            ->concat($a05Results)
+            ->concat($a06Results)
+            ->concat($a07Results)
+            ->concat($a08Results)
+            ->concat($a09Results)
+            ->concat($a15Results)
             ->unique()
             ->values(); // Reiniciar índices del array
 

@@ -498,7 +498,6 @@ export default function ConsultasShow({ auth, consulta }) {
                                     </div>                                    
                                 </div>
 
-                                {/* Impresión Diagnóstica */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica</label>
                                     <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">

@@ -3,7 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import fondoOjo from '../../../../public/img/fondo_ojo.png'; // Importar imagen de fondo de ojo
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Cie10Search from '@/Components/Cie10Search'; // Importa el componente de búsqueda
 
@@ -16,6 +16,8 @@ export default function ConsultasCreate({ auth }) {
         apellido_materno: '',
         telefono: '',
         email: '',
+        fecha_nacimiento: '',
+        edad: '',
         //
         antecedentes_personales_hta: '',
         antecedentes_personales_alergias: '',
@@ -93,6 +95,14 @@ export default function ConsultasCreate({ auth }) {
         { id: 2, nombre: 'Plan B', seleccionado: false },
         { id: 3, nombre: 'Plan C', seleccionado: false },
     ]);
+
+    const [selectedResults, setSelectedResults] = useState([]);
+
+    // Manejar la selección de resultados
+    const handleSelectResult = useCallback((results) => {
+        setSelectedResults(results); // Actualizar el estado de resultados seleccionados
+        setData('impresion_diagnostica', results.join(', ')); // Combinar las opciones en una cadena
+    }, [setData]);
 
     const handleSeleccionPlan = (id) => {
         const nuevasOpciones = opcionesPlan.map(opcion => ({
@@ -323,6 +333,17 @@ export default function ConsultasCreate({ auth }) {
                     apellido_materno: result.paciente.apellido_materno,
                     telefono: result.paciente.telefono,
                     email: result.paciente.email,
+                    fecha_nacimiento: result.paciente.fecha_nacimiento,
+                    edad: result.paciente.edad,
+                    sexo: result.paciente.sexo,
+                    peso: result.paciente.peso,
+                    dni: result.paciente.dni,
+                    estado_civil: result.paciente.estado_civil,
+                    ocupacion: result.paciente.ocupacion,
+                    procedencia: result.paciente.procedencia,
+                    direccion: result.paciente.direccion,
+                    acompañante: result.paciente.acompañante,
+                    referido: result.paciente.referido,
                 });
     
                 setPacienteEncontrado(true);
@@ -358,11 +379,6 @@ export default function ConsultasCreate({ auth }) {
             console.error(error);
             return false;
         }
-    };
-
-    const handleSelectResult = (result) => {
-        // Aquí puedes manejar el resultado seleccionado
-        setData('impresion_diagnostica', result.colera); // Por ejemplo, guardar el valor en el campo "impresion_diagnostica"
     };
 
     const handleSubmit = (e) => {
@@ -427,6 +443,50 @@ export default function ConsultasCreate({ auth }) {
                                         <div className="mb-2 border border-gray-200 rounded-md">
                                             <label className="text-sm text-gray-700"><strong>Apellido Materno:</strong></label>
                                             <p className="text-sm text-gray-700">{data.apellido_materno}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Fecha de Nacimiento:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.fecha_nacimiento}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Edad:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.edad}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Sexo:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.sexo}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Peso:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.peso}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>DNI:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.dni}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Estado Civil:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.estado_civil}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Ocupación:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.ocupacion}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Procedencia:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.procedencia}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Domicilio:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.direccion}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Acompañante:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.acompañante}</p>
+                                        </div>
+                                        <div className="mb-2 border border-gray-200 rounded-md">
+                                            <label className="text-sm text-gray-700"><strong>Referido:</strong></label>
+                                            <p className="text-sm text-gray-700">{data.referido}</p>
                                         </div>
                                         <div className="mb-2 border border-gray-200 rounded-md">
                                             <label className="text-sm text-gray-700"><strong>Teléfono:</strong></label>
@@ -967,11 +1027,23 @@ export default function ConsultasCreate({ auth }) {
                                     </div>
                                 </div>
 
-                                {/* Integra el componente de búsqueda */}
+                                {/* Campo de búsqueda CIE10 */}
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (Buscar en CIE10)</label>
+                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
                                     <Cie10Search onSelectResult={handleSelectResult} />
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
+                                </div>
+
+                                {/* Mostrar las opciones seleccionadas */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Opciones Seleccionadas</label>
+                                    <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                        {selectedResults.map((result, index) => (
+                                            <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                <span>{result}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="mb-4">
@@ -1032,45 +1104,304 @@ export default function ConsultasCreate({ auth }) {
                                     </>
                                 )}
 
-                                {/* Campos Consulta EVOLUCION */}
+{/*--------------------------------Campos Consulta EVOLUCION ---------------------------------------------------*/}
+                                 
                                 {tipoConsulta === 'evolucion' && ( // Mostrar solo si es tipo EVOLUCION
                                     <> 
                                     <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
                                         <h2>Consulta de Evolución</h2>
                                     </div>
+
                                     <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Antecedentes Patológicos Familiares</label>
-                                    <input
-                                        type="text"
-                                        value={data.antecedentes_patologicos_familiares}
-                                        onChange={(e) => setData('antecedentes_patologicos_familiares', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.antecedentes_patologicos_familiares && <p className="text-sm text-red-500">{errors.antecedentes_patologicos_familiares}</p>}
+                                        <label className="block text-sm font-medium text-gray-700">Evoluciones</label>
+                                        <input
+                                            type="text"
+                                            value={data.evoluciones}
+                                            onChange={(e) => setData('evoluciones', e.target.value)}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        />
+                                        {errors.evoluciones && <p className="text-sm text-red-500">{errors.evoluciones}</p>}
+                                    </div>
+                                    <div className='mb-8'>
+                                    <label className="block text-xl font-medium text-gray-700">Examen</label>
+                                    <div className='grid grid-cols-2 gap-4 p-4 border border-gray-200 rounded-md'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
+                                            <div className='flex justify-center items-center w-full gap-4'>
+                                                <h4 className='text-xl'>Agudeza Visual</h4>
+                                            </div>
+                                            <div className='grid grid-cols-4 gap-1'>
+                                                <label></label>
+                                                <label className='text-center text-lg'>SC</label>
+                                                <label className='text-center'>CAE</label>
+                                                <label className='text-center'>CC</label>
+                                                <label className='flex justify-end items-center px-2'>OD</label>
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_av_sc_od}
+                                                    onChange={(e) => setData('examen_av_sc_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_av_cae_od}
+                                                    onChange={(e) => setData('examen_av_cae_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_av_cc_od}
+                                                    onChange={(e) => setData('examen_av_cc_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <label className='flex justify-end items-center px-2'>OI</label>
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_av_sc_oi}
+                                                    onChange={(e) => setData('examen_av_sc_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_av_cae_oi}
+                                                    onChange={(e) => setData('examen_av_cae_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_av_cc_oi}
+                                                    onChange={(e) => setData('examen_av_cc_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
+                                            <div className='flex justify-center items-center w-full gap-4'>
+                                                <h4 className='text-xl'>Presión Intraocular</h4>
+                                            </div>
+                                            <div className='grid grid-cols-4 gap-1'>
+                                                <label></label>
+                                                <label className='text-center text-lg'>OD</label>
+                                                <label className='text-center'>OI</label>
+                                                <label></label>
+                                                <label></label>
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_pi_od}
+                                                    onChange={(e) => setData('examen_pi_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_pi_oi}
+                                                    onChange={(e) => setData('examen_pi_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <label></label>
+                                            </div>
+                                        </div>
+
+                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
+                                            <div className='flex justify-center items-center w-full gap-4'>
+                                                <h4 className='text-xl uppercase'>Autorefractometria</h4>
+                                            </div>
+                                            <div className='grid grid-cols-4 gap-1'>
+                                                <label></label>
+                                                <label className='text-center text-lg'>Sph</label>
+                                                <label className='text-center'>Cyl</label>
+                                                <label className='text-center'>ax</label>
+                                                <label className='flex justify-end items-center px-2'>OD</label>
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_ar_sph_od}
+                                                    onChange={(e) => setData('examen_ar_sph_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_ar_cyl_od}
+                                                    onChange={(e) => setData('examen_ar_cyl_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_ar_ax_od}
+                                                    onChange={(e) => setData('examen_ar_ax_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <label className='flex justify-end items-center px-2'>OI</label>
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_ar_sph_oi}
+                                                    onChange={(e) => setData('examen_ar_sph_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_ar_cyl_oi}
+                                                    onChange={(e) => setData('examen_ar_cyl_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_ar_ax_oi}
+                                                    onChange={(e) => setData('examen_ar_ax_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
+                                            <div className='flex justify-center items-center w-full gap-4'>
+                                                <h4 className='text-xl uppercase'>Keratometria</h4>
+                                            </div>
+                                            <div className='grid grid-cols-4 gap-1'>
+                                                <label></label>
+                                                <label className='text-center text-lg'>QD1</label>
+                                                <label className='text-center'>QD2</label>
+                                                <label className='text-center'>EJE</label>
+                                                <label className='flex justify-end items-center px-2'>OD</label>
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_keratometria_qd1_od}
+                                                    onChange={(e) => setData('examen_keratometria_qd1_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_keratometria_qd2_od}
+                                                    onChange={(e) => setData('examen_keratometria_qd2_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_keratometria_eje_od}
+                                                    onChange={(e) => setData('examen_keratometria_eje_od', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <label className='flex justify-end items-center px-2'>OI</label>
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_keratometria_qd1_oi}
+                                                    onChange={(e) => setData('examen_keratometria_qd1_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_keratometria_qd2_oi}
+                                                    onChange={(e) => setData('examen_keratometria_qd2_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={data.examen_keratometria_eje_oi}
+                                                    onChange={(e) => setData('examen_keratometria_eje_oi', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Cirugías Previas</label>
-                                    <input
-                                        type="text"
-                                        value={data.cirugias_previas}
-                                        onChange={(e) => setData('cirugias_previas', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.cirugias_previas && <p className="text-sm text-red-500">{errors.cirugias_previas}</p>}
+                                <div className='mb-4'>
+                                    <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full">Biomicroscopia</label>
+                                    <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
+                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>Examen Fisico</label>
+                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OD</label>
+                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OI</label>
+                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_movoculares_od}
+                                            onChange={(e) => setData('biomicroscopia_movoculares_od', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_movoculares_oi}
+                                            onChange={(e) => setData('biomicroscopia_movoculares_oi', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Párpados</label>
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_parpados_od}
+                                            onChange={(e) => setData('biomicroscopia_parpados_od', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_parpados_oi}
+                                            onChange={(e) => setData('biomicroscopia_parpados_oi', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea</label>
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_cornea_od}
+                                            onChange={(e) => setData('biomicroscopia_cornea_od', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_cornea_oi}
+                                            onChange={(e) => setData('biomicroscopia_cornea_oi', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_corneaconj_od}
+                                            onChange={(e) => setData('biomicroscopia_corneaconj_od', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_corneaconj_oi}
+                                            onChange={(e) => setData('biomicroscopia_corneaconj_oi', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_ca_od}
+                                            onChange={(e) => setData('biomicroscopia_ca_od', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_ca_oi}
+                                            onChange={(e) => setData('biomicroscopia_ca_oi', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Iris</label>
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_iris_od}
+                                            onChange={(e) => setData('biomicroscopia_iris_od', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_iris_oi}
+                                            onChange={(e) => setData('biomicroscopia_iris_oi', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cristalino</label>
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_cristalino_od}
+                                            onChange={(e) => setData('biomicroscopia_cristalino_od', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={data.biomicroscopia_cristalino_oi}
+                                            onChange={(e) => setData('biomicroscopia_cristalino_oi', e.target.value)}
+                                            className="block w-full  border-gray-300 shadow-sm"
+                                        />
+                                    </div>
                                 </div>
-
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Motivo de Consulta</label>
-                                    <input
-                                        type="text"
-                                        value={data.motivo_consulta}
-                                        onChange={(e) => setData('motivo_consulta', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.motivo_consulta && <p className="text-sm text-red-500">{errors.motivo_consulta}</p>}
-                                </div>
-
                                 {/* Fondo de Ojo */}
                                 <div className='flex flex-col justify-center items-center w-full gap-4'>
                                     <label className="block text-xl font-medium text-gray-700">Fondo de Ojo</label>
@@ -1180,11 +1511,23 @@ export default function ConsultasCreate({ auth }) {
                                     </div>
                                 </div>
 
-                                {/* Integra el componente de búsqueda */}
+                                {/* Campo de búsqueda CIE10 */}
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (Buscar en CIE10)</label>
+                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
                                     <Cie10Search onSelectResult={handleSelectResult} />
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
+                                </div>
+
+                                {/* Mostrar las opciones seleccionadas */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Opciones Seleccionadas</label>
+                                    <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                        {selectedResults.map((result, index) => (
+                                            <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                <span>{result}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="mb-4">
@@ -1199,14 +1542,37 @@ export default function ConsultasCreate({ auth }) {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Plan</label>
-                                    <input
-                                        type="text"
-                                        value={data.plan}
-                                        onChange={(e) => setData('plan', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.plan && <p className="text-sm text-red-500">{errors.plan}</p>}
+                                    <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
+                                        <label className="block text-sm font-medium text-gray-700">Plan</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPlanText(!showPlanText)}
+                                            className="text-sm text-blue-500 hover:text-blue-700 focus:outline-none"
+                                        >
+                                            {showPlanText ? '▲' : '▼'} {/* Flecha hacia arriba/abajo */}
+                                        </button>
+                                    </div>
+                                    {showPlanText && (
+                                        <div className="mt-2 space-y-2">
+                                        {opcionesPlan.map((opcion) => (
+                                            <div key={opcion.id} className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`plan-${opcion.id}`}
+                                                    checked={opcion.seleccionado}
+                                                    onChange={() => handleSeleccionPlan(opcion.id)}
+                                                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                                />
+                                                <label
+                                                    htmlFor={`plan-${opcion.id}`}
+                                                    className="ml-2 text-sm text-gray-700"
+                                                >
+                                                    {opcion.nombre}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>                                                                            
+                                    )}
                                 </div>
 
                                 <div className="mb-4">
@@ -1218,18 +1584,7 @@ export default function ConsultasCreate({ auth }) {
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                     />
                                     {errors.examenes_indicados && <p className="text-sm text-red-500">{errors.examenes_indicados}</p>}
-                                </div>
-
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Evoluciones</label>
-                                    <input
-                                        type="text"
-                                        value={data.evoluciones}
-                                        onChange={(e) => setData('evoluciones', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.evoluciones && <p className="text-sm text-red-500">{errors.evoluciones}</p>}
-                                </div>
+                                </div>                                
                                     </>
                                 )}
                                 
