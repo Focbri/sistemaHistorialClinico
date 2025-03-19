@@ -6,6 +6,8 @@ import fondoOjo from '../../../assets/fondo_ojo.png';
 import { useEffect, useState, useCallback } from 'react';
 
 import Cie10Search from '@/Components/Cie10Search'; // Importa el componente de búsqueda
+import FondoOjo from '@/Components/FondoOjo';
+import PlanSelector from '@/Components/PlanSelector';
 
 export default function ConsultasEdit({ auth }) {
     // Obtener la consulta actual desde las props
@@ -73,7 +75,7 @@ export default function ConsultasEdit({ auth }) {
         fondo_ojo_vitreo_oi: consulta.fondo_ojo_vitreo_oi || '',
         fondo_ojo_disco_o_oi: consulta.fondo_ojo_disco_o_oi || '',
         fondo_ojo_vasos_oi: consulta.fondo_ojo_vasos_oi || '',
-        fondo_ojo_macula_oi: consulta.fondo_ojo_macula_oi || '',
+        fondo_ojo_retina_p_oi: consulta.fondo_ojo_retina_p_oi || '',
     });
 
     // Estados para mostrar/ocultar campos
@@ -90,18 +92,15 @@ export default function ConsultasEdit({ auth }) {
 
     const [selectedResults, setSelectedResults] = useState([]);
 
-    // Manejar la selección de resultados
     const handleSelectResult = useCallback((results) => {
-        setSelectedResults(results); // Actualizar el estado de resultados seleccionados
-        setData('impresion_diagnostica', results.join(', ')); // Combinar las opciones en una cadena
-    }, [setData]);
-
-    // Inicializar selectedResults con los valores de impresion_diagnostica
-    useEffect(() => {
-        if (data.impresion_diagnostica) {
-            setSelectedResults(data.impresion_diagnostica.split(', '));
+        if (typeof results === 'string') {
+            results = results.split(';').map(item => item.trim()); // Convertir a array si es una cadena
         }
-    }, [data.impresion_diagnostica]);
+        setSelectedResults(results); // Actualizar el estado de resultados seleccionados
+        setData('impresion_diagnostica', results.join('; ')); // Combinar las opciones en una cadena
+    }, [setData]);
+    console.log('selectedResults:', selectedResults);
+    console.log('Type of selectedResults:', typeof selectedResults);
 
     // Definir los marcadores
     const marcadores = [
@@ -789,114 +788,17 @@ export default function ConsultasEdit({ auth }) {
                                     </div>
                                 </div>
 
-                                {/* Fondo de Ojo */}
-                                <div className='flex flex-col justify-center items-center w-full gap-4'>
-                                    <label className="block text-xl font-medium text-gray-700">Fondo de Ojo</label>
-                                    <div className='flex gap-4'>
-                                        <div className='relative inline-block'>
-                                            <img src={fondoOjo} alt="Fondo de Ojo" className="w-full h-auto" />
-                                            
-                                            {marcadores.map((marcador) => (
-                                                    <span
-                                                        key={marcador.id}
-                                                        className={`text-2xl absolute cursor-pointer ${marcador.top} ${marcador.left}`}
-                                                        onClick={() => handleMarkerClick(marcador)}
-                                                    >
-                                                        <FontAwesomeIcon
-                                                            icon={faMapMarkerAlt}
-                                                            style={{ color: marcador.color, fontSize: '24px' }} // Aplica el color dinámico
-                                                        />
-                                                    </span>
-                                                ))}
-
-                                            {marcadorActivo && (
-                                                <div
-                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
-                                                    style={{
-                                                        top: '0', // Posiciona el contenedor debajo del marcador
-                                                        left: '-50%', // Centra horizontalmente
-                                                        transform: 'translateX(-10%)', // Ajusta el centrado
-                                                    }}
-                                                >
-                                                    {marcadores.find(m => m.id === marcadorActivo).subtitulo && (
-                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
-                                                                {marcadores.find(m => m.id === marcadorActivo).subtitulo}
-                                                            </span>
-                                                        )}
-                                                    <label className='text-sm text-gray-500'>
-                                                        (Selecciona una opción:)
-                                                        
-                                                    </label>
-                                                    <div className='space-y-2'>
-                                                        {marcadores.find(m => m.id === marcadorActivo).opciones.map((opcion) => (
-                                                            <div
-                                                                key={opcion.id}
-                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
-                                                                    data[marcadores.find(m => m.id === marcadorActivo).campo] === opcion.nombre
-                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
-                                                                        : 'bg-white' // Estilo por defecto
-                                                                }`}
-                                                                onClick={() => handleSeleccionOpcion(opcion)}
-                                                            >
-                                                                {opcion.nombre}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Contenedor de opciones OI */}                
-                                                {marcadoresOI.map((marcadorOI) => (
-                                                    <span
-                                                        key={marcadorOI.id}
-                                                        className={`text-2xl absolute cursor-pointer ${marcadorOI.top} ${marcadorOI.right}`}
-                                                        onClick={() => handleMarkerClickOI(marcadorOI)}
-                                                    >
-                                                        <FontAwesomeIcon
-                                                            icon={faMapMarkerAlt}
-                                                            style={{ color: marcadorOI.color, fontSize: '24px' }} // Aplica el color dinámico
-                                                        />
-                                                    </span>
-                                                ))}
-
-                                            {marcadorActivoOI && (
-                                                <div
-                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
-                                                    style={{
-                                                        top: '0', // Posiciona el contenedor debajo del marcador
-                                                        right: '-50%', // Centra horizontalmente
-                                                        transform: 'translateX(10%)', // Ajusta el centrado
-                                                    }}
-                                                >
-                                                    {marcadoresOI.find(mOI=> mOI.id === marcadorActivoOI).subtitulo && (
-                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
-                                                                {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).subtitulo}
-                                                            </span>
-                                                        )}
-                                                    <label className='text-sm text-gray-500'>
-                                                        (Selecciona una opción:)
-                                                        
-                                                    </label>
-                                                    <div className='space-y-2'>
-                                                        {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).opciones.map((opcionOI) => (
-                                                            <div
-                                                                key={opcionOI.id}
-                                                                className={`cursor-pointer bg-green-200 p-1 rounded-md ${
-                                                                    data[marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).campo] === opcionOI.nombre
-                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
-                                                                        : 'bg-white' // Estilo por defecto
-                                                                }`}
-                                                                onClick={() => handleSeleccionOpcionOI(opcionOI)}
-                                                            >
-                                                                {opcionOI.nombre}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>                                        
-                                    </div>
-                                </div>
+                                <FondoOjo
+                                    marcadoresOD={marcadores}
+                                    marcadoresOI={marcadoresOI}
+                                    marcadorActivoOD={marcadorActivo}
+                                    marcadorActivoOI={marcadorActivoOI}
+                                    handleMarkerClickOD={handleMarkerClick}
+                                    handleMarkerClickOI={handleMarkerClickOI}
+                                    handleSeleccionOpcionOD={handleSeleccionOpcion}
+                                    handleSeleccionOpcionOI={handleSeleccionOpcionOI}
+                                    data={data}
+                                />
 
                                 {/* Campo de búsqueda CIE10 */}
                                 <div className="mb-4">
@@ -977,9 +879,10 @@ export default function ConsultasEdit({ auth }) {
                                 )}
 
                                 {/* Campos Consulta EVOLUCION */}
-                                {tipoConsulta === 'evolucion' && ( // Mostrar solo si es tipo EVOLUCION
-                                    <> 
-                                    <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
+                                {/* Campos Consulta EVOLUCION */}
+                                {data.tipo_consulta === 'evolucion' && (
+                                    <>
+                                        <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
                                             <h2>Consulta de Evolución</h2>
                                         </div>
                                         <div className="mb-4">
@@ -1430,7 +1333,7 @@ export default function ConsultasEdit({ auth }) {
                                                 <input
                                                     type="checkbox"
                                                     id={`plan-${opcion.id}`}
-                                                    checked={opcion.seleccionado}
+                                                    checked={data.plan === opcion.nombre}
                                                     onChange={() => handleSeleccionPlan(opcion.id)}
                                                     className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                                                 />

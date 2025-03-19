@@ -24,7 +24,6 @@ export default function Login({ status, canResetPassword }) {
     return (
         <GuestLayout>
             <Head title="Log in" />
-
             {status && (
                 <div className="mb-4 text-sm font-medium text-green-600">
                     {status}
@@ -43,8 +42,7 @@ export default function Login({ status, canResetPassword }) {
                         className="mt-1 block w-full"
                         autoComplete="username"
                         isFocused={true}
-                        onChange={(e) => setData('email', e.target.value)}
-                    />
+                        onChange={(e) => setData('email', e.target.value)}/>
 
                     <InputError message={errors.email} className="mt-2" />
                 </div>
@@ -84,17 +82,12 @@ export default function Login({ status, canResetPassword }) {
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 
+                            focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                         >
                             Forgot your password?
                         </Link>
                     )}
-                    {/*<Link
-                        href={route('register')}
-                        className="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-red focus:outline-none focus-visible:ring-[#FF2D20] text-black dark:focus-visible:ring-white"
-                        >
-                        Register
-                    </Link>*/}
                     <PrimaryButton className="ms-4" disabled={processing}>
                         Log in
                     </PrimaryButton>

@@ -10,6 +10,10 @@ export default function ConsultasShow({ auth, consulta }) {
     // Obtener el tipo de consulta
     const tipoConsulta = consulta.tipo_consulta;
 
+    const messageVerArchivo = {
+
+    }
+
     // Definir los marcadores
     const marcadores = [
         {
@@ -151,69 +155,69 @@ export default function ConsultasShow({ auth, consulta }) {
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 bg-white border-b border-gray-200">
+                        <div className="p-6 bg-white border-b border-[#8FDBF1]">
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700">Fecha de Consulta</label>
-                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                <span className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                     {new Date(consulta.created_at).toLocaleDateString()}
-                                </p>
+                                </span>
                             </div>
 
                             {/* Datos del Paciente */}
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700">Paciente</label>
-                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                     {consulta.paciente.nombres} {consulta.paciente.apellido_paterno} {consulta.paciente.apellido_materno}
                                 </p>
                             </div>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700">DNI del Paciente</label>
-                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{consulta.paciente.dni}</p>
+                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">{consulta.paciente.dni}</p>
                             </div>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700">Teléfono del Paciente</label>
-                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{consulta.paciente.telefono}</p>
+                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">{consulta.paciente.telefono}</p>
                             </div>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700">Email del Paciente</label>
-                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">{consulta.paciente.email}</p>
+                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">{consulta.paciente.email}</p>
                             </div>
 
                             {tipoConsulta === 'inicio' && (
                                 <>
-                                <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
+                                <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-[#8FDBF1] pb-2 mb-4 text-4xl'>
                                     <h2>Consulta de Inicio</h2>
                                 </div>
                                 {/* Antecedentes Personales */}
-                                <div className='flex flex-col border border-gray-200 p-4 rounded-md mb-8'>
+                                <div className='flex flex-col border border-[#8FDBF1] p-4 rounded-md mb-8'>
                                     <div className="mb-4">
                                         <label className="block text-xl font-medium text-gray-700">Antecedentes Personales</label>
                                     </div>
                                     <div className='grid grid-cols-2 gap-4'>
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">HTA</label>
-                                            <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                            <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                 {consulta.antecedentes_personales_hta || 'N/A'}
                                             </p>
                                         </div>
 
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">Alergias</label>
-                                            <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                            <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                 {consulta.antecedentes_personales_alergias || 'N/A'}
                                             </p>
                                         </div>
 
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">DM</label>
-                                            <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                            <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                 {consulta.antecedentes_personales_dm || 'N/A'}
                                             </p>
                                         </div>
 
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">Otros</label>
-                                            <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                            <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                 {consulta.antecedentes_personales_otros || 'N/A'}
                                             </p>
                                         </div>
@@ -223,7 +227,7 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Antecedentes Patológicos Familiares */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Antecedentes Patológicos Familiares</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.antecedentes_patologicos_familiares || 'N/A'}
                                     </p>
                                 </div>
@@ -231,7 +235,7 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Cirugías Previas */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Cirugías Previas</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.cirugias_previas || 'N/A'}
                                     </p>
                                 </div>
@@ -239,7 +243,7 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Motivo de Consulta */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Motivo de Consulta</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.motivo_consulta || 'N/A'}
                                     </p>
                                 </div>
@@ -247,54 +251,54 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Examen */}
                                 <div className='mb-4'>
                                     <label className="block text-xl font-medium text-gray-700">Examen</label>
-                                    <div className='grid grid-cols-2 gap-4 p-4 border border-gray-200 rounded-md'>
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
+                                    <div className='grid grid-cols-2 gap-4 p-4 border border-[#8FDBF1] rounded-md'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 border border-[#8FDBF1] rounded-md'>
+                                            <div className='flex justify-center items-center w-full gap-4 mb-4'>
                                                 <h4 className='text-xl'>Agudeza Visual</h4>
                                             </div>
                                             <div className='grid grid-cols-4 gap-1'>
                                                 <label></label>
-                                                <label className='text-center text-lg'>SC</label>
+                                                <label className='text-center'>SC</label>
                                                 <label className='text-center'>CAE</label>
                                                 <label className='text-center'>CC</label>
                                                 <label className='flex justify-end items-center px-2'>OD</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_av_sc_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_av_cae_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_av_cc_od || 'N/A'}
                                                 </p>
                                                 <label className='flex justify-end items-center px-2'>OI</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_av_sc_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_av_cae_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_av_cc_oi || 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Examen de Presión Intraocular */}
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 border border-[#8FDBF1] rounded-md'>
+                                            <div className='flex justify-center items-center w-full gap-4 mb-4'>
                                                 <h4 className='text-xl'>Presión Intraocular</h4>
                                             </div>
                                             <div className='grid grid-cols-4 gap-1'>
                                                 <label></label>
-                                                <label className='text-center text-lg'>OD</label>
+                                                <label className='text-center '>OD</label>
                                                 <label className='text-center'>OI</label>
                                                 <label></label>
                                                 <label></label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_pi_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_pi_oi || 'N/A'}
                                                 </p>
                                                 <label></label>
@@ -302,66 +306,66 @@ export default function ConsultasShow({ auth, consulta }) {
                                         </div>
 
                                         {/* Examen de Autorefractometría */}
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 border border-[#8FDBF1] rounded-md'>
+                                            <div className='flex justify-center items-center w-full gap-4 mb-4'>
                                                 <h4 className='text-xl uppercase'>Autorefractometria</h4>
                                             </div>
                                             <div className='grid grid-cols-4 gap-1'>
                                                 <label></label>
-                                                <label className='text-center text-lg'>Sph</label>
+                                                <label className='text-center '>Sph</label>
                                                 <label className='text-center'>Cyl</label>
                                                 <label className='text-center'>ax</label>
                                                 <label className='flex justify-end items-center px-2'>OD</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_ar_sph_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_ar_cyl_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_ar_ax_od || 'N/A'}
                                                 </p>
                                                 <label className='flex justify-end items-center px-2'>OI</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_ar_sph_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_ar_cyl_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_ar_ax_oi || 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Examen de Keratometría */}
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 border border-[#8FDBF1] rounded-md'>
+                                            <div className='flex justify-center items-center w-full gap-4 mb-4'>
                                                 <h4 className='text-xl uppercase'>Keratometria</h4>
                                             </div>
                                             <div className='grid grid-cols-4 gap-1'>
                                                 <label></label>
-                                                <label className='text-center text-lg'>QD1</label>
+                                                <label className='text-center '>QD1</label>
                                                 <label className='text-center'>QD2</label>
                                                 <label className='text-center'>EJE</label>
                                                 <label className='flex justify-end items-center px-2'>OD</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_keratometria_qd1_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_keratometria_qd2_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_keratometria_eje_od || 'N/A'}
                                                 </p>
                                                 <label className='flex justify-end items-center px-2'>OI</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_keratometria_qd1_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_keratometria_qd2_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border py-2 px-8">
                                                     {consulta.examen_keratometria_eje_oi || 'N/A'}
                                                 </p>
                                             </div>
@@ -372,57 +376,57 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Biomicroscopía */}
                                 <div className='mb-4'>
                                     <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full">Biomicroscopia</label>
-                                    <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>Examen Fisico</label>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OD</label>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OI</label>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <div className='grid grid-cols-3 mx-8 border border-[#8FDBF1] rounded-md'>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_movoculares_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_movoculares_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Párpados</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_parpados_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_parpados_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_cornea_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_cornea_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_corneaconj_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_corneaconj_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cámara Anterior</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_ca_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_ca_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Iris</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_iris_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_iris_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cristalino</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_cristalino_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className=" block w-full border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_cristalino_oi || 'N/A'}
                                         </p>
                                     </div>
@@ -500,7 +504,7 @@ export default function ConsultasShow({ auth, consulta }) {
 
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.impresion_diagnostica || 'N/A'}
                                     </p>
                                 </div>
@@ -508,36 +512,50 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Tratamiento */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.tratamiento || 'N/A'}
                                     </p>
                                 </div>
                                 {/* Plan */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Plan</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.plan || 'N/A'}
                                     </p>
                                 </div>
                                 {/* Examenes Indicados */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Examenes Indicados</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
-                                        {consulta.examenes_indicados || 'N/A'}
-                                    </p>
+                                    {consulta.examenes_indicados && JSON.parse(consulta.examenes_indicados).length > 0 ? (
+                                        <div>
+                                            {JSON.parse(consulta.examenes_indicados).map((archivo, index) => (
+                                                <a
+                                                    key={index}
+                                                    href={`/storage/${archivo}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:underline"
+                                                >
+                                                    Ver archivo {index + 1}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">No hay imágenes</p>
+                                    )}
                                 </div>
                                 </>
                             )}
 
                             {tipoConsulta === 'evolucion' && (
                                 <>
-                                <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
+                                <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-[#8FDBF1] pb-2 mb-4 text-4xl'>
                                     <h2>Consulta de Evolución</h2>
                                 </div>
                                 {/* Evoluciones */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Evoluciones</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.evoluciones || 'N/A'}
                                     </p>
                                 </div>
@@ -545,41 +563,41 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Examen */}
                                 <div className='mb-4'>
                                     <label className="block text-xl font-medium text-gray-700">Examen</label>
-                                    <div className='grid grid-cols-2 gap-4 p-4 border border-gray-200 rounded-md'>
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
+                                    <div className='grid grid-cols-2 gap-4 p-4 border border-[#8FDBF1] rounded-md'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 border border-[#8FDBF1] rounded-md'>
                                             <div className='flex justify-center items-center w-full gap-4'>
                                                 <h4 className='text-xl'>Agudeza Visual</h4>
                                             </div>
                                             <div className='grid grid-cols-4 gap-1'>
                                                 <label></label>
-                                                <label className='text-center text-lg'>SC</label>
+                                                <label className='text-center'>SC</label>
                                                 <label className='text-center'>CAE</label>
                                                 <label className='text-center'>CC</label>
                                                 <label className='flex justify-end items-center px-2'>OD</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_av_sc_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_av_cae_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_av_cc_od || 'N/A'}
                                                 </p>
                                                 <label className='flex justify-end items-center px-2'>OI</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_av_sc_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_av_cae_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_av_cc_oi || 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Examen de Presión Intraocular */}
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 border border-[#8FDBF1] rounded-md'>
                                             <div className='flex justify-center items-center w-full gap-4'>
                                                 <h4 className='text-xl'>Presión Intraocular</h4>
                                             </div>
@@ -589,10 +607,10 @@ export default function ConsultasShow({ auth, consulta }) {
                                                 <label className='text-center'>OI</label>
                                                 <label></label>
                                                 <label></label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_pi_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_pi_oi || 'N/A'}
                                                 </p>
                                                 <label></label>
@@ -600,7 +618,7 @@ export default function ConsultasShow({ auth, consulta }) {
                                         </div>
 
                                         {/* Examen de Autorefractometría */}
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 border border-[#8FDBF1] rounded-md'>
                                             <div className='flex justify-center items-center w-full gap-4'>
                                                 <h4 className='text-xl uppercase'>Autorefractometria</h4>
                                             </div>
@@ -610,30 +628,30 @@ export default function ConsultasShow({ auth, consulta }) {
                                                 <label className='text-center'>Cyl</label>
                                                 <label className='text-center'>ax</label>
                                                 <label className='flex justify-end items-center px-2'>OD</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_ar_sph_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_ar_cyl_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_ar_ax_od || 'N/A'}
                                                 </p>
                                                 <label className='flex justify-end items-center px-2'>OI</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_ar_sph_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_ar_cyl_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_ar_ax_oi || 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Examen de Keratometría */}
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
+                                        <div className='flex flex-col justify-center items-center w-full p-4 border border-[#8FDBF1] rounded-md'>
                                             <div className='flex justify-center items-center w-full gap-4'>
                                                 <h4 className='text-xl uppercase'>Keratometria</h4>
                                             </div>
@@ -643,23 +661,23 @@ export default function ConsultasShow({ auth, consulta }) {
                                                 <label className='text-center'>QD2</label>
                                                 <label className='text-center'>EJE</label>
                                                 <label className='flex justify-end items-center px-2'>OD</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_keratometria_qd1_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_keratometria_qd2_od || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_keratometria_eje_od || 'N/A'}
                                                 </p>
                                                 <label className='flex justify-end items-center px-2'>OI</label>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_keratometria_qd1_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_keratometria_qd2_oi || 'N/A'}
                                                 </p>
-                                                <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                                <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                                     {consulta.examen_keratometria_eje_oi || 'N/A'}
                                                 </p>
                                             </div>
@@ -670,57 +688,57 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Biomicroscopía */}
                                 <div className='mb-4'>
                                     <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full">Biomicroscopia</label>
-                                    <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>Examen Fisico</label>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OD</label>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OI</label>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <div className='grid grid-cols-3 mx-8 border border-[#8FDBF1] rounded-md'>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_movoculares_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_movoculares_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Párpados</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_parpados_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_parpados_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_cornea_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_cornea_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_corneaconj_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_corneaconj_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cámara Anterior</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_ca_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_ca_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Iris</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_iris_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_iris_oi || 'N/A'}
                                         </p>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cristalino</label>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_cristalino_od || 'N/A'}
                                         </p>
-                                        <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                             {consulta.biomicroscopia_cristalino_oi || 'N/A'}
                                         </p>
                                     </div>
@@ -799,7 +817,7 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Impresión Diagnóstica */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.impresion_diagnostica || 'N/A'}
                                     </p>
                                 </div>
@@ -807,24 +825,38 @@ export default function ConsultasShow({ auth, consulta }) {
                                 {/* Tratamiento */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.tratamiento || 'N/A'}
                                     </p>
                                 </div>
                                 {/* Plan */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Plan</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
+                                    <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">
                                         {consulta.plan || 'N/A'}
                                     </p>
                                 </div>
                                 {/* Examenes Indicados */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Examenes Indicados</label>
-                                    <p className="mt-1 block w-full rounded-md bg-gray-100 p-2">
-                                        {consulta.examenes_indicados || 'N/A'}
-                                    </p>
-                                </div>                                             
+                                    {consulta.examenes_indicados && JSON.parse(consulta.examenes_indicados).length > 0 ? (
+                                        <div>
+                                            {JSON.parse(consulta.examenes_indicados).map((archivo, index) => (
+                                                <a
+                                                    key={index}
+                                                    href={`/storage/${archivo}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:underline"
+                                                >
+                                                    Ver archivo {index + 1}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="mt-1 block w-full rounded-md border-[#8FDBF1] border p-2">No hay imágenes</p>
+                                    )}
+                                </div>                                       
                                 </>
                             )}
                             {/* Botón para volver */}

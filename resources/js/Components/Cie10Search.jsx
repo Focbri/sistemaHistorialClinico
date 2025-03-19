@@ -33,21 +33,28 @@ const Cie10Search = React.memo(({ onSelectResult }) => {
     }, [query, handleSearch]);
 
     // Manejar la selección de un resultado
-    const handleSelectResult = useCallback((result) => {
-        if (selectedResults.length < 4) {
-            setSelectedResults((prev) => [...prev, result]); // Agregar el resultado seleccionado
-            setQuery(''); // Limpiar el campo de búsqueda
-            setResults([]); // Limpiar los resultados de la búsqueda
-            onSelectResult([...selectedResults, result]); // Notificar al formulario que se seleccionó un resultado
-        }
-    }, [onSelectResult, selectedResults]);
+    const handleSelectResult = useCallback(
+        (result) => {
+            if (selectedResults.length < 4) {
+                const newSelectedResults = [...selectedResults, result];
+                setSelectedResults(newSelectedResults); // Actualizar el estado
+                setQuery(''); // Limpiar el campo de búsqueda
+                setResults([]); // Limpiar los resultados de la búsqueda
+                onSelectResult(newSelectedResults); // Pasar el array de resultados
+            }
+        },
+        [onSelectResult, selectedResults]
+    );
 
     // Manejar la eliminación de un resultado
-    const handleRemoveResult = useCallback((index) => {
-        const newResults = selectedResults.filter((_, i) => i !== index); // Filtrar el resultado eliminado
-        setSelectedResults(newResults); // Actualizar el estado de resultados seleccionados
-        onSelectResult(newResults); // Notificar al formulario que se eliminó un resultado
-    }, [onSelectResult, selectedResults]);
+    const handleRemoveResult = useCallback(
+        (index) => {
+            const newResults = selectedResults.filter((_, i) => i !== index); // Filtrar el resultado eliminado
+            setSelectedResults(newResults); // Actualizar el estado de resultados seleccionados
+            onSelectResult(newResults); // Notificar al formulario con el array de resultados
+        },
+        [onSelectResult, selectedResults]
+    );
 
     return (
         <div>

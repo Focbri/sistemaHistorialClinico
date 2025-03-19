@@ -1,11 +1,13 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
-import fondoOjo from '../../../../public/img/fondo_ojo.png'; // Importar imagen de fondo de ojo
 import { useState, useEffect, useCallback } from 'react';
 
-import Cie10Search from '@/Components/Cie10Search'; // Importa el componente de búsqueda
+import PacienteForm from '@/Components/PacienteForm';
+import Cie10Search from '@/Components/Cie10Search';
+import AntecedentesPersonales from '@/Components/AntecedentesPersonales';
+import ExamenOcular from '@/Components/ExamenOcular';
+import FondoOjo from '@/Components/FondoOjo';
+import PlanSelector from '@/Components/PlanSelector';
 
 export default function ConsultasCreate({ auth }) {
     const { data, setData, post, errors, processing } = useForm({
@@ -29,7 +31,8 @@ export default function ConsultasCreate({ auth }) {
         impresion_diagnostica: '',
         tratamiento: '',
         plan: '',
-        examenes_indicados: '',
+        examenes_indicados_img: [], // Array para almacenar las imágenes
+        examenes_indicados_archivos: [], // Array para almacenar las imágenes
         evoluciones: '',
         tipo_consulta: 'inicio', // Asegúrate de incluir este campo
         //
@@ -96,13 +99,17 @@ export default function ConsultasCreate({ auth }) {
         { id: 3, nombre: 'Plan C', seleccionado: false },
     ]);
 
-    const [selectedResults, setSelectedResults] = useState([]);
-
+    const [selectedResults, setSelectedResults] = useState([]); // Inicializado como array vacío
     // Manejar la selección de resultados
     const handleSelectResult = useCallback((results) => {
+        if (typeof results === 'string') {
+            results = results.split(';').map(item => item.trim()); // Convertir a array si es una cadena
+        }
         setSelectedResults(results); // Actualizar el estado de resultados seleccionados
-        setData('impresion_diagnostica', results.join(', ')); // Combinar las opciones en una cadena
+        setData('impresion_diagnostica', results.join('; ')); // Combinar las opciones en una cadena
     }, [setData]);
+    console.log('selectedResults:', selectedResults);
+    console.log('Type of selectedResults:', typeof selectedResults);
 
     const handleSeleccionPlan = (id) => {
         const nuevasOpciones = opcionesPlan.map(opcion => ({
@@ -303,7 +310,6 @@ export default function ConsultasCreate({ auth }) {
         return () => document.removeEventListener('mousedown', handleClickOutsideOI);
     }, [marcadorActivoOI]);
 
-
     // Función para buscar paciente
     const buscarPaciente = async () => {
         if (!data.dni) return;
@@ -381,17 +387,123 @@ export default function ConsultasCreate({ auth }) {
         }
     };
 
+    const [previewImages, setPreviewImages] = useState([]); // Para previsualizar imágenes
+    const [previewArchivos, setPreviewArchivos] = useState([]); // Para mostrar nombres de archivos
+
+    // Manejar subida de imágenes
+    const handleFileChangeImages = (e) => {
+        const files = Array.from(e.target.files); // Convertir FileList a Array
+        if (files.length + (data.examenes_indicados_img ? data.examenes_indicados_img.length : 0) > 4) {
+            alert('Solo puedes subir un máximo de 4 imágenes.');
+            return;
+        }
+
+        // Guardar las imágenes en el estado
+        const newImages = files.map((file) => ({
+            file,
+            preview: URL.createObjectURL(file), // Previsualización
+        }));
+
+        setData('examenes_indicados_img', [...(data.examenes_indicados_img || []), ...files]);
+        setPreviewImages([...previewImages, ...newImages]);
+    };
+
+    // Manejar subida de archivos
+    const handleFileChangeArchivos = (e) => {
+        const files = Array.from(e.target.files); // Convertir FileList a Array
+        if (files.length + data.examenes_indicados_archivos.length > 4) {
+            alert('Solo puedes subir un máximo de 4 archivos.');
+            return;
+        }
+
+        // Guardar los archivos en el estado
+        setData('examenes_indicados_archivos', [...data.examenes_indicados_archivos, ...files]);
+        setPreviewArchivos([...previewArchivos, ...files]);
+    };
+
+    // Eliminar imagen o archivo
+    const handleRemoveImage = (index, type) => {
+        if (type === 'img') {
+            const updatedImages = [...data.examenes_indicados_img];
+            updatedImages.splice(index, 1);
+
+            const updatedPreviews = [...previewImages];
+            updatedPreviews.splice(index, 1);
+
+            setData('examenes_indicados_img', updatedImages);
+            setPreviewImages(updatedPreviews);
+        } else if (type === 'archivos') {
+            const updatedArchivos = [...data.examenes_indicados_archivos];
+            updatedArchivos.splice(index, 1);
+
+            const updatedPreviews = [...previewArchivos];
+            updatedPreviews.splice(index, 1);
+
+            setData('examenes_indicados_archivos', updatedArchivos);
+            setPreviewArchivos(updatedPreviews);
+        }
+    };
+    const handleRemoveArchivo = (index, type) => {
+        if (type === 'archivos') {
+            // Crear una copia del array de archivos
+            const updatedArchivos = [...data.examenes_indicados_archivos];
+            // Eliminar el archivo en la posición `index`
+            updatedArchivos.splice(index, 1);
+    
+            // Crear una copia del array de previsualizaciones de archivos
+            const updatedPreviews = [...previewArchivos];
+            // Eliminar la previsualización en la posición `index`
+            updatedPreviews.splice(index, 1);
+    
+            // Actualizar el estado de `data` y `previewArchivos`
+            setData('examenes_indicados_archivos', updatedArchivos);
+            setPreviewArchivos(updatedPreviews);
+        }
+    };
+
+
     const handleSubmit = (e) => {
         e.preventDefault();
-    
-        console.log('Datos a enviar:', data); // Verificar que `fondo_ojo_vitreo_od` esté correctamente asignado
-    
-        const formData = {
-            ...data,
-            tipo_consulta: tipoConsulta, // Asegúrate de enviar el tipo de consulta
-        };    
-    
-        post(route('consultas.store'), formData);
+
+         // Verificar que examenes_indicados_img esté definido
+        if (!data.examenes_indicados_img || !Array.isArray(data.examenes_indicados_img)) {
+            console.error('examenes_indicados_img no está definido o no es un array');
+            return;
+        }
+
+        // Crear un FormData para enviar las imágenes
+        const formData = new FormData();
+        
+        formData.append('paciente_id', data.paciente_id);
+        formData.append('tipo_consulta', data.tipo_consulta);
+
+        // Agregar campos de texto y otros datos
+        Object.keys(data).forEach((key) => {
+            if (key !== 'examenes_indicados_img' && key !== 'examenes_indicados_archivos') {
+                formData.append(key, data[key]);
+            }
+        });
+
+        // Agregar las imágenes seleccionadas
+        if (data.examenes_indicados_img && data.examenes_indicados_img.length > 0) {
+            data.examenes_indicados_img.forEach((file, index) => {
+                formData.append(`examenes_indicados_img[${index}]`, file);
+            });
+        }
+
+        // Agregar los archivos seleccionados
+        if (data.examenes_indicados_archivos && data.examenes_indicados_archivos.length > 0) {
+            data.examenes_indicados_archivos.forEach((file, index) => {
+                formData.append(`examenes_indicados_archivos[${index}]`, file);
+            });
+        }
+
+        // Enviar el formulario
+        post(route('consultas.store'), formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
     };
 
     console.log('Tipo de consulta actualizado:', tipoConsulta);
@@ -409,211 +521,135 @@ export default function ConsultasCreate({ auth }) {
                         <div className="p-6 bg-white border-b border-gray-200">
                             <form onSubmit={handleSubmit}>
                                 {/* Campo para ingresar el DNI y buscar paciente */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">DNI del Paciente</label>
-                                    <input
-                                        type="text"
-                                        value={data.dni}
-                                        onChange={(e) => setData('dni', e.target.value)}
-                                        disabled={pacienteEncontrado}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={buscarPaciente}
-                                        disabled={pacienteEncontrado}
-                                        className="mt-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
-                                    >
-                                        Buscar Paciente
-                                    </button>
-                                    {errors.dni && <p className="text-sm text-red-500">{errors.dni}</p>}
-                                </div>
+                                <PacienteForm
+                                    data={data}
+                                    setData={setData}
+                                    pacienteEncontrado={pacienteEncontrado}
+                                    buscarPaciente={buscarPaciente}
+                                    errors={errors}
+                                />
 
                                 {/* Mostrar datos del paciente encontrado */}
                                 {pacienteEncontrado && (
-                                    <div className="mb-4 p-4 border border-gray-200 rounded-md">
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Nombres:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.nombres}</p>
+                                    <div className="mb-8 py-4 px-8 border border-gray-200 rounded-md">
+                                        <div className='mb-4'>
+                                            <label className="inline-block text-xl font-medium text-black border-b-2 border-black uppercase">Datos Personales</label>
+                                        </div>                                       
+                                        <div className='grid grid-cols-2 gap-4'>
+                                            <div className='flex flex-col'>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Apellido Paterno:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.apellido_paterno}</p>
+                                                </div>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Apellido Materno:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.apellido_materno}</p>
+                                                </div>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Nombres:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.nombres}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className='flex flex-col'>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Fecha de Nacimiento:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.fecha_nacimiento}</p>
+                                                </div>
+                                                <div className='grid grid-cols-2 '>
+                                                    <div className="mb-1 flex gap-2">
+                                                        <label className="text-sm text-gray-700"><strong>Edad:</strong></label>
+                                                        <p className="text-sm text-gray-700">{data.edad}</p>
+                                                    </div>
+                                                    <div className="mb-1 flex gap-2">
+                                                        <label className="text-sm text-gray-700"><strong>Peso:</strong></label>
+                                                        <p className="text-sm text-gray-700">{data.peso}</p>
+                                                    </div>
+                                                    <div className="mb-1 flex gap-2">
+                                                        <label className="text-sm text-gray-700"><strong>Sexo:</strong></label>
+                                                        <p className="text-sm text-gray-700">{data.sexo}</p>
+                                                    </div>
+                                                    <div className="mb-1 flex gap-2">
+                                                        <label className="text-sm text-gray-700"><strong>DNI:</strong></label>
+                                                        <p className="text-sm text-gray-700">{data.dni}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Apellido Paterno:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.apellido_paterno}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Apellido Materno:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.apellido_materno}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Fecha de Nacimiento:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.fecha_nacimiento}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Edad:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.edad}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Sexo:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.sexo}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Peso:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.peso}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>DNI:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.dni}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Estado Civil:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.estado_civil}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Ocupación:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.ocupacion}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Procedencia:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.procedencia}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Domicilio:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.direccion}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Acompañante:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.acompañante}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Referido:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.referido}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Teléfono:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.telefono}</p>
-                                        </div>
-                                        <div className="mb-2 border border-gray-200 rounded-md">
-                                            <label className="text-sm text-gray-700"><strong>Email:</strong></label>
-                                            <p className="text-sm text-gray-700">{data.email}</p>
-                                        </div>
+
+                                        <hr className='my-6'/>
+                                        <div className='grid grid-cols-2 gap-4'>
+                                            <div className='flex flex-col'>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Estado Civil:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.estado_civil}</p>
+                                                </div>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Ocupación:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.ocupacion}</p>
+                                                </div>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Procedencia:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.procedencia}</p>
+                                                </div>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Domicilio:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.direccion}</p>
+                                                </div>
+                                            </div>
+                                            <div className='flex flex-col'>
+                                                <div className="mb-1 flex gap-2">
+                                                <label className="text-sm text-gray-700"><strong>Acompañante:</strong></label>
+                                                <p className="text-sm text-gray-700">{data.acompañante}</p>
+                                                </div>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Referido:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.referido}</p>
+                                                </div>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Teléfono:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.telefono}</p>
+                                                </div>
+                                                <div className="mb-1 flex gap-2">
+                                                    <label className="text-sm text-gray-700"><strong>Email:</strong></label>
+                                                    <p className="text-sm text-gray-700">{data.email}</p>
+                                                </div>
+                                            </div>
+                                        </div>                                        
+                                        
                                     </div>
                                 )}
 
 {/*--------------------------- Campos Consulta INICIO ------------------------------------------------------*/}
 
                                 {tipoConsulta === 'inicio' && ( // Mostrar solo si es tipo INICIO
-                                    <>
-                                        <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
-                                            <h2>Consulta de Inicio</h2>
-                                        </div>
-                                        <div className="mb-4">
-                                            <label className="block text-xl font-medium text-gray-700">Antecedentes Personales</label>
-                                            <p className="text-sm text-gray-500">Marque las opciones que correspondan</p>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4 border border-gray-200 p-4 rounded-md mb-8">
-                                            {/* Campo HTA */}
-                                            <div className="mb-4">
-                                                <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
-                                                    <label className="block text-sm font-medium text-gray-700">HTA</label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowHTAText(!showHTAText)}
-                                                        className="text-sm text-blue-500 hover:text-blue-700 focus:outline-none"
-                                                    >
-                                                        {showHTAText ? '▲' : '▼'} {/* Flecha hacia arriba/abajo */}
-                                                    </button>
-                                                </div>
-                                                {showHTAText && (
-                                                    <input
-                                                        type="text"
-                                                        value={data.antecedentes_personales_hta || ''}
-                                                        onChange={(e) => setData('antecedentes_personales_hta', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                        placeholder="Detalles de HTA"
-                                                    />
-                                                )}
-                                            </div>
-
-                                            {/* Campo DM */}
-                                            <div className="mb-4">
-                                                <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
-                                                    <label className="block text-sm font-medium text-gray-700">DM</label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowDMText(!showDMText)}
-                                                        className="text-sm text-blue-500 hover:text-blue-700 focus:outline-none"
-                                                    >
-                                                        {showDMText ? '▲' : '▼'} {/* Flecha hacia arriba/abajo */}
-                                                    </button>
-                                                </div>
-                                                {showDMText && (
-                                                    <input
-                                                        type="text"
-                                                        value={data.antecedentes_personales_dm || ''}
-                                                        onChange={(e) => setData('antecedentes_personales_dm', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                        placeholder="Detalles de DM"
-                                                    />
-                                                )}
-                                            </div>
-
-                                            {/* Campo Alergias */}
-                                            <div className="mb-4">
-                                                <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
-                                                    <label className="block text-sm font-medium text-gray-700">Alergias</label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowAlergiasText(!showAlergiasText)}
-                                                        className="text-sm text-blue-500 hover:text-blue-700 focus:outline-none"
-                                                    >
-                                                        {showAlergiasText ? '▲' : '▼'} {/* Flecha hacia arriba/abajo */}
-                                                    </button>
-                                                </div>
-                                                {showAlergiasText && (
-                                                    <input
-                                                        type="text"
-                                                        value={data.antecedentes_personales_alergias || ''}
-                                                        onChange={(e) => setData('antecedentes_personales_alergias', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                        placeholder="Detalles de Alergias"
-                                                    />
-                                                )}
-                                            </div>
-
-                                            {/* Campo Otros */}
-                                            <div className="mb-4">
-                                                <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
-                                                    <label className="block text-sm font-medium text-gray-700">Otros</label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowOtrosText(!showOtrosText)}
-                                                        className="text-sm text-blue-500 hover:text-blue-700 focus:outline-none"
-                                                    >
-                                                        {showOtrosText ? '▲' : '▼'} {/* Flecha hacia arriba/abajo */}
-                                                    </button>
-                                                </div>
-                                                {showOtrosText && (
-                                                    <input
-                                                        type="text"
-                                                        value={data.antecedentes_personales_otros || ''}
-                                                        onChange={(e) => setData('antecedentes_personales_otros', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                        placeholder="Detalles de Otros"
-                                                    />                                                    
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="mb-4">
+                                <>
+                                    <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
+                                        <h2>Consulta de Inicio</h2>
+                                    </div>
+                                    <AntecedentesPersonales
+                                        data={data}
+                                        setData={setData}
+                                        showHTAText={showHTAText}
+                                        setShowHTAText={setShowHTAText}
+                                        showDMText={showDMText}
+                                        setShowDMText={setShowDMText}
+                                        showAlergiasText={showAlergiasText}
+                                        setShowAlergiasText={setShowAlergiasText}
+                                        showOtrosText={showOtrosText}
+                                        setShowOtrosText={setShowOtrosText}
+                                    />
+                                    
+                                    <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Antecedentes Patológicos Familiares</label>
                                     <input
                                         type="text"
                                         value={data.antecedentes_patologicos_familiares}
                                         onChange={(e) => setData('antecedentes_patologicos_familiares', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
                                     />
                                     {errors.antecedentes_patologicos_familiares && <p className="text-sm text-red-500">{errors.antecedentes_patologicos_familiares}</p>}
-                                </div>
+                                    </div>
 
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Cirugías Previas</label>
@@ -621,7 +657,7 @@ export default function ConsultasCreate({ auth }) {
                                         type="text"
                                         value={data.cirugias_previas}
                                         onChange={(e) => setData('cirugias_previas', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
                                     />
                                     {errors.cirugias_previas && <p className="text-sm text-red-500">{errors.cirugias_previas}</p>}
                                 </div>
@@ -632,400 +668,124 @@ export default function ConsultasCreate({ auth }) {
                                         type="text"
                                         value={data.motivo_consulta}
                                         onChange={(e) => setData('motivo_consulta', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
                                     />
                                     {errors.motivo_consulta && <p className="text-sm text-red-500">{errors.motivo_consulta}</p>}
                                 </div>
 
-                                <div className='mb-8'>
-                                    <label className="block text-xl font-medium text-gray-700">Examen</label>
-                                    <div className='grid grid-cols-2 gap-4 p-4 border border-gray-200 rounded-md'>
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
-                                                <h4 className='text-xl'>Agudeza Visual</h4>
-                                            </div>
-                                            <div className='grid grid-cols-4 gap-1'>
-                                                <label></label>
-                                                <label className='text-center text-lg'>SC</label>
-                                                <label className='text-center'>CAE</label>
-                                                <label className='text-center'>CC</label>
-                                                <label className='flex justify-end items-center px-2'>OD</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_sc_od}
-                                                    onChange={(e) => setData('examen_av_sc_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_cae_od}
-                                                    onChange={(e) => setData('examen_av_cae_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_cc_od}
-                                                    onChange={(e) => setData('examen_av_cc_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <label className='flex justify-end items-center px-2'>OI</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_sc_oi}
-                                                    onChange={(e) => setData('examen_av_sc_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_cae_oi}
-                                                    onChange={(e) => setData('examen_av_cae_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_cc_oi}
-                                                    onChange={(e) => setData('examen_av_cc_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
-                                                <h4 className='text-xl'>Presión Intraocular</h4>
-                                            </div>
-                                            <div className='grid grid-cols-4 gap-1'>
-                                                <label></label>
-                                                <label className='text-center text-lg'>OD</label>
-                                                <label className='text-center'>OI</label>
-                                                <label></label>
-                                                <label></label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_pi_od}
-                                                    onChange={(e) => setData('examen_pi_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_pi_oi}
-                                                    onChange={(e) => setData('examen_pi_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <label></label>
-                                            </div>
-                                        </div>
-
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
-                                                <h4 className='text-xl uppercase'>Autorefractometria</h4>
-                                            </div>
-                                            <div className='grid grid-cols-4 gap-1'>
-                                                <label></label>
-                                                <label className='text-center text-lg'>Sph</label>
-                                                <label className='text-center'>Cyl</label>
-                                                <label className='text-center'>ax</label>
-                                                <label className='flex justify-end items-center px-2'>OD</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_sph_od}
-                                                    onChange={(e) => setData('examen_ar_sph_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_cyl_od}
-                                                    onChange={(e) => setData('examen_ar_cyl_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_ax_od}
-                                                    onChange={(e) => setData('examen_ar_ax_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <label className='flex justify-end items-center px-2'>OI</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_sph_oi}
-                                                    onChange={(e) => setData('examen_ar_sph_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_cyl_oi}
-                                                    onChange={(e) => setData('examen_ar_cyl_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_ax_oi}
-                                                    onChange={(e) => setData('examen_ar_ax_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
-                                                <h4 className='text-xl uppercase'>Keratometria</h4>
-                                            </div>
-                                            <div className='grid grid-cols-4 gap-1'>
-                                                <label></label>
-                                                <label className='text-center text-lg'>QD1</label>
-                                                <label className='text-center'>QD2</label>
-                                                <label className='text-center'>EJE</label>
-                                                <label className='flex justify-end items-center px-2'>OD</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_qd1_od}
-                                                    onChange={(e) => setData('examen_keratometria_qd1_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_qd2_od}
-                                                    onChange={(e) => setData('examen_keratometria_qd2_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_eje_od}
-                                                    onChange={(e) => setData('examen_keratometria_eje_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <label className='flex justify-end items-center px-2'>OI</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_qd1_oi}
-                                                    onChange={(e) => setData('examen_keratometria_qd1_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_qd2_oi}
-                                                    onChange={(e) => setData('examen_keratometria_qd2_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_eje_oi}
-                                                    onChange={(e) => setData('examen_keratometria_eje_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <ExamenOcular data={data} setData={setData} />
 
                                 <div className='mb-4'>
-                                    <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full">Biomicroscopia</label>
+                                    <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
                                     <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>Examen Fisico</label>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OD</label>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OI</label>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
+                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_movoculares_od}
                                             onChange={(e) => setData('biomicroscopia_movoculares_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_movoculares_oi}
                                             onChange={(e) => setData('biomicroscopia_movoculares_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Párpados</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_parpados_od}
                                             onChange={(e) => setData('biomicroscopia_parpados_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_parpados_oi}
                                             onChange={(e) => setData('biomicroscopia_parpados_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_cornea_od}
                                             onChange={(e) => setData('biomicroscopia_cornea_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_cornea_oi}
                                             onChange={(e) => setData('biomicroscopia_cornea_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_corneaconj_od}
                                             onChange={(e) => setData('biomicroscopia_corneaconj_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_corneaconj_oi}
                                             onChange={(e) => setData('biomicroscopia_corneaconj_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_ca_od}
                                             onChange={(e) => setData('biomicroscopia_ca_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_ca_oi}
                                             onChange={(e) => setData('biomicroscopia_ca_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Iris</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_iris_od}
                                             onChange={(e) => setData('biomicroscopia_iris_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_iris_oi}
                                             onChange={(e) => setData('biomicroscopia_iris_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cristalino</label>
+                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_cristalino_od}
                                             onChange={(e) => setData('biomicroscopia_cristalino_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
                                         <input
                                             type="text"
                                             value={data.biomicroscopia_cristalino_oi}
                                             onChange={(e) => setData('biomicroscopia_cristalino_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
+                                            className="block w-full  border-[#8FDBF1] shadow-sm"
                                         />
                                     </div>
                                 </div>
 
-                                {/* Fondo de Ojo */}
-                                <div className='flex flex-col justify-center items-center w-full gap-4'>
-                                    <label className="block text-xl font-medium text-gray-700">Fondo de Ojo</label>
-                                    <div className='flex gap-4'>
-                                        <div className='relative inline-block'>
-                                            <img src={fondoOjo} alt="Fondo de Ojo" className="w-full h-auto" />
-                                            
-                                                {marcadores.map((marcador) => (
-                                                    <span
-                                                        key={marcador.id}
-                                                        className={`text-2xl absolute cursor-pointer ${marcador.top} ${marcador.left}`}
-                                                        onClick={() => handleMarkerClick(marcador)}
-                                                    >
-                                                        <FontAwesomeIcon
-                                                            icon={faMapMarkerAlt}
-                                                            style={{ color: marcador.color, fontSize: '24px' }} // Aplica el color dinámico
-                                                        />
-                                                    </span>
-                                                ))}
-
-                                            {marcadorActivo && (
-                                                <div
-                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
-                                                    style={{
-                                                        top: '0', // Posiciona el contenedor debajo del marcador
-                                                        left: '-50%', // Centra horizontalmente
-                                                        transform: 'translateX(-10%)', // Ajusta el centrado
-                                                    }}
-                                                >
-                                                    {marcadores.find(m => m.id === marcadorActivo).subtitulo && (
-                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
-                                                                {marcadores.find(m => m.id === marcadorActivo).subtitulo}
-                                                            </span>
-                                                        )}
-                                                    <label className='text-sm text-gray-500'>
-                                                        (Selecciona una opción:)
-                                                        
-                                                    </label>
-                                                    <div className='space-y-2'>
-                                                        {marcadores.find(m => m.id === marcadorActivo).opciones.map((opcion) => (
-                                                            <div
-                                                                key={opcion.id}
-                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
-                                                                    data[marcadores.find(m => m.id === marcadorActivo).campo] === opcion.nombre
-                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
-                                                                        : 'bg-white' // Estilo por defecto
-                                                                }`}
-                                                                onClick={() => handleSeleccionOpcion(opcion)}
-                                                            >
-                                                                {opcion.nombre}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Contenedor de opciones OI */}                
-                                                {marcadoresOI.map((marcadorOI) => (
-                                                    <span
-                                                        key={marcadorOI.id}
-                                                        className={`text-2xl absolute cursor-pointer ${marcadorOI.top} ${marcadorOI.right}`}
-                                                        onClick={() => handleMarkerClickOI(marcadorOI)}
-                                                    >
-                                                        <FontAwesomeIcon
-                                                            icon={faMapMarkerAlt}
-                                                            style={{ color: marcadorOI.color, fontSize: '24px' }} // Aplica el color dinámico
-                                                        />
-                                                    </span>
-                                                ))}
-
-                                            {marcadorActivoOI && (
-                                                <div
-                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
-                                                    style={{
-                                                        top: '0', // Posiciona el contenedor debajo del marcador
-                                                        right: '-50%', // Centra horizontalmente
-                                                        transform: 'translateX(10%)', // Ajusta el centrado
-                                                    }}
-                                                >
-                                                    {marcadoresOI.find(mOI=> mOI.id === marcadorActivoOI).subtitulo && (
-                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
-                                                                {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).subtitulo}
-                                                            </span>
-                                                        )}
-                                                    <label className='text-sm text-gray-500'>
-                                                        (Selecciona una opción:)
-                                                        
-                                                    </label>
-                                                    <div className='space-y-2'>
-                                                        {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).opciones.map((opcionOI) => (
-                                                            <div
-                                                                key={opcionOI.id}
-                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
-                                                                    data[marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).campo] === opcionOI.nombre
-                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
-                                                                        : 'bg-white' // Estilo por defecto
-                                                                }`}
-                                                                onClick={() => handleSeleccionOpcionOI(opcionOI)}
-                                                            >
-                                                                {opcionOI.nombre}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>                                        
-                                    </div>
-                                </div>
+                                <FondoOjo
+                                    marcadoresOD={marcadores}
+                                    marcadoresOI={marcadoresOI}
+                                    marcadorActivoOD={marcadorActivo}
+                                    marcadorActivoOI={marcadorActivoOI}
+                                    handleMarkerClickOD={handleMarkerClick}
+                                    handleMarkerClickOI={handleMarkerClickOI}
+                                    handleSeleccionOpcionOD={handleSeleccionOpcion}
+                                    handleSeleccionOpcionOI={handleSeleccionOpcionOI}
+                                    data={data}
+                                />                                
 
                                 {/* Campo de búsqueda CIE10 */}
                                 <div className="mb-4">
@@ -1052,55 +812,81 @@ export default function ConsultasCreate({ auth }) {
                                         type="text"
                                         value={data.tratamiento}
                                         onChange={(e) => setData('tratamiento', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
                                     />
                                     {errors.tratamiento && <p className="text-sm text-red-500">{errors.tratamiento}</p>}
                                 </div>
 
-                                <div className="mb-4">
-                                    <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
-                                        <label className="block text-sm font-medium text-gray-700">Plan</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPlanText(!showPlanText)}
-                                            className="text-sm text-blue-500 hover:text-blue-700 focus:outline-none"
-                                        >
-                                            {showPlanText ? '▲' : '▼'} {/* Flecha hacia arriba/abajo */}
-                                        </button>
-                                    </div>
-                                    {showPlanText && (
-                                        <div className="mt-2 space-y-2">
-                                        {opcionesPlan.map((opcion) => (
-                                            <div key={opcion.id} className="flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`plan-${opcion.id}`}
-                                                    checked={opcion.seleccionado}
-                                                    onChange={() => handleSeleccionPlan(opcion.id)}
-                                                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                                                />
-                                                <label
-                                                    htmlFor={`plan-${opcion.id}`}
-                                                    className="ml-2 text-sm text-gray-700"
-                                                >
-                                                    {opcion.nombre}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>                                                                            
-                                    )}
-                                </div>
+                                <PlanSelector
+                                    opcionesPlan={opcionesPlan}
+                                    handleSeleccionPlan={handleSeleccionPlan}
+                                    showPlanText={showPlanText}
+                                    setShowPlanText={setShowPlanText}
+                                />
                                 
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Exámenes Indicados</label>
+                                    <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Imágenes)</label>
                                     <input
-                                        type="text"
-                                        value={data.examenes_indicados}
-                                        onChange={(e) => setData('examenes_indicados', e.target.value)}
+                                        type="file"
+                                        onChange={handleFileChangeImages} // Nueva función para manejar imágenes
+                                        multiple // Permitir múltiples archivos
+                                        accept="image/*" // Solo permitir imágenes
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                     />
-                                    {errors.examenes_indicados && <p className="text-sm text-red-500">{errors.examenes_indicados}</p>}
-                                </div>                
+                                    {errors.examenes_indicados_img && (
+                                        <p className="text-sm text-red-500">{errors.examenes_indicados_img}</p>
+                                    )}
+
+                                    {/* Mostrar previsualizaciones de imágenes */}
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {previewImages.map((image, index) => (
+                                            <div key={index} className="relative">
+                                                <img
+                                                    src={image.preview}
+                                                    alt={`Previsualización ${index + 1}`}
+                                                    className="w-24 h-24 object-cover rounded-md"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveImage(index, 'img')} // Eliminar imagen
+                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Archivos)</label>
+                                    <input
+                                        type="file"
+                                        onChange={handleFileChangeArchivos} // Nueva función para manejar archivos
+                                        multiple // Permitir múltiples archivos
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx" // Solo permitir archivos específicos
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                    />
+                                    {errors.examenes_indicados_archivos && (
+                                        <p className="text-sm text-red-500">{errors.examenes_indicados_archivos}</p>
+                                    )}
+
+                                    {/* Mostrar nombres de archivos subidos */}
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {previewArchivos.map((archivo, index) => (
+                                            <div key={index} className="relative">
+                                                <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveArchivo(index, 'archivos')} // Eliminar archivo
+                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                                     </>
                                 )}
 
@@ -1113,7 +899,7 @@ export default function ConsultasCreate({ auth }) {
                                     </div>
 
                                     <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700">Evoluciones</label>
+                                        <label className="block text-sm font-medium text-gray-700 uppercase">Evoluciones</label>
                                         <input
                                             type="text"
                                             value={data.evoluciones}
@@ -1122,189 +908,10 @@ export default function ConsultasCreate({ auth }) {
                                         />
                                         {errors.evoluciones && <p className="text-sm text-red-500">{errors.evoluciones}</p>}
                                     </div>
-                                    <div className='mb-8'>
-                                    <label className="block text-xl font-medium text-gray-700">Examen</label>
-                                    <div className='grid grid-cols-2 gap-4 p-4 border border-gray-200 rounded-md'>
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
-                                                <h4 className='text-xl'>Agudeza Visual</h4>
-                                            </div>
-                                            <div className='grid grid-cols-4 gap-1'>
-                                                <label></label>
-                                                <label className='text-center text-lg'>SC</label>
-                                                <label className='text-center'>CAE</label>
-                                                <label className='text-center'>CC</label>
-                                                <label className='flex justify-end items-center px-2'>OD</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_sc_od}
-                                                    onChange={(e) => setData('examen_av_sc_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_cae_od}
-                                                    onChange={(e) => setData('examen_av_cae_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_cc_od}
-                                                    onChange={(e) => setData('examen_av_cc_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <label className='flex justify-end items-center px-2'>OI</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_sc_oi}
-                                                    onChange={(e) => setData('examen_av_sc_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_cae_oi}
-                                                    onChange={(e) => setData('examen_av_cae_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_av_cc_oi}
-                                                    onChange={(e) => setData('examen_av_cc_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
-                                                <h4 className='text-xl'>Presión Intraocular</h4>
-                                            </div>
-                                            <div className='grid grid-cols-4 gap-1'>
-                                                <label></label>
-                                                <label className='text-center text-lg'>OD</label>
-                                                <label className='text-center'>OI</label>
-                                                <label></label>
-                                                <label></label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_pi_od}
-                                                    onChange={(e) => setData('examen_pi_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_pi_oi}
-                                                    onChange={(e) => setData('examen_pi_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <label></label>
-                                            </div>
-                                        </div>
-
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
-                                                <h4 className='text-xl uppercase'>Autorefractometria</h4>
-                                            </div>
-                                            <div className='grid grid-cols-4 gap-1'>
-                                                <label></label>
-                                                <label className='text-center text-lg'>Sph</label>
-                                                <label className='text-center'>Cyl</label>
-                                                <label className='text-center'>ax</label>
-                                                <label className='flex justify-end items-center px-2'>OD</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_sph_od}
-                                                    onChange={(e) => setData('examen_ar_sph_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_cyl_od}
-                                                    onChange={(e) => setData('examen_ar_cyl_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_ax_od}
-                                                    onChange={(e) => setData('examen_ar_ax_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <label className='flex justify-end items-center px-2'>OI</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_sph_oi}
-                                                    onChange={(e) => setData('examen_ar_sph_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_cyl_oi}
-                                                    onChange={(e) => setData('examen_ar_cyl_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_ar_ax_oi}
-                                                    onChange={(e) => setData('examen_ar_ax_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
-                                            <div className='flex justify-center items-center w-full gap-4'>
-                                                <h4 className='text-xl uppercase'>Keratometria</h4>
-                                            </div>
-                                            <div className='grid grid-cols-4 gap-1'>
-                                                <label></label>
-                                                <label className='text-center text-lg'>QD1</label>
-                                                <label className='text-center'>QD2</label>
-                                                <label className='text-center'>EJE</label>
-                                                <label className='flex justify-end items-center px-2'>OD</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_qd1_od}
-                                                    onChange={(e) => setData('examen_keratometria_qd1_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_qd2_od}
-                                                    onChange={(e) => setData('examen_keratometria_qd2_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_eje_od}
-                                                    onChange={(e) => setData('examen_keratometria_eje_od', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <label className='flex justify-end items-center px-2'>OI</label>
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_qd1_oi}
-                                                    onChange={(e) => setData('examen_keratometria_qd1_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_qd2_oi}
-                                                    onChange={(e) => setData('examen_keratometria_qd2_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={data.examen_keratometria_eje_oi}
-                                                    onChange={(e) => setData('examen_keratometria_eje_oi', e.target.value)}
-                                                    className="block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                    <ExamenOcular data={data} setData={setData} />
 
                                 <div className='mb-4'>
-                                    <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full">Biomicroscopia</label>
+                                    <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
                                     <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
                                         <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>Examen Fisico</label>
                                         <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OD</label>
@@ -1403,117 +1010,21 @@ export default function ConsultasCreate({ auth }) {
                                     </div>
                                 </div>
                                 {/* Fondo de Ojo */}
-                                <div className='flex flex-col justify-center items-center w-full gap-4'>
-                                    <label className="block text-xl font-medium text-gray-700">Fondo de Ojo</label>
-                                    <div className='flex gap-4'>
-                                        <div className='relative inline-block'>
-                                            <img src={fondoOjo} alt="Fondo de Ojo" className="w-full h-auto" />
-                                            
-                                            {marcadores.map((marcador) => (
-                                                <span
-                                                    key={marcador.id}
-                                                    className={`text-2xl absolute cursor-pointer ${marcador.top} ${marcador.left}`}
-                                                    onClick={() => handleMarkerClick(marcador)}
-                                                >
-                                                    <FontAwesomeIcon
-                                                        icon={faMapMarkerAlt}
-                                                        style={{ color: marcador.color, fontSize: '24px' }} // Aplica el color dinámico
-                                                    />
-                                                </span>
-                                            ))}
-
-                                            {marcadorActivo && (
-                                                <div
-                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
-                                                    style={{
-                                                        top: '0', // Posiciona el contenedor debajo del marcador
-                                                        left: '-50%', // Centra horizontalmente
-                                                        transform: 'translateX(-10%)', // Ajusta el centrado
-                                                    }}
-                                                >
-                                                    {marcadores.find(m => m.id === marcadorActivo).subtitulo && (
-                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
-                                                                {marcadores.find(m => m.id === marcadorActivo).subtitulo}
-                                                            </span>
-                                                        )}
-                                                    <label className='text-sm text-gray-500'>
-                                                        (Selecciona una opción:)
-                                                        
-                                                    </label>
-                                                    <div className='space-y-2'>
-                                                        {marcadores.find(m => m.id === marcadorActivo).opciones.map((opcion) => (
-                                                            <div
-                                                                key={opcion.id}
-                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
-                                                                    data[marcadores.find(m => m.id === marcadorActivo).campo] === opcion.nombre
-                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
-                                                                        : 'bg-white' // Estilo por defecto
-                                                                }`}
-                                                                onClick={() => handleSeleccionOpcion(opcion)}
-                                                            >
-                                                                {opcion.nombre}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Contenedor de opciones OI */}                
-                                            {marcadoresOI.map((marcadorOI) => (
-                                                    <span
-                                                        key={marcadorOI.id}
-                                                        className={`text-2xl absolute cursor-pointer ${marcadorOI.top} ${marcadorOI.right}`}
-                                                        onClick={() => handleMarkerClickOI(marcadorOI)}
-                                                    >
-                                                        <FontAwesomeIcon
-                                                            icon={faMapMarkerAlt}
-                                                            style={{ color: marcadorOI.color, fontSize: '24px' }} // Aplica el color dinámico
-                                                        />
-                                                    </span>
-                                                ))}
-
-                                            {marcadorActivoOI && (
-                                                <div
-                                                    className='absolute bg-white border border-gray-300 rounded-md shadow-lg p-3 opciones-container'
-                                                    style={{
-                                                        top: '0', // Posiciona el contenedor debajo del marcador
-                                                        right: '-50%', // Centra horizontalmente
-                                                        transform: 'translateX(10%)', // Ajusta el centrado
-                                                    }}
-                                                >
-                                                    {marcadoresOI.find(mOI=> mOI.id === marcadorActivoOI).subtitulo && (
-                                                            <span className='block text-lg font-bold text-gray-700 mb-1'>
-                                                                {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).subtitulo}
-                                                            </span>
-                                                        )}
-                                                    <label className='text-sm text-gray-500'>
-                                                        (Selecciona una opción:)
-                                                        
-                                                    </label>
-                                                    <div className='space-y-2'>
-                                                        {marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).opciones.map((opcionOI) => (
-                                                            <div
-                                                                key={opcionOI.id}
-                                                                className={`cursor-pointer hover:bg-green-200 p-1 rounded-md ${
-                                                                    data[marcadoresOI.find(mOI => mOI.id === marcadorActivoOI).campo] === opcionOI.nombre
-                                                                        ? 'bg-green-400' // Estilo para la opción seleccionada
-                                                                        : 'bg-white' // Estilo por defecto
-                                                                }`}
-                                                                onClick={() => handleSeleccionOpcionOI(opcionOI)}
-                                                            >
-                                                                {opcionOI.nombre}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>                                        
-                                    </div>
-                                </div>
+                                    <FondoOjo
+                                        marcadoresOD={marcadores}
+                                        marcadoresOI={marcadoresOI}
+                                        marcadorActivoOD={marcadorActivo}
+                                        marcadorActivoOI={marcadorActivoOI}
+                                        handleMarkerClickOD={handleMarkerClick}
+                                        handleMarkerClickOI={handleMarkerClickOI}
+                                        handleSeleccionOpcionOD={handleSeleccionOpcion}
+                                        handleSeleccionOpcionOI={handleSeleccionOpcionOI}
+                                        data={data}
+                                    />        
 
                                 {/* Campo de búsqueda CIE10 */}
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
+                                    <label className="block text-sm font-medium text-gray-700 uppercase">Impresión Diagnóstica (CIE10)</label>
                                     <Cie10Search onSelectResult={handleSelectResult} />
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
                                 </div>
@@ -1531,7 +1042,7 @@ export default function ConsultasCreate({ auth }) {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
+                                    <label className="block text-sm font-medium text-gray-700 uppercase">Tratamiento</label>
                                     <input
                                         type="text"
                                         value={data.tratamiento}
@@ -1541,53 +1052,47 @@ export default function ConsultasCreate({ auth }) {
                                     {errors.tratamiento && <p className="text-sm text-red-500">{errors.tratamiento}</p>}
                                 </div>
 
-                                <div className="mb-4">
-                                    <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
-                                        <label className="block text-sm font-medium text-gray-700">Plan</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPlanText(!showPlanText)}
-                                            className="text-sm text-blue-500 hover:text-blue-700 focus:outline-none"
-                                        >
-                                            {showPlanText ? '▲' : '▼'} {/* Flecha hacia arriba/abajo */}
-                                        </button>
-                                    </div>
-                                    {showPlanText && (
-                                        <div className="mt-2 space-y-2">
-                                        {opcionesPlan.map((opcion) => (
-                                            <div key={opcion.id} className="flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`plan-${opcion.id}`}
-                                                    checked={opcion.seleccionado}
-                                                    onChange={() => handleSeleccionPlan(opcion.id)}
-                                                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                                                />
-                                                <label
-                                                    htmlFor={`plan-${opcion.id}`}
-                                                    className="ml-2 text-sm text-gray-700"
-                                                >
-                                                    {opcion.nombre}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>                                                                            
-                                    )}
-                                </div>
+                                <PlanSelector
+                                    opcionesPlan={opcionesPlan}
+                                    handleSeleccionPlan={handleSeleccionPlan}
+                                    showPlanText={showPlanText}
+                                    setShowPlanText={setShowPlanText}
+                                />
 
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Exámenes Indicados</label>
+                                    <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Archivo)</label>
                                     <input
-                                        type="text"
-                                        value={data.examenes_indicados}
-                                        onChange={(e) => setData('examenes_indicados', e.target.value)}
+                                        type="file"
+                                        onChange={handleFileChange}
+                                        multiple // Permitir múltiples archivos
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                     />
-                                    {errors.examenes_indicados && <p className="text-sm text-red-500">{errors.examenes_indicados}</p>}
-                                </div>                                
+                                    {errors.examenes_indicados && (
+                                        <p className="text-sm text-red-500">{errors.examenes_indicados_img}</p>
+                                    )}
+
+                                    {/* Mostrar previsualizaciones de imágenes */}
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {previewImages.map((image, index) => (
+                                            <div key={index} className="relative">
+                                                <img
+                                                    src={image.preview}
+                                                    alt={`Previsualización ${index + 1}`}
+                                                    className="w-24 h-24 object-cover rounded-md"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveImage(index)}
+                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>                          
                                     </>
-                                )}
-                                
+                                )}                                
 
                                 <div className="flex items-center justify-end">
                                     <Link

@@ -11,10 +11,18 @@ export default function PacientesIndex({ auth, pacientes }) {
         router.get(route('pacientes.index'), { dni: searchDni });
     };
 
-    // Función para eliminar un paciente
     const handleDelete = (id) => {
-        if (confirm('¿Estás seguro de que deseas eliminar este paciente?')) {
-            router.delete(route('pacientes.destroy', id));
+        if (confirm('¿Estás seguro de que deseas eliminar este paciente y todas sus consultas relacionadas?')) {
+            console.log('Eliminando paciente con ID:', id); // Depuración
+            router.delete(route('pacientes.destroy', id), {
+                onSuccess: () => {
+                    console.log('Paciente eliminado correctamente'); // Depuración
+                    router.visit(route('pacientes.index'));
+                },
+                onError: () => {
+                    console.log('Error al eliminar paciente'); // Depuración
+                },
+            });
         }
     };
 

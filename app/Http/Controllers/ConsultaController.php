@@ -70,15 +70,20 @@ class ConsultaController extends Controller
             'impresion_diagnostica' => 'nullable|string',
             'tratamiento' => 'nullable|string',
             'plan' => 'nullable|string',
-            'examenes_indicados' => 'nullable|string',
-            'tipo_consulta' => 'required|in:inicio,evolucion', // Asegurar que el tipo de consulta sea 
-            'examen_av_sc_od' => 'nullable|string',
-            'examen_av_cae_od' => 'nullable|string',
-            'examen_av_cae_od' => 'nullable|string',
-            'examen_av_cc_od' => 'nullable|string',
-            'examen_av_sc_oi' => 'nullable|string',
-            'examen_av_cae_oi' => 'nullable|string',
-            'examen_av_cc_oi' => 'nullable|string',
+            //
+            'examenes_indicados_img' => 'nullable|array|max:4', // Máximo 4 imágenes
+            'examenes_indicados_img.*' => 'file|mimes:jpg,jpeg,png|max:2048', // Cada imagen debe ser un archivo válido
+            'examenes_indicados_archivos' => 'nullable|array|max:4', // Máximo 4 archivos
+            'examenes_indicados_archivos.*' => 'file|mimes:pdf,doc,docx,xls,xlsx|max:5120', // Cada archivo debe ser válido
+            //
+            'evoluciones' => 'nullable|string',
+            'tipo_consulta' => 'nullable|in:inicio,evolucion', // Asegurar que el tipo de consulta sea 
+            'examen_av_sc_od' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_cae_od' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_cc_od' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_sc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_cae_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_cc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
             'examen_pi_od' => 'nullable|string',
             'examen_pi_oi' => 'nullable|string',
             'examen_ar_sph_od' => 'nullable|string',
@@ -121,20 +126,66 @@ class ConsultaController extends Controller
 
         ]);
 
+        Log::info('Ruta de almacenamiento:', ['ruta' => storage_path('app/public')]);
+        Log::info('Ruta de enlace simbólico:', ['ruta' => public_path('storage')]);
+
         // Verificar si ya existe una consulta de inicio para este paciente
         if ($request->tipo_consulta === 'inicio') {
             $existeConsultaInicio = Consulta::where('paciente_id', $request->paciente_id)
                 ->where('tipo_consulta', 'inicio')
-                ->exists();
+                ->exists(); 
 
             if ($existeConsultaInicio) {
                 return redirect()->back()->withErrors(['message' => 'Ya existe una consulta de inicio para este paciente. No se puede generar más de una.']);
             }
         }
 
-        // Generar un código único para la consulta
-        $codigoConsulta = 'CONS-' . Str::uuid();
+        // Obtener el paciente
+        $paciente = Paciente::findOrFail($request->paciente_id);
 
+        // Crear la estructura de carpetas
+        $carpetaPaciente = 'pacientes/' . $paciente->dni;
+
+        $carpetaHistorialClinico = $carpetaPaciente . '/historial_clinico';
+        $carpetaImagenes = $carpetaPaciente . '/imagenes';
+        $carpetaArchivos = $carpetaPaciente . '/archivos';
+
+         // Crear las carpetas si no existen
+        if (!Storage::disk('public')->exists($carpetaImagenes)) {
+            Storage::disk('public')->makeDirectory($carpetaImagenes);
+        }
+        if (!Storage::disk('public')->exists($carpetaHistorialClinico)) {
+            Storage::disk('public')->makeDirectory($carpetaHistorialClinico);
+        }
+        if (!Storage::disk('public')->exists($carpetaArchivos)) {
+            Storage::disk('public')->makeDirectory($carpetaArchivos);
+        }
+
+         // Procesar las imágenes
+        $imagenes = [];
+        if ($request->hasFile('examenes_indicados_img')) {
+            foreach ($request->file('examenes_indicados_img') as $imagen) {
+                $nombreImagen = time() . '_' . $imagen->getClientOriginalName();
+                $rutaImagen = $imagen->storeAs($carpetaImagenes, $nombreImagen, 'public'); // Guardar en la carpeta del paciente
+                $imagenes[] = $rutaImagen; // Guardar la ruta en un array
+            }
+        }
+        // Procesar los archivos
+        $archivos = [];
+        if ($request->hasFile('examenes_indicados_archivos')) {
+            foreach ($request->file('examenes_indicados_archivos') as $archivo) {
+                $nombreArchivo = time() . '_' . $archivo->getClientOriginalName();
+                $rutaArchivo = $archivo->storeAs($carpetaArchivos, $nombreArchivo, 'public'); // Guardar en la carpeta del paciente
+                $archivos[] = $rutaArchivo; // Guardar la ruta en un array
+            }
+        }
+
+        // Contar las consultas previas del paciente
+        $numeroConsultas = Consulta::where('paciente_id', $paciente->id)->count();
+
+        $numeroConsultasFormateado = str_pad($numeroConsultas + 1, 3, '0', STR_PAD_LEFT);
+        $codigoConsulta = 'HCL-' . $paciente->dni . '-' . $numeroConsultasFormateado;
+        
         // Crear la consulta
         $consulta = Consulta::create([
             'codigo_consulta' => $codigoConsulta,
@@ -150,7 +201,9 @@ class ConsultaController extends Controller
             'impresion_diagnostica' => $request->impresion_diagnostica,
             'tratamiento' => $request->tratamiento,
             'plan' => $request->plan,
-            'examenes_indicados' => $request->examenes_indicados,
+            'examenes_indicados_img' => json_encode($imagenes), // Guardar las rutas de las imágenes como JSON
+            'examenes_indicados_archivos' => json_encode($archivos), // Guardar las rutas de los archivos como JSON
+            'evoluciones' => $request->evoluciones,
             'examen_av_sc_od' => $request->examen_av_sc_od,
             'examen_av_cae_od' => $request->examen_av_cae_od,
             'examen_av_cc_od' => $request->examen_av_cc_od,
@@ -196,6 +249,11 @@ class ConsultaController extends Controller
             'fondo_ojo_vitreo_oi' => $request->fondo_ojo_vitreo_oi,
             'fondo_ojo_disco_o_oi' => $request->fondo_ojo_disco_o_oi,
             'fondo_ojo_vasos_oi' => $request->fondo_ojo_vasos_oi,
+        ]);
+
+        Log::info('Archivos recibidos:', [
+            'imagenes' => $request->file('examenes_indicados_img'),
+            'archivos' => $request->file('examenes_indicados_archivos'),
         ]);
 
         return redirect()->route('consultas.index')->with('success', 'Consulta creada correctamente.');
@@ -251,15 +309,16 @@ class ConsultaController extends Controller
             'impresion_diagnostica' => 'nullable|string',
             'tratamiento' => 'nullable|string',
             'plan' => 'nullable|string',
-            'examenes_indicados' => 'nullable|string',
+            'examenes_indicados' => 'nullable|array|max:4', // Máximo 4 imágenes
+            'examenes_indicados.*' => 'file|mimes:jpg,jpeg,png|max:2048', // Cada imagen debe ser un archivo válido
+            'imagenes_a_eliminar' => 'nullable|json', // Campo para imágenes a eliminar
             'evoluciones' => 'nullable|string',
-            'examen_av_sc_od' => 'nullable|string',
-            'examen_av_cae_od' => 'nullable|string',
-            'examen_av_cae_od' => 'nullable|string',
-            'examen_av_cc_od' => 'nullable|string',
-            'examen_av_sc_oi' => 'nullable|string',
-            'examen_av_cae_oi' => 'nullable|string',
-            'examen_av_cc_oi' => 'nullable|string',
+            'examen_av_sc_od' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_cae_od' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_cc_od' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_sc_oi' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_cae_oi' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_av_cc_oi' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
             'examen_pi_od' => 'nullable|string',
             'examen_pi_oi' => 'nullable|string',
             'examen_ar_sph_od' => 'nullable|string',
@@ -300,13 +359,37 @@ class ConsultaController extends Controller
             'fondo_ojo_vitreo_oi' => 'nullable|string',
             'fondo_ojo_disco_o_oi' => 'nullable|string',
             'fondo_ojo_vasos_oi' => 'nullable|string',
-        ]);
+        ]);        
 
         // Buscar la consulta por su ID
         $consulta = Consulta::findOrFail($id);
 
         // Actualizar la consulta
         $consulta->update($request->all());
+
+        // Procesar las imágenes a eliminar
+        $imagenesAEliminar = json_decode($request->imagenes_a_eliminar, true) ?? [];
+        $rutasArchivos = json_decode($consulta->examenes_indicados, true) ?? [];
+        foreach ($imagenesAEliminar as $imagen) {
+            Storage::disk('public')->delete($imagen); // Eliminar la imagen del almacenamiento
+            $rutasArchivos = array_diff($rutasArchivos, [$imagen]); // Eliminar la ruta del array
+        }
+
+        // Procesar las imágenes subidas
+        $rutasArchivos = json_decode($consulta->examenes_indicados, true) ?? [];
+            if ($request->hasFile('examenes_indicados')) {
+                foreach ($request->file('examenes_indicados') as $archivo) {
+                    $nombreArchivo = time() . '_' . $archivo->getClientOriginalName();
+                    $rutaArchivo = $archivo->storeAs('examenes_indicados', $nombreArchivo, 'public');
+                    $rutasArchivos[] = $rutaArchivo;
+                }
+            }
+
+    // Actualizar las rutas como JSON o null si no hay imágenes
+    $consulta->update([
+        // Otros campos...
+        'examenes_indicados' => !empty($rutasArchivos) ? json_encode($rutasArchivos) : null,
+    ]);
 
         return redirect()->route('consultas.index')->with('success', 'Consulta actualizada correctamente.');
     }
@@ -403,27 +486,26 @@ class ConsultaController extends Controller
 
             // Ruta de la carpeta del paciente
             $carpetaPaciente = 'pacientes/' . $consulta->paciente->dni;
-            Log::info('Carpeta del paciente:', ['carpeta' => $carpetaPaciente]);
 
-            // Crear la carpeta si no existe
-            if (!Storage::exists($carpetaPaciente)) {
-                Storage::makeDirectory($carpetaPaciente);
-                Log::info('Carpeta creada:', ['carpeta' => $carpetaPaciente]);
+            $carpetaHistorialClinico = $carpetaPaciente . '/historial_clinico';
+
+             // Crear la carpeta si no existe
+            if (!Storage::disk('public')->exists($carpetaHistorialClinico)) {
+                Storage::disk('public')->makeDirectory($carpetaHistorialClinico);
             }
 
             // Nombre del archivo PDF
             $nombreArchivo = 'consulta_' . $consulta->id . '-' . $consulta->paciente->dni . '.pdf';
             Log::info('Nombre del archivo PDF:', ['nombreArchivo' => $nombreArchivo]);
 
-            // Guardar el PDF en la carpeta del paciente
-            Storage::put($carpetaPaciente . '/' . $nombreArchivo, $pdf->output());
-            Log::info('PDF guardado correctamente.');
+            // Guardar el PDF en la carpeta de historial clínico
+            Storage::disk('public')->put($carpetaHistorialClinico . '/' . $nombreArchivo, $pdf->output());
 
             // Retornar una respuesta JSON o redirigir
             return response()->json([
                 'success' => true,
                 'message' => 'PDF generado y guardado correctamente.',
-                'path' => $carpetaPaciente . '/' . $nombreArchivo,
+                'path' => $carpetaHistorialClinico . '/' . $nombreArchivo,
             ]);
         } catch (\Exception $e) {
             // Manejar errores

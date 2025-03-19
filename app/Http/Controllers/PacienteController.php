@@ -55,9 +55,9 @@ class PacienteController extends Controller
             'direccion' => 'required|string|max:255',
             'telefono' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
-            'procedencia' => 'nullable|string|max:255',
+            'procedencia' => 'required|in:Ancon,Ate,Barranco,Breña,Carabayllo,Chaclacayo,Chorrillos,Cienegilla,Comas,El Agustino,Independencia,Jesús María,La Molina,La Victoria,Lima,Lince,Los Olivos,Lurigancho,Lurín,Magdalena del Mar,Miraflores,Pachacamac,Pucusana,Pueblo Libre,Puente Piedra,Punta Hermosa,Punta Negra,Rimac,San Bartolo,San Borja,San Isidro,San Juan de Lurigancho,San Juan de Miraflores,San Luis,San Martín de Porres,San Miguel,Santa Anita,Santa María del Mar,Santa Rosa,Santiago de Surco,Surquillo,Villa El Salvador,Villa María del Triunfo',
             'acompañante' => 'nullable|string|max:255',
-            'referido' => 'nullable|string|max:255',
+            'referido' => 'required|in:Recomendación de un amigo o familiar,Facebook,Instagram,TikTok,WhatsApp,Búsqueda en Google,Publicidad en línea,Boca a boca,Sitio web o blog,Reseñas en línea,Correo electrónico,Eventos o ferias',
         ]);
 
         // Crear el paciente
@@ -112,9 +112,9 @@ class PacienteController extends Controller
             'direccion' => 'required|string|max:255',
             'telefono' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
-            'procedencia' => 'nullable|string|max:255',
+            'procedencia' => 'required|in:Ancon,Ate,Barranco,Breña,Carabayllo,Chaclacayo,Chorrillos,Cienegilla,Comas,El Agustino,Independencia,Jesús María,La Molina,La Victoria,Lima,Lince,Los Olivos,Lurigancho,Lurín,Magdalena del Mar,Miraflores,Pachacamac,Pucusana,Pueblo Libre,Puente Piedra,Punta Hermosa,Punta Negra,Rimac,San Bartolo,San Borja,San Isidro,San Juan de Lurigancho,San Juan de Miraflores,San Luis,San Martín de Porres,San Miguel,Santa Anita,Santa María del Mar,Santa Rosa,Santiago de Surco,Surquillo,Villa El Salvador,Villa María del Triunfo',
             'acompañante' => 'nullable|string|max:255',
-            'referido' => 'nullable|string|max:255',
+            'referido' => 'required|in:Recomendación de un amigo o familiar,Facebook,Instagram,TikTok,WhatsApp,Búsqueda en Google,Publicidad en línea,Boca a boca,Sitio web o blog,Reseñas en línea,Correo electrónico,Eventos o ferias',
         ]);
 
         // Buscar el paciente por su ID
@@ -127,17 +127,19 @@ class PacienteController extends Controller
         return redirect()->route('pacientes.index')->with('success', 'Paciente actualizado correctamente.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        // Buscar y eliminar el paciente
-        $paciente = Paciente::findOrFail($id);
-        $paciente->delete();
+        try {
+            $paciente = Paciente::findOrFail($id);
+            Log::info('Eliminando paciente:', ['id' => $paciente->id]);
 
-        // Redirigir a la lista de pacientes con un mensaje de éxito
-        return redirect()->route('pacientes.index')->with('success', 'Paciente eliminado correctamente.');
+            $paciente->delete();
+            Log::info('Paciente eliminado correctamente');
+            return redirect()->route('pacientes.index')->with('success', 'Paciente y consultas eliminados correctamente.');
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar paciente:', ['error' => $e->getMessage()]);
+            return redirect()->route('pacientes.index')->with('error', 'Ocurrió un error al eliminar el paciente.');
+        }
     }
 
     public function buscarPacientePorDNI(Request $request)

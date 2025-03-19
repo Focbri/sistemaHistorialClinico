@@ -78,8 +78,31 @@
         }
         label { 
             font-weight: bold;
-            text-decoration: underline;
             margin-bottom: 16px;
+        }
+        .section-datos-personales{
+            text-align: left;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .apellido-paterno{
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .section-datos-p{
+            width: 100%;
+            border: 2px solid black;
+        }
+        .section-datos-hijo{
+            width: 100%;
+        }
+        .datos-principales{
+            width: 40%;
+            border: 2px solid black;
+        }
+        .datos-secundarios{
+            width: 40%;
+            border: 2px solid black;
         }
     </style>
 </head>
@@ -90,7 +113,7 @@
                 <img src="{{ $imageSrcLogo }}" alt="Logo Visual OSF" class="logo">
             </div>
             <div class="codigo">
-                <p>HLC: {{ $consulta->codigo_consulta }}</p>
+                <p>{{ $consulta->codigo_consulta }}</p>
             </div>
         </div>
         
@@ -103,14 +126,49 @@
                 <p>Fecha: {{ $fechaActual }}</p>
             </div>
         </div>
-
+<!-- Campos comunes para Consulta de Inicio y Consulta de Evolución -->
+        <!-- Datos personales -->
         <div class="section">
             <label>DATOS PERSONALES</label>
-            <p>{{ $consulta->paciente->nombres }} {{ $consulta->paciente->apellido_paterno }} {{ $consulta->paciente->apellido_materno }}</p>
+            <div class="section-datosP">
+                <div class="section-datos-hijo">
+                    <div class="datos-principales">
+                        <p>Apellido Paterno: {{ $consulta->paciente->apellido_paterno }}</p>
+                        <p>Apellido Materno: {{ $consulta->paciente->apellido_materno }}</p>
+                        <p>Nombres: {{ $consulta->paciente->nombres }}</p>
+                    </div>
+                    <div class="datos-secundarios">
+                        <p>Fecha de Nacimiento: {{ $consulta->paciente->fecha_nacimiento }}</p>
+                        <p>Edad: {{ $consulta->paciente->edad }}</p>
+                        <p>Sexo: {{ $consulta->paciente->sexo }}</p>
+                        <p>Peso: {{ $consulta->paciente->peso }}</p>
+                        <p>DNI: {{ $consulta->paciente->dni }}</p>
+                    </div>
+                </div>
+                <div class="section-datos-hijo-2">
+                    <div class="datos-otros-1">
+                        <p>Estado Civil: {{ $consulta->paciente->estado_civil }}</p>
+                        <p>Ocupación: {{ $consulta->paciente->ocupacion }}</p>
+                        <p>Procedencia: {{ $consulta->paciente->procedencia }}</p>
+                        <p>Domicilio: {{ $consulta->paciente->direccion }}</p>
+                    </div>
+                    <div class="datos-otros-2">
+                        <p>Telf. Casa: {{ $consulta->paciente->telefono }}</p>
+                        <p>Acompañante: {{ $consulta->paciente->acompañante }}</p>
+                        <p>Referido: {{ $consulta->paciente->referido }}</p>
+                        <p>Email: {{ $consulta->paciente->email }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Campos específicos para Consulta de Evolución -->
         @if ($consulta->tipo_consulta === 'inicio')
+        <div class="title">
+            <h2>
+                CONSULTA DE INICIO
+            </h2>
+        </div>
         <div class="section">
             <label>ANTECEDENTES PERSONALES</label>
             <p>HTA: {{ $consulta->antecedentes_personales_hta ? 'SI' : 'NO' }}</p>
@@ -165,13 +223,48 @@
         <!-- Campos específicos para Consulta de Evolución -->
         @if ($consulta->tipo_consulta === 'evolucion')
         <div class="section">
-            <label>EXAMENES INDICADOS</label>
-            <p>{{ $consulta->examenes_indicados }}</p>
-        </div>
-
-        <div class="section">
             <label>EVOLUCIONES</label>
             <p>{{ $consulta->evoluciones }}</p>
+        </div>
+        <div>
+            <label>Examen</label>
+                <table width="50%" style="border-collapse: collapse; margin-bottom: 20px;">
+                    <label>Agudeza Visual</label>
+                    <tr>
+                        <th style=" padding: 5px; text-align: left;">Tipo</th>
+                        <th style=" padding: 5px; text-align: left;">SC</th>
+                        <th style=" padding: 5px; text-align: left;">CAE</th>
+                        <th style=" padding: 5px; text-align: left;">CC</th>
+                    </tr>
+                    <tr>
+                        <td style=" padding: 5px;">OD</td>
+                        <td style="border: 1px solid #000; padding: 5px;">{{ $consulta->examen_av_sc_od }}</td>
+                        <td style="border: 1px solid #000; padding: 5px;">{{ $consulta->examen_av_cae_od }}</td>
+                        <td style="border: 1px solid #000; padding: 5px;">{{ $consulta->examen_av_cc_od }}</td>
+
+                    </tr>
+                    <tr>
+                        <td style=" padding: 5px;">OI</td>
+                        <td style="border: 1px solid #000; padding: 5px;">{{ $consulta->examen_av_sc_oi }}</td>
+                        <td style="border: 1px solid #000; padding: 5px;">{{ $consulta->examen_av_cae_oi }}</td>
+                        <td style="border: 1px solid #000; padding: 5px;">{{ $consulta->examen_av_cc_oi }}</td>
+                    </tr>
+                </table>
+                <table width="50%" style="border-collapse: collapse; margin-bottom: 20px;">
+                    <label>Presión Intraocular</label>
+                    <tr>
+                        <th style=" padding: 5px; text-align: left;">OD</th>
+                        <th style=" padding: 5px; text-align: left;">OI</th>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 5px;">{{ $consulta->examen_pi_od }}</td>
+                        <td style="border: 1px solid #000; padding: 5px;">{{ $consulta->examen_pi_oi }}</td>
+                    </tr>                    
+                </table>
+        </div>
+        <div class="section">
+            <label>EXAMENES INDICADOS</label>
+            <p>{{ $consulta->examenes_indicados }}</p>
         </div>
         @endif
     </div> <!-- Fin del contenedor principal -->
