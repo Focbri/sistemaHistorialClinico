@@ -600,7 +600,7 @@ class ConsultaController extends Controller
         $query = $request->input('query');
 
         $terminos_mc = TerminoMotivoConsulta::where('termino_mc', 'LIKE', "%$query%")
-            ->pluck('termino');
+            ->pluck('termino_mc');
 
         return response()->json($terminos_mc);
     }
