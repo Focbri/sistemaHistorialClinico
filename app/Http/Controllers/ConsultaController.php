@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use \App\Models\Consulta;
 use \App\Models\Paciente;
+use \App\Models\TerminoBiomicroscopia;
+use App\Models\TerminoMotivoConsulta;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Dompdf\Dompdf;
@@ -84,6 +86,7 @@ class ConsultaController extends Controller
             'examen_av_sc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
             'examen_av_cae_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
             'examen_av_cc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_pi_tipo' => 'nullable|in:aplanatica,manual,neumatica',
             'examen_pi_od' => 'nullable|string',
             'examen_pi_oi' => 'nullable|string',
             'examen_ar_sph_od' => 'nullable|string',
@@ -249,7 +252,54 @@ class ConsultaController extends Controller
             'fondo_ojo_vitreo_oi' => $request->fondo_ojo_vitreo_oi,
             'fondo_ojo_disco_o_oi' => $request->fondo_ojo_disco_o_oi,
             'fondo_ojo_vasos_oi' => $request->fondo_ojo_vasos_oi,
+            'examen_pi_tipo' => $request->examen_pi_tipo,
         ]);
+
+         // Extraer términos de biomicroscopia
+         $terminos = [];
+         $camposBiomicroscopia = [
+             'biomicroscopia_movoculares_od',
+             'biomicroscopia_movoculares_oi',
+             'biomicroscopia_parpados_od',
+             'biomicroscopia_parpados_oi',
+             'biomicroscopia_cornea_od',
+             'biomicroscopia_cornea_oi',
+             'biomicroscopia_corneaconj_od',
+             'biomicroscopia_corneaconj_oi',
+             'biomicroscopia_ca_od',
+             'biomicroscopia_ca_oi',
+             'biomicroscopia_iris_od',
+             'biomicroscopia_iris_oi',
+             'biomicroscopia_cristalino_od',
+             'biomicroscopia_cristalino_oi',
+         ];
+         foreach ($camposBiomicroscopia as $campo) {
+            if ($request->$campo) {
+                $terminos = array_merge($terminos, explode(', ', $request->$campo));
+            }
+        }
+
+        // Guardar términos únicos en la tabla TERMINOS_BIOMICROSCOPIA
+        $terminosUnicos = array_unique($terminos);
+        foreach ($terminosUnicos as $termino) {
+            TerminoBiomicroscopia::firstOrCreate(['termino' => trim($termino)]);
+        }
+
+        //Extraer terminos motivo consulta
+        $terminos_mc= [];
+        $camposMotivoConsulta=[
+            'motivo_consulta',
+        ];
+        foreach ($camposMotivoConsulta as $campoMC){
+            if ($request->$campoMC){
+                $terminos_mc=array_merge($terminos_mc, explode(', ', $request->$campoMC));
+            }
+        }
+        //Guardar terminos en la tabla TERMINOS_MOTIVO_CONSULTA
+        $terminosUnicosMC = array_unique($terminos_mc);
+        foreach($terminosUnicosMC as $termino_mc){
+            TerminoMotivoConsulta::firstOrCreate(['termino_mc' => trim($termino_mc)]);
+        }
 
         Log::info('Archivos recibidos:', [
             'imagenes' => $request->file('examenes_indicados_img'),
@@ -319,6 +369,7 @@ class ConsultaController extends Controller
             'examen_av_sc_oi' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
             'examen_av_cae_oi' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
             'examen_av_cc_oi' => 'required|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
+            'examen_pi_tipo' => 'nullable|in:aplanatica,manual,neumatica',
             'examen_pi_od' => 'nullable|string',
             'examen_pi_oi' => 'nullable|string',
             'examen_ar_sph_od' => 'nullable|string',
@@ -395,42 +446,42 @@ class ConsultaController extends Controller
     }
 
     public function buscarPacientePorDNI(Request $request)
-{
-    $dni = trim($request->input('dni')); // Eliminar espacios en blanco
-    Log::info('Buscando paciente con DNI:', ['dni' => $dni]);
+    {
+        $dni = trim($request->input('dni')); // Eliminar espacios en blanco
+        Log::info('Buscando paciente con DNI:', ['dni' => $dni]);
 
-    // Buscar el paciente por DNI
-    $paciente = Paciente::where('dni', $dni)->first();
+        // Buscar el paciente por DNI
+        $paciente = Paciente::where('dni', $dni)->first();
 
-    if ($paciente) {
-        Log::info('Paciente encontrado:', ['paciente' => $paciente]);
-        return response()->json([
-            'success' => true,
-            'paciente' => [
-                'id' => $paciente->id,
-                'nombres' => $paciente->nombres,
-                'apellido_paterno' => $paciente->apellido_paterno,
-                'apellido_materno' => $paciente->apellido_materno,
-                'dni' => $paciente->dni,
-                'telefono' => $paciente->telefono,
-                'email' => $paciente->email,
-                'fecha_nacimiento' => $paciente->fecha_nacimiento,
-                'edad' => $paciente->edad,
-                'sexo' => $paciente->sexo,
-                'procedencia' => $paciente->procedencia,
-                'acompañante' => $paciente->acompañante,
-                'referido' => $paciente->referido,
-                'peso' => $paciente->peso,
-                'estado_civil' => $paciente->estado_civil,
-                'ocupacion' => $paciente->ocupacion,
-                'direccion' => $paciente->direccion,
-            ],
-        ]);
+        if ($paciente) {
+            Log::info('Paciente encontrado:', ['paciente' => $paciente]);
+            return response()->json([
+                'success' => true,
+                'paciente' => [
+                    'id' => $paciente->id,
+                    'nombres' => $paciente->nombres,
+                    'apellido_paterno' => $paciente->apellido_paterno,
+                    'apellido_materno' => $paciente->apellido_materno,
+                    'dni' => $paciente->dni,
+                    'telefono' => $paciente->telefono,
+                    'email' => $paciente->email,
+                    'fecha_nacimiento' => $paciente->fecha_nacimiento,
+                    'edad' => $paciente->edad,
+                    'sexo' => $paciente->sexo,
+                    'procedencia' => $paciente->procedencia,
+                    'acompañante' => $paciente->acompañante,
+                    'referido' => $paciente->referido,
+                    'peso' => $paciente->peso,
+                    'estado_civil' => $paciente->estado_civil,
+                    'ocupacion' => $paciente->ocupacion,
+                    'direccion' => $paciente->direccion,
+                ],
+            ]);
+        }
+        
+        Log::warning('Paciente no encontrado para DNI:', ['dni' => $dni]);
+        return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
     }
-    
-    Log::warning('Paciente no encontrado para DNI:', ['dni' => $dni]);
-    return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
-}
 
     public function generarPDF($id)
     {
@@ -532,5 +583,25 @@ class ConsultaController extends Controller
             Log::error('Error al verificar consulta de inicio:', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al verificar consulta de inicio'], 500);
         }
+    }
+
+    public function buscarTerminosBiomicroscopia(Request $request)
+    {
+        $query = $request->input('query');
+
+        $terminos = TerminoBiomicroscopia::where('termino', 'LIKE', "%$query%")
+            ->pluck('termino');
+
+        return response()->json($terminos);
+    }
+
+    public function buscarTerminosMotivoConsulta(Request $request)
+    {
+        $query = $request->input('query');
+
+        $terminos_mc = TerminoMotivoConsulta::where('termino_mc', 'LIKE', "%$query%")
+            ->pluck('termino');
+
+        return response()->json($terminos_mc);
     }
 }

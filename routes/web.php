@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PacienteController;
-use App\Http\Controllers\ConsultaInicioController;
 use App\Http\Controllers\ConsultaController; // Controlador común para funcionalidades compartidas
 use App\Http\Controllers\Cie10Controller;
 use App\Http\Controllers\UserController;
@@ -46,14 +45,6 @@ Route::middleware('auth')->group(function () {
 
      Route::get('/cie10/search', [Cie10Controller::class, 'search']);
 
-    // Rutas para Consultas de Inicio
-    //Route::get('/consultas/create', [ConsultaController::class, 'create'])->name('consultas.create');
-    //Route::post('/consultas', [ConsultaController::class, 'store'])->name('consultas.store');
-
-    // Rutas para Consultas de Evolución
-    //Route::get('/consultas/evolucion/create', [ConsultaEvolucionController::class, 'create'])->name('consultas.evolucion.create');
-    //Route::post('/consultas/evolucion', [ConsultaEvolucionController::class, 'store'])->name('consultas.evolucion.store');
-
     // Ruta para verificar si existe una consulta de inicio
     Route::get('/consultas/verificar-inicio/{pacienteId}', [ConsultaController::class, 'verificarConsultaInicio'])->name('consultas.verificar-inicio');
 
@@ -62,6 +53,9 @@ Route::middleware('auth')->group(function () {
 
     // Ruta para generar PDF (común para ambos tipos de consulta)
     Route::get('/consultas/{id}/generar-pdf', [ConsultaController::class, 'generarPDF'])->name('consultas.generarPDF');
+
+    Route::get('/terminos-biomicroscopia/search', [ConsultaController::class, 'buscarTerminosBiomicroscopia']);
+    Route::get('/terminos-motivo-consulta/search', [ConsultaController::class, 'buscarTerminosMotivoConsulta']);
 });
 
 // Rutas de gestión de usuarios (protegidas por autenticación y rol de administrador)

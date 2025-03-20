@@ -38,6 +38,7 @@ class Consulta extends Model
         'examen_av_sc_oi',
         'examen_av_cae_oi',
         'examen_av_cc_oi',
+        'examen_pi_tipo',
         'examen_pi_od',
         'examen_pi_oi',
         'examen_ar_sph_od',

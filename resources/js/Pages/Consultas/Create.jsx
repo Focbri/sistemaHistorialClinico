@@ -8,6 +8,8 @@ import AntecedentesPersonales from '@/Components/AntecedentesPersonales';
 import ExamenOcular from '@/Components/ExamenOcular';
 import FondoOjo from '@/Components/FondoOjo';
 import PlanSelector from '@/Components/PlanSelector';
+import TerminoBiomicroscopiaSearch from '@/Components/TerminoBiomicroscopiaSearch';
+import TerminoMotivoConsultaSearch from '@/Components/TerminoMotivoConsultaSearch';
 
 export default function ConsultasCreate({ auth }) {
     const { data, setData, post, errors, processing } = useForm({
@@ -42,6 +44,7 @@ export default function ConsultasCreate({ auth }) {
         examen_av_sc_oi: '',
         examen_av_cae_oi: '',
         examen_av_cc_oi: '',
+        examen_pi_tipo:'',
         examen_pi_od: '',
         examen_pi_oi: '',
         examen_ar_sph_od: '',
@@ -664,13 +667,8 @@ export default function ConsultasCreate({ auth }) {
 
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Motivo de Consulta</label>
-                                    <input
-                                        type="text"
-                                        value={data.motivo_consulta}
-                                        onChange={(e) => setData('motivo_consulta', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                    />
-                                    {errors.motivo_consulta && <p className="text-sm text-red-500">{errors.motivo_consulta}</p>}
+                                    <TerminoMotivoConsultaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, motivo_consulta: terms.join(', ') })}/>
                                 </div>
 
                                 <ExamenOcular data={data} setData={setData} />
@@ -682,96 +680,40 @@ export default function ConsultasCreate({ auth }) {
                                         <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
                                         <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_movoculares_od}
-                                            onChange={(e) => setData('biomicroscopia_movoculares_od', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_movoculares_oi}
-                                            onChange={(e) => setData('biomicroscopia_movoculares_oi', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_movoculares_od: terms.join(', ') })}/>
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_movoculares_oi: terms.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_parpados_od}
-                                            onChange={(e) => setData('biomicroscopia_parpados_od', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_parpados_oi}
-                                            onChange={(e) => setData('biomicroscopia_parpados_oi', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_parpados_od: terms.join(', ') })}/>
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_parpados_oi: terms.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_cornea_od}
-                                            onChange={(e) => setData('biomicroscopia_cornea_od', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_cornea_oi}
-                                            onChange={(e) => setData('biomicroscopia_cornea_oi', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cornea_od: terms.join(', ') })}/>
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cornea_oi: terms.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_corneaconj_od}
-                                            onChange={(e) => setData('biomicroscopia_corneaconj_od', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_corneaconj_oi}
-                                            onChange={(e) => setData('biomicroscopia_corneaconj_oi', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_corneaconj_od: terms.join(', ') })}/>
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_corneaconj_oi: terms.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_ca_od}
-                                            onChange={(e) => setData('biomicroscopia_ca_od', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_ca_oi}
-                                            onChange={(e) => setData('biomicroscopia_ca_oi', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_ca_od: terms.join(', ') })}/>
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_ca_oi: terms.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_iris_od}
-                                            onChange={(e) => setData('biomicroscopia_iris_od', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_iris_oi}
-                                            onChange={(e) => setData('biomicroscopia_iris_oi', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_iris_od: terms.join(', ') })}/>
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_iris_oi: terms.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_cristalino_od}
-                                            onChange={(e) => setData('biomicroscopia_cristalino_od', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_cristalino_oi}
-                                            onChange={(e) => setData('biomicroscopia_cristalino_oi', e.target.value)}
-                                            className="block w-full  border-[#8FDBF1] shadow-sm"
-                                        />
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cristalino_od: terms.join(', ') })}/>
+                                        <TerminoBiomicroscopiaSearch
+                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cristalino_oi: terms.join(', ') })}/>
                                     </div>
                                 </div>
 

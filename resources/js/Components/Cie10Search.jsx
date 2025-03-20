@@ -1,64 +1,49 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
+// Componente Cie10Search optimizado
 const Cie10Search = React.memo(({ onSelectResult }) => {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [selectedResults, setSelectedResults] = useState([]);
 
-    // Función para realizar la búsqueda
     const handleSearch = useCallback(async (searchQuery) => {
         if (!searchQuery) {
-            setResults([]); // Limpiar resultados si la consulta está vacía
+            setResults([]);
             return;
         }
-
         try {
-            const response = await axios.get('/cie10/search', {
-                params: { query: searchQuery },
-            });
-            setResults(response.data); // Actualizar resultados
+            const response = await axios.get('/cie10/search', { params: { query: searchQuery } });
+            setResults(response.data);
         } catch (error) {
             console.error('Error searching:', error);
         }
     }, []);
 
-    // Debouncing: Realizar la búsqueda después de que el usuario deje de escribir
     useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            handleSearch(query);
-        }, 300); // Esperar 300 ms después de que el usuario deje de escribir
-
-        return () => clearTimeout(delayDebounceFn); // Limpiar el timeout si el usuario sigue escribiendo
+        const delayDebounceFn = setTimeout(() => handleSearch(query), 300);
+        return () => clearTimeout(delayDebounceFn);
     }, [query, handleSearch]);
 
-    // Manejar la selección de un resultado
-    const handleSelectResult = useCallback(
-        (result) => {
-            if (selectedResults.length < 4) {
-                const newSelectedResults = [...selectedResults, result];
-                setSelectedResults(newSelectedResults); // Actualizar el estado
-                setQuery(''); // Limpiar el campo de búsqueda
-                setResults([]); // Limpiar los resultados de la búsqueda
-                onSelectResult(newSelectedResults); // Pasar el array de resultados
-            }
-        },
-        [onSelectResult, selectedResults]
-    );
+    const handleSelectResult = useCallback((result) => {
+        if (selectedResults.length < 4) {
+            const newSelectedResults = [...selectedResults, result];
+            setSelectedResults(newSelectedResults);
+            setQuery('');
+            setResults([]);
+            onSelectResult(newSelectedResults);
+        }
+    }, [onSelectResult, selectedResults]);
 
-    // Manejar la eliminación de un resultado
-    const handleRemoveResult = useCallback(
-        (index) => {
-            const newResults = selectedResults.filter((_, i) => i !== index); // Filtrar el resultado eliminado
-            setSelectedResults(newResults); // Actualizar el estado de resultados seleccionados
-            onSelectResult(newResults); // Notificar al formulario con el array de resultados
-        },
-        [onSelectResult, selectedResults]
-    );
+    const handleRemoveResult = useCallback((index, event) => {
+        event.stopPropagation();
+        const newResults = selectedResults.filter((_, i) => i !== index);
+        setSelectedResults(newResults);
+        onSelectResult(newResults);
+    }, [onSelectResult, selectedResults]);
 
     return (
         <div>
-            {/* Campo de búsqueda */}
             <input
                 type="text"
                 value={query}
@@ -66,8 +51,6 @@ const Cie10Search = React.memo(({ onSelectResult }) => {
                 placeholder="Buscar en CIE10..."
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
             />
-
-            {/* Mostrar resultados de la búsqueda */}
             <ul className="mt-4 max-h-60 overflow-y-auto border border-gray-200 rounded-md">
                 {results.map((result, index) => (
                     <li
@@ -79,15 +62,14 @@ const Cie10Search = React.memo(({ onSelectResult }) => {
                     </li>
                 ))}
             </ul>
-
-            {/* Mostrar opciones seleccionadas en un cuadro */}
             <div className="mt-4">
                 {selectedResults.map((result, index) => (
                     <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
                         <span>{result}</span>
                         <button
-                            onClick={() => handleRemoveResult(index)}
-                            className="ml-2 text-red-500 hover:text-red-700"
+                            type='button'
+                            onClick={(event) => handleRemoveResult(index, event)}
+                            className="ml-2 text-red-500 hover:text-red-700 min-w-8 min-h-8"
                         >
                             ×
                         </button>
