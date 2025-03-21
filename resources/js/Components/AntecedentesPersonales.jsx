@@ -5,7 +5,7 @@ const AntecedentesPersonales = ({
     setShowHTAText, 
     showDMText, 
     setShowDMText, 
-    showAlergiasText, 
+    showAlergiasText,
     setShowAlergiasText, 
     showOtrosText, 
     setShowOtrosText 

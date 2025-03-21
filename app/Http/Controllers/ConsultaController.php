@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use \App\Models\Consulta;
 use \App\Models\Paciente;
 use \App\Models\TerminoBiomicroscopia;
+use \App\Models\Examen;
 use App\Models\TerminoMotivoConsulta;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
@@ -13,8 +14,6 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use Illuminate\Support\Str; 
-
 class ConsultaController extends Controller
 {
     public function index(Request $request)
@@ -42,16 +41,26 @@ class ConsultaController extends Controller
 
     public function create(Request $request)
 {
-    $pacientes = Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno')
+    // Obtener la consulta (si es necesario)
+    $pacientes = Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno','edad')
         ->orderBy('nombres')
         ->get();
 
     // Determinar el tipo de consulta (inicio o evolución)
     $tipoConsulta = $request->query('tipo', 'inicio'); // Por defecto es 'inicio'
+    // Obtener la edad del paciente si se selecciona uno
+    $edad = null;
+    if ($request->has('paciente_id')) {
+        $paciente = Paciente::find($request->query('paciente_id'));
+        if ($paciente) {
+            $edad = $paciente->edad;
+        }
+    }
 
     return Inertia::render('Consultas/Create', [
         'pacientes' => $pacientes,
         'tipoConsulta' => $tipoConsulta, // Pasar el tipo de consulta a la vista
+        'edad' => $edad, // Pasar la edad del paciente
     ]);
 }
 
@@ -126,11 +135,42 @@ class ConsultaController extends Controller
             'fondo_ojo_vitreo_oi' => 'nullable|string',
             'fondo_ojo_disco_o_oi' => 'nullable|string',
             'fondo_ojo_vasos_oi' => 'nullable|string',
-
+            //
+            'exam_new_distancia_esfera_od' => 'nullable|string',
+            'exam_new_distancia_esfera_oi' => 'nullable|string',
+            'exam_new_distancia_cilindro_od' => 'nullable|string',
+            'exam_new_distancia_cilindro_oi' => 'nullable|string',
+            'exam_new_distancia_eje_od' => 'nullable|string',
+            'exam_new_distancia_eje_oi' => 'nullable|string',
+            'exam_new_distancia_dip' => 'nullable|string',
+            'exam_old_distancia_esfera_od' => 'nullable|string',
+            'exam_old_distancia_esfera_oi' => 'nullable|string',
+            'exam_old_distancia_cilindro_od' => 'nullable|string',
+            'exam_old_distancia_cilindro_oi' => 'nullable|string',
+            'exam_old_distancia_eje_od' => 'nullable|string',
+            'exam_old_distancia_eje_oi' => 'nullable|string',
+            'exam_old_distancia_dip' => 'nullable|string',
+            //
+            'exam_new_cerca_esfera_od' => 'nullable|string',
+            'exam_new_cerca_esfera_oi' => 'nullable|string',
+            'exam_new_cerca_cilindro_od' => 'nullable|string',
+            'exam_new_cerca_cilindro_oi' => 'nullable|string',
+            'exam_new_cerca_eje_od' => 'nullable|string',
+            'exam_new_cerca_eje_oi' => 'nullable|string',
+            'exam_new_cerca_dip' => 'nullable|string',
+            'exam_old_cerca_esfera_od' => 'nullable|string',
+            'exam_old_cerca_esfera_oi' => 'nullable|string',
+            'exam_old_cerca_cilindro_od' => 'nullable|string',
+            'exam_old_cerca_cilindro_oi' => 'nullable|string',
+            'exam_old_cerca_eje_od' => 'nullable|string',
+            'exam_old_cerca_eje_oi' => 'nullable|string',
+            'exam_old_cerca_dip' => 'nullable|string',
         ]);
+        Log::info('Datos recibidos:', $request->all());
 
         Log::info('Ruta de almacenamiento:', ['ruta' => storage_path('app/public')]);
         Log::info('Ruta de enlace simbólico:', ['ruta' => public_path('storage')]);
+        
 
         // Verificar si ya existe una consulta de inicio para este paciente
         if ($request->tipo_consulta === 'inicio') {
@@ -207,26 +247,6 @@ class ConsultaController extends Controller
             'examenes_indicados_img' => json_encode($imagenes), // Guardar las rutas de las imágenes como JSON
             'examenes_indicados_archivos' => json_encode($archivos), // Guardar las rutas de los archivos como JSON
             'evoluciones' => $request->evoluciones,
-            'examen_av_sc_od' => $request->examen_av_sc_od,
-            'examen_av_cae_od' => $request->examen_av_cae_od,
-            'examen_av_cc_od' => $request->examen_av_cc_od,
-            'examen_av_sc_oi' => $request->examen_av_sc_oi,
-            'examen_av_cae_oi' => $request->examen_av_cae_oi,
-            'examen_av_cc_oi' => $request->examen_av_cc_oi,
-            'examen_pi_od' => $request->examen_pi_od,
-            'examen_pi_oi' => $request->examen_pi_oi,
-            'examen_ar_sph_od' => $request->examen_ar_sph_od,
-            'examen_ar_cyl_od' => $request->examen_ar_cyl_od,
-            'examen_ar_ax_od' => $request->examen_ar_ax_od,
-            'examen_ar_sph_oi' => $request->examen_ar_sph_oi,
-            'examen_ar_cyl_oi' => $request->examen_ar_cyl_oi,
-            'examen_ar_ax_oi' => $request->examen_ar_ax_oi,
-            'examen_keratometria_qd1_od' => $request->examen_keratometria_qd1_od,
-            'examen_keratometria_qd2_od' => $request->examen_keratometria_qd2_od,
-            'examen_keratometria_eje_od' => $request->examen_keratometria_eje_od,
-            'examen_keratometria_qd1_oi' => $request->examen_keratometria_qd1_oi,
-            'examen_keratometria_qd2_oi' => $request->examen_keratometria_qd2_oi,
-            'examen_keratometria_eje_oi' => $request->examen_keratometria_eje_oi,
             'biomicroscopia_movoculares_od' => $request->biomicroscopia_movoculares_od,
             'biomicroscopia_movoculares_oi' => $request->biomicroscopia_movoculares_oi,
             'biomicroscopia_parpados_od' => $request->biomicroscopia_parpados_od,
@@ -252,8 +272,63 @@ class ConsultaController extends Controller
             'fondo_ojo_vitreo_oi' => $request->fondo_ojo_vitreo_oi,
             'fondo_ojo_disco_o_oi' => $request->fondo_ojo_disco_o_oi,
             'fondo_ojo_vasos_oi' => $request->fondo_ojo_vasos_oi,
-            'examen_pi_tipo' => $request->examen_pi_tipo,
         ]);
+
+            // Crear el examen asociado a la consulta
+            $examen = Examen::create([
+            'consulta_id' => $consulta->id,
+            'examen_av_sc_od' => $request->examen_av_sc_od,
+            'examen_av_cae_od' => $request->examen_av_cae_od,
+            'examen_av_cc_od' => $request->examen_av_cc_od,
+            'examen_av_sc_oi' => $request->examen_av_sc_oi,
+            'examen_av_cae_oi' => $request->examen_av_cae_oi,
+            'examen_av_cc_oi' => $request->examen_av_cc_oi,
+            'examen_pi_tipo' => $request->examen_pi_tipo,
+            'examen_pi_od' => $request->examen_pi_od,
+            'examen_pi_oi' => $request->examen_pi_oi,
+            'examen_ar_sph_od' => $request->examen_ar_sph_od,
+            'examen_ar_cyl_od' => $request->examen_ar_cyl_od,
+            'examen_ar_ax_od' => $request->examen_ar_ax_od,
+            'examen_ar_sph_oi' => $request->examen_ar_sph_oi,
+            'examen_ar_cyl_oi' => $request->examen_ar_cyl_oi,
+            'examen_ar_ax_oi' => $request->examen_ar_ax_oi,
+            'examen_keratometria_qd1_od' => $request->examen_keratometria_qd1_od,
+            'examen_keratometria_qd2_od' => $request->examen_keratometria_qd2_od,
+            'examen_keratometria_eje_od' => $request->examen_keratometria_eje_od,
+            'examen_keratometria_qd1_oi' => $request->examen_keratometria_qd1_oi,
+            'examen_keratometria_qd2_oi' => $request->examen_keratometria_qd2_oi,
+            'examen_keratometria_eje_oi' => $request->examen_keratometria_eje_oi,
+            'exam_new_distancia_esfera_od' => $request->exam_new_distancia_esfera_od,
+            'exam_new_distancia_esfera_oi' => $request->exam_new_distancia_esfera_oi,
+            'exam_new_distancia_cilindro_od' => $request->exam_new_distancia_cilindro_od,
+            'exam_new_distancia_cilindro_oi' => $request->exam_new_distancia_cilindro_oi,
+            'exam_new_distancia_eje_od' => $request->exam_new_distancia_eje_od,
+            'exam_new_distancia_eje_oi' => $request->exam_new_distancia_eje_oi,
+            'exam_new_distancia_dip' => $request->exam_new_distancia_dip,
+            'exam_old_distancia_esfera_od' => $request->exam_old_distancia_esfera_od,
+            'exam_old_distancia_esfera_oi' => $request->exam_old_distancia_esfera_oi,
+            'exam_old_distancia_cilindro_od' => $request->exam_old_distancia_cilindro_od,
+            'exam_old_distancia_cilindro_oi' => $request->exam_old_distancia_cilindro_oi,
+            'exam_old_distancia_eje_od' => $request->exam_old_distancia_eje_od,
+            'exam_old_distancia_eje_oi' => $request->exam_old_distancia_eje_oi,
+            'exam_old_distancia_dip' => $request->exam_old_distancia_dip,
+            'exam_new_cerca_esfera_od' => $request->exam_new_cerca_esfera_od,
+            'exam_new_cerca_esfera_oi' => $request->exam_new_cerca_esfera_oi,
+            'exam_new_cerca_cilindro_od' => $request->exam_new_cerca_cilindro_od,
+            'exam_new_cerca_cilindro_oi' => $request->exam_new_cerca_cilindro_oi,
+            'exam_new_cerca_eje_od' => $request->exam_new_cerca_eje_od,
+            'exam_new_cerca_eje_oi' => $request->exam_new_cerca_eje_oi,
+            'exam_new_cerca_dip' => $request->exam_new_cerca_dip,
+            'exam_old_cerca_esfera_od' => $request->exam_old_cerca_esfera_od,
+            'exam_old_cerca_esfera_oi' => $request->exam_old_cerca_esfera_oi,
+            'exam_old_cerca_cilindro_od' => $request->exam_old_cerca_cilindro_od,
+            'exam_old_cerca_cilindro_oi' => $request->exam_old_cerca_cilindro_oi,
+            'exam_old_cerca_eje_od' => $request->exam_old_cerca_eje_od,
+            'exam_old_cerca_eje_oi' => $request->exam_old_cerca_eje_oi,
+            'exam_old_cerca_dip' => $request->exam_old_cerca_dip,
+        ]);
+
+        Log::info('Examen creado:', $examen->toArray());
 
          // Extraer términos de biomicroscopia
          $terminos = [];
@@ -278,12 +353,20 @@ class ConsultaController extends Controller
                 $terminos = array_merge($terminos, explode(', ', $request->$campo));
             }
         }
+        Log::info('Términos de biomicroscopia extraídos:', ['terminos' => $terminos]);
 
         // Guardar términos únicos en la tabla TERMINOS_BIOMICROSCOPIA
         $terminosUnicos = array_unique($terminos);
         foreach ($terminosUnicos as $termino) {
-            TerminoBiomicroscopia::firstOrCreate(['termino' => trim($termino)]);
+            $termino = trim($termino); // Eliminar espacios en blanco
+            if (!empty($termino)) { // Verificar que el término no esté vacío
+                $terminoGuardado = TerminoBiomicroscopia::firstOrCreate(['termino' => $termino]);
+                Log::info('Término guardado en terminos_biomicroscopia:', ['termino' => $terminoGuardado]);
+            }
         }
+        
+
+        
 
         //Extraer terminos motivo consulta
         $terminos_mc= [];
@@ -410,6 +493,36 @@ class ConsultaController extends Controller
             'fondo_ojo_vitreo_oi' => 'nullable|string',
             'fondo_ojo_disco_o_oi' => 'nullable|string',
             'fondo_ojo_vasos_oi' => 'nullable|string',
+            //
+            'exam_new_distancia_esfera_od' => 'nullable|string',
+            'exam_new_distancia_esfera_oi' => 'nullable|string',
+            'exam_new_distancia_cilindro_od' => 'nullable|string',
+            'exam_new_distancia_cilindro_oi' => 'nullable|string',
+            'exam_new_distancia_eje_od' => 'nullable|string',
+            'exam_new_distancia_eje_oi' => 'nullable|string',
+            'exam_new_distancia_dip' => 'nullable|string',
+            'exam_old_distancia_esfera_od' => 'nullable|string',
+            'exam_old_distancia_esfera_oi' => 'nullable|string',
+            'exam_old_distancia_cilindro_od' => 'nullable|string',
+            'exam_old_distancia_cilindro_oi' => 'nullable|string',
+            'exam_old_distancia_eje_od' => 'nullable|string',
+            'exam_old_distancia_eje_oi' => 'nullable|string',
+            'exam_old_distancia_dip' => 'nullable|string',
+            //
+            'exam_new_cerca_esfera_od' => 'nullable|string',
+            'exam_new_cerca_esfera_oi' => 'nullable|string',
+            'exam_new_cerca_cilindro_od' => 'nullable|string',
+            'exam_new_cerca_cilindro_oi' => 'nullable|string',
+            'exam_new_cerca_eje_od' => 'nullable|string',
+            'exam_new_cerca_eje_oi' => 'nullable|string',
+            'exam_new_cerca_dip' => 'nullable|string',
+            'exam_old_cerca_esfera_od' => 'nullable|string',
+            'exam_old_cerca_esfera_oi' => 'nullable|string',
+            'exam_old_cerca_cilindro_od' => 'nullable|string',
+            'exam_old_cerca_cilindro_oi' => 'nullable|string',
+            'exam_old_cerca_eje_od' => 'nullable|string',
+            'exam_old_cerca_eje_oi' => 'nullable|string',
+            'exam_old_cerca_dip' => 'nullable|string',
         ]);        
 
         // Buscar la consulta por su ID

@@ -77,6 +77,20 @@ class Consulta extends Model
         'fondo_ojo_disco_o_oi',
         'fondo_ojo_vasos_oi',
         'fondo_ojo_retina_p_oi',
+        'exam_new_distancia_esfera_od' ,
+        'exam_new_distancia_esfera_oi' ,
+        'exam_new_distancia_cilindro_od' ,
+        'exam_new_distancia_cilindro_oi' ,
+        'exam_new_distancia_eje_od' ,
+        'exam_new_distancia_eje_oi' ,
+        'exam_new_distancia_dip' ,
+        'exam_old_distancia_esfera_od' ,
+        'exam_old_distancia_esfera_oi' ,
+        'exam_old_distancia_cilindro_od' ,
+        'exam_old_distancia_cilindro_oi' ,
+        'exam_old_distancia_eje_od' ,
+        'exam_old_distancia_eje_oi' ,
+        'exam_old_distancia_dip' ,
     ];
 
     /**
@@ -150,6 +164,20 @@ class Consulta extends Model
             'fondo_ojo_vitreo_oi',
             'fondo_ojo_disco_o_oi',
             'fondo_ojo_vasos_oi',
+            'exam_new_distancia_esfera_od' ,
+            'exam_new_distancia_esfera_oi' ,
+            'exam_new_distancia_cilindro_od' ,
+            'exam_new_distancia_cilindro_oi' ,
+            'exam_new_distancia_eje_od' ,
+            'exam_new_distancia_eje_oi' ,
+            'exam_new_distancia_dip' ,
+            'exam_old_distancia_esfera_od' ,
+            'exam_old_distancia_esfera_oi' ,
+            'exam_old_distancia_cilindro_od' ,
+            'exam_old_distancia_cilindro_oi' ,
+            'exam_old_distancia_eje_od' ,
+            'exam_old_distancia_eje_oi' ,
+            'exam_old_distancia_dip' ,
         ];
     }
 
@@ -157,5 +185,9 @@ class Consulta extends Model
     public function paciente()
     {
         return $this->belongsTo(Paciente::class, 'paciente_id');
+    }
+    public function examen()
+    {
+        return $this->hasOne(Examen::class);
     }
 }

@@ -85,6 +85,36 @@ export default function ConsultasCreate({ auth }) {
         fondo_ojo_disco_o_oi:'',
         fondo_ojo_vasos_oi:'',
         fondo_ojo_retina_p_oi:'',
+        //
+        exam_new_distancia_esfera_od: '',
+        exam_new_distancia_esfera_oi: '',
+        exam_new_distancia_cilindro_od: '',
+        exam_new_distancia_cilindro_oi: '',
+        exam_new_distancia_eje_od: '',
+        exam_new_distancia_eje_oi: '',
+        exam_new_distancia_dip: '',
+        exam_old_distancia_esfera_od: '',
+        exam_old_distancia_esfera_oi: '',
+        exam_old_distancia_cilindro_od: '',
+        exam_old_distancia_cilindro_oi: '',
+        exam_old_distancia_eje_od: '',
+        exam_old_distancia_eje_oi: '',
+        exam_old_distancia_dip: '',
+        //
+        exam_new_cerca_esfera_od: '',
+        exam_new_cerca_esfera_oi: '',
+        exam_new_cerca_cilindro_od: '',
+        exam_new_cerca_cilindro_oi: '',
+        exam_new_cerca_eje_od: '',
+        exam_new_cerca_eje_oi: '',
+        exam_new_cerca_dip: '',
+        exam_old_cerca_esfera_od: '',
+        exam_old_cerca_esfera_oi: '',
+        exam_old_cerca_cilindro_od: '',
+        exam_old_cerca_cilindro_oi: '',
+        exam_old_cerca_eje_od: '',
+        exam_old_cerca_eje_oi: '',
+        exam_old_cerca_dip: '',
     });
 
     const [showHTAText, setShowHTAText] = useState(false);
@@ -111,8 +141,6 @@ export default function ConsultasCreate({ auth }) {
         setSelectedResults(results); // Actualizar el estado de resultados seleccionados
         setData('impresion_diagnostica', results.join('; ')); // Combinar las opciones en una cadena
     }, [setData]);
-    console.log('selectedResults:', selectedResults);
-    console.log('Type of selectedResults:', typeof selectedResults);
 
     const handleSeleccionPlan = (id) => {
         const nuevasOpciones = opcionesPlan.map(opcion => ({
@@ -468,12 +496,6 @@ export default function ConsultasCreate({ auth }) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-         // Verificar que examenes_indicados_img esté definido
-        if (!data.examenes_indicados_img || !Array.isArray(data.examenes_indicados_img)) {
-            console.error('examenes_indicados_img no está definido o no es un array');
-            return;
-        }
-
         // Crear un FormData para enviar las imágenes
         const formData = new FormData();
         
@@ -508,8 +530,6 @@ export default function ConsultasCreate({ auth }) {
             },
         });
     };
-
-    console.log('Tipo de consulta actualizado:', tipoConsulta);
 
     return (
         <AuthenticatedLayout
@@ -670,8 +690,9 @@ export default function ConsultasCreate({ auth }) {
                                     <TerminoMotivoConsultaSearch
                                         onSelectTerm={(terms) => setData({ ...data, motivo_consulta: terms.join(', ') })}/>
                                 </div>
-
-                                <ExamenOcular data={data} setData={setData} />
+                                <hr className='my-8'/>
+                                <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                <hr className='my-8'/>
 
                                 <div className='mb-4'>
                                     <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
@@ -730,7 +751,7 @@ export default function ConsultasCreate({ auth }) {
                                 />                                
 
                                 {/* Campo de búsqueda CIE10 */}
-                                <div className="mb-4">
+                                <div className="mb-4 mt-8">
                                     <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
                                     <Cie10Search onSelectResult={handleSelectResult} />
                                     {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
@@ -850,108 +871,54 @@ export default function ConsultasCreate({ auth }) {
                                         />
                                         {errors.evoluciones && <p className="text-sm text-red-500">{errors.evoluciones}</p>}
                                     </div>
-                                    <ExamenOcular data={data} setData={setData} />
+                                    <hr className='my-8'/>
+                                    <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                    <hr className='my-8'/>
 
-                                <div className='mb-4'>
-                                    <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
-                                    <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>Examen Fisico</label>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OD</label>
-                                        <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OI</label>
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_movoculares_od}
-                                            onChange={(e) => setData('biomicroscopia_movoculares_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_movoculares_oi}
-                                            onChange={(e) => setData('biomicroscopia_movoculares_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Párpados</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_parpados_od}
-                                            onChange={(e) => setData('biomicroscopia_parpados_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_parpados_oi}
-                                            onChange={(e) => setData('biomicroscopia_parpados_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_cornea_od}
-                                            onChange={(e) => setData('biomicroscopia_cornea_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_cornea_oi}
-                                            onChange={(e) => setData('biomicroscopia_cornea_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_corneaconj_od}
-                                            onChange={(e) => setData('biomicroscopia_corneaconj_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_corneaconj_oi}
-                                            onChange={(e) => setData('biomicroscopia_corneaconj_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cámara Anterior</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_ca_od}
-                                            onChange={(e) => setData('biomicroscopia_ca_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_ca_oi}
-                                            onChange={(e) => setData('biomicroscopia_ca_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Iris</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_iris_od}
-                                            onChange={(e) => setData('biomicroscopia_iris_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_iris_oi}
-                                            onChange={(e) => setData('biomicroscopia_iris_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <label className='border-gray-300 shadow-sm border flex items-center px-4'>Cristalino</label>
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_cristalino_od}
-                                            onChange={(e) => setData('biomicroscopia_cristalino_od', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={data.biomicroscopia_cristalino_oi}
-                                            onChange={(e) => setData('biomicroscopia_cristalino_oi', e.target.value)}
-                                            className="block w-full  border-gray-300 shadow-sm"
-                                        />
+                                    <div className='mb-4'>
+                                        <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
+                                        <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
+                                            <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>Examen Fisico</label>
+                                            <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OD</label>
+                                            <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OI</label>
+                                            <label className='border-gray-300 shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_movoculares_od: terms.join(', ') })}/>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_movoculares_oi: terms.join(', ') })}/>
+                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_parpados_od: terms.join(', ') })}/>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_parpados_oi: terms.join(', ') })}/>
+                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cornea_od: terms.join(', ') })}/>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cornea_oi: terms.join(', ') })}/>
+                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_corneaconj_od: terms.join(', ') })}/>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_corneaconj_oi: terms.join(', ') })}/>
+                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_ca_od: terms.join(', ') })}/>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_ca_oi: terms.join(', ') })}/>
+                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_iris_od: terms.join(', ') })}/>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_iris_oi: terms.join(', ') })}/>
+                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cristalino_od: terms.join(', ') })}/>
+                                            <TerminoBiomicroscopiaSearch
+                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cristalino_oi: terms.join(', ') })}/>
+                                        </div>
                                     </div>
-                                </div>
-                                {/* Fondo de Ojo */}
+                                    {/* Fondo de Ojo */}
                                     <FondoOjo
                                         marcadoresOD={marcadores}
                                         marcadoresOI={marcadoresOI}
@@ -962,77 +929,108 @@ export default function ConsultasCreate({ auth }) {
                                         handleSeleccionOpcionOD={handleSeleccionOpcion}
                                         handleSeleccionOpcionOI={handleSeleccionOpcionOI}
                                         data={data}
-                                    />        
+                                    />              
 
-                                {/* Campo de búsqueda CIE10 */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 uppercase">Impresión Diagnóstica (CIE10)</label>
-                                    <Cie10Search onSelectResult={handleSelectResult} />
-                                    {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
-                                </div>
-
-                                {/* Mostrar las opciones seleccionadas */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Opciones Seleccionadas</label>
-                                    <div className="mt-2 p-2 border border-gray-200 rounded-md">
-                                        {selectedResults.map((result, index) => (
-                                            <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
-                                                <span>{result}</span>
-                                            </div>
-                                        ))}
+                                    {/* Campo de búsqueda CIE10 */}
+                                    <div className="mb-4 mt-8">
+                                        <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
+                                        <Cie10Search onSelectResult={handleSelectResult} />
+                                        {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
                                     </div>
-                                </div>
 
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 uppercase">Tratamiento</label>
-                                    <input
-                                        type="text"
-                                        value={data.tratamiento}
-                                        onChange={(e) => setData('tratamiento', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.tratamiento && <p className="text-sm text-red-500">{errors.tratamiento}</p>}
-                                </div>
-
-                                <PlanSelector
-                                    opcionesPlan={opcionesPlan}
-                                    handleSeleccionPlan={handleSeleccionPlan}
-                                    showPlanText={showPlanText}
-                                    setShowPlanText={setShowPlanText}
-                                />
-
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Archivo)</label>
-                                    <input
-                                        type="file"
-                                        onChange={handleFileChange}
-                                        multiple // Permitir múltiples archivos
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.examenes_indicados && (
-                                        <p className="text-sm text-red-500">{errors.examenes_indicados_img}</p>
-                                    )}
-
-                                    {/* Mostrar previsualizaciones de imágenes */}
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        {previewImages.map((image, index) => (
-                                            <div key={index} className="relative">
-                                                <img
-                                                    src={image.preview}
-                                                    alt={`Previsualización ${index + 1}`}
-                                                    className="w-24 h-24 object-cover rounded-md"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveImage(index)}
-                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                                                >
-                                                    &times;
-                                                </button>
-                                            </div>
-                                        ))}
+                                    {/* Mostrar las opciones seleccionadas */}
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Opciones Seleccionadas</label>
+                                        <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                            {selectedResults.map((result, index) => (
+                                                <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                    <span>{result}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>                          
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
+                                        <input
+                                            type="text"
+                                            value={data.tratamiento}
+                                            onChange={(e) => setData('tratamiento', e.target.value)}
+                                            className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                        />
+                                        {errors.tratamiento && <p className="text-sm text-red-500">{errors.tratamiento}</p>}
+                                    </div>
+
+                                    <PlanSelector
+                                        opcionesPlan={opcionesPlan}
+                                        handleSeleccionPlan={handleSeleccionPlan}
+                                        showPlanText={showPlanText}
+                                        setShowPlanText={setShowPlanText}
+                                    />
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Imágenes)</label>
+                                        <input
+                                            type="file"
+                                            onChange={handleFileChangeImages} // Nueva función para manejar imágenes
+                                            multiple // Permitir múltiples archivos
+                                            accept="image/*" // Solo permitir imágenes
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        />
+                                        {errors.examenes_indicados_img && (
+                                            <p className="text-sm text-red-500">{errors.examenes_indicados_img}</p>
+                                        )}
+
+                                        {/* Mostrar previsualizaciones de imágenes */}
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {previewImages.map((image, index) => (
+                                                <div key={index} className="relative">
+                                                    <img
+                                                        src={image.preview}
+                                                        alt={`Previsualización ${index + 1}`}
+                                                        className="w-24 h-24 object-cover rounded-md"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveImage(index, 'img')} // Eliminar imagen
+                                                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                    >
+                                                        &times;
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Archivos)</label>
+                                        <input
+                                            type="file"
+                                            onChange={handleFileChangeArchivos} // Nueva función para manejar archivos
+                                            multiple // Permitir múltiples archivos
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx" // Solo permitir archivos específicos
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        />
+                                        {errors.examenes_indicados_archivos && (
+                                            <p className="text-sm text-red-500">{errors.examenes_indicados_archivos}</p>
+                                        )}
+
+                                        {/* Mostrar nombres de archivos subidos */}
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {previewArchivos.map((archivo, index) => (
+                                                <div key={index} className="relative">
+                                                    <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveArchivo(index, 'archivos')} // Eliminar archivo
+                                                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                    >
+                                                        &times;
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>                         
                                     </>
                                 )}                                
 
