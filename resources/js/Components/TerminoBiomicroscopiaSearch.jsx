@@ -1,90 +1,59 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
-const TerminoBiomicroscopiaSearch = ({ onSelectTerm }) => {
+const TerminoBiomicroscopiaSearch = ({ initialValue = '', onSelectTerm }) => {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
-    const [selectedTerms, setSelectedTerms] = useState([]);
+    const [selectedTerms, setSelectedTerms] = useState(
+        initialValue ? initialValue.split(',').map(t => t.trim()).filter(t => t) : []
+    );
 
     // Función para realizar la búsqueda
     const handleSearch = useCallback(async (searchQuery) => {
-        if (!searchQuery) {
-            setResults([]); // Limpiar resultados si la consulta está vacía
+        if (!searchQuery.trim()) {
+            setResults([]);
             return;
         }
 
         try {
             const response = await axios.get('/terminos-biomicroscopia/search', {
-                params: { query: searchQuery },
+                params: { query: searchQuery }
             });
-            setResults(response.data); // Actualizar resultados
+            setResults(response.data);
         } catch (error) {
-            console.error('Error buscando términos:', error);
+            console.error('Error en búsqueda:', error);
+            setResults([]);
         }
     }, []);
 
     // Debouncing: Realizar la búsqueda después de que el usuario deje de escribir
     useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            handleSearch(query);
-        }, 300); // Esperar 300 ms después de que el usuario deje de escribir
-
-        return () => clearTimeout(delayDebounceFn); // Limpiar el timeout si el usuario sigue escribiendo
+        const timer = setTimeout(() => handleSearch(query), 300);
+        return () => clearTimeout(timer);
     }, [query, handleSearch]);
 
     // Manejar la selección de un término
-    const handleSelectTerm = useCallback(
-        (term) => {
-            // Verificar si ya se han seleccionado 20 términos
-            if (selectedTerms.length >= 20) {
-                alert('Has alcanzado el límite de 20 términos seleccionados.');
-                return;
-            }
+    const updateTerms = useCallback((newTerms) => {
+        setSelectedTerms(newTerms);
+        onSelectTerm(newTerms); // Siempre envía un array
+    }, [onSelectTerm]);
 
-            // Verificar si el término ya está seleccionado
-            if (!selectedTerms.includes(term)) {
-                const newSelectedTerms = [...selectedTerms, term];
-                setSelectedTerms(newSelectedTerms); // Actualizar el estado
-                setQuery(''); // Limpiar el campo de búsqueda
-                setResults([]); // Limpiar los resultados de la búsqueda
-                onSelectTerm(newSelectedTerms); // Pasar el array de términos seleccionados
-            }
-        },
-        [onSelectTerm, selectedTerms]
-    );
-
-    // Manejar la eliminación de un término
-    const handleRemoveTerm = useCallback(
-        (term) => {
-            const newTerms = selectedTerms.filter((t) => t !== term); // Filtrar el término eliminado
-            setSelectedTerms(newTerms); // Actualizar el estado de términos seleccionados
-            onSelectTerm(newTerms); // Notificar al formulario con los términos actualizados
-        },
-        [onSelectTerm, selectedTerms]
-    );
-
-    // Manejar la entrada manual de un término
-    const handleAddTermManually = () => {
-        if (query.trim() === '') {
-            alert('Por favor, ingresa un término válido.');
-            return;
+    const handleSelectTerm = useCallback((term) => {
+        if (selectedTerms.length >= 20) return alert('Límite alcanzado: 20 términos máx.');
+        if (!selectedTerms.includes(term)) {
+            updateTerms([...selectedTerms, term]);
         }
+    }, [selectedTerms, updateTerms]);
 
-        // Verificar si ya se han seleccionado 20 términos
-        if (selectedTerms.length >= 20) {
-            alert('Has alcanzado el límite de 20 términos seleccionados.');
-            return;
-        }
+    const handleRemoveTerm = useCallback((term) => {
+        updateTerms(selectedTerms.filter(t => t !== term));
+    }, [selectedTerms, updateTerms]);
 
-        // Verificar si el término ya está seleccionado
-        if (!selectedTerms.includes(query)) {
-            const newSelectedTerms = [...selectedTerms, query];
-            setSelectedTerms(newSelectedTerms); // Actualizar el estado
-            setQuery(''); // Limpiar el campo de búsqueda
-            setResults([]); // Limpiar los resultados de la búsqueda
-            onSelectTerm(newSelectedTerms); // Pasar el array de términos seleccionados
-        }
-    };
+    const handleAddManually = useCallback(() => {
+        if (!query.trim()) return alert('Ingresa un término válido');
+        handleSelectTerm(query.trim());
+        setQuery('');
+    }, [query, handleSelectTerm]);
 
     return (
         <div className='border-[#8FDBF1] border py-1 px-2 relative'>
@@ -99,7 +68,7 @@ const TerminoBiomicroscopiaSearch = ({ onSelectTerm }) => {
                 />
                 <button
                     type="button"
-                    onClick={handleAddTermManually}
+                    onClick={handleAddManually}
                     className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 >
                     Agregar
@@ -107,27 +76,28 @@ const TerminoBiomicroscopiaSearch = ({ onSelectTerm }) => {
             </div>
 
             {/* Mostrar resultados de la búsqueda */}
-            <ul className="mt-1 max-h-40 overflow-y-auto absolute bg-white z-50">
-                {results.map((result, index) => (
-                    <li
-                        key={index}
-                        onClick={() => handleSelectTerm(result)} // Llamar a handleSelectTerm
-                        className="cursor-pointer p-2 hover:bg-gray-100"
-                    >
-                        {result}
-                    </li>
-                ))}
-            </ul>
+            {results.length > 0 && (
+                <ul className="max-h-40 overflow-y-auto border rounded bg-white z-50 absolute w-[calc(100%-20px)]">
+                    {results.map((result, i) => (
+                        <li
+                            key={i}
+                            onClick={() => handleSelectTerm(result)}
+                            className="p-2 hover:bg-gray-100 cursor-pointer"
+                        >
+                            {result}
+                        </li>
+                    ))}
+                </ul>
+            )}
 
             {/* Mostrar términos seleccionados en un cuadro */}
-            <div className="mt-2 grid grid-cols-3">
-                {selectedTerms.map((term, index) => (
-                    <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-1 m-1 justify-between">
-                        <span>{term}</span>
+            <div className="mt-2 flex flex-wrap gap-1">
+                {selectedTerms.map((term, i) => (
+                    <div key={i} className="bg-gray-200 rounded-full px-3 py-1 flex items-center">
+                        <span className="mr-1 text-sm truncate max-w-xs">{term}</span>
                         <button
-                            type="button" // Cambiar el tipo a "button"
                             onClick={() => handleRemoveTerm(term)}
-                            className="mr-2 text-red-500 font-bold rounded-full hover:text-red-700"
+                            className="text-red-500 hover:text-red-700 ml-1"
                         >
                             ×
                         </button>

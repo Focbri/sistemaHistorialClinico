@@ -40,10 +40,11 @@ Route::middleware('auth')->group(function () {
 
 // Rutas de consultas (protegidas por autenticación)
 Route::middleware('auth')->group(function () {
-     // Ruta para listar consultas
-     Route::resource('consultas', ConsultaController::class);
-
-     Route::get('/cie10/search', [Cie10Controller::class, 'search']);
+    // Ruta para listar consultas
+    Route::resource('consultas', ConsultaController::class);
+    Route::get('/cie10/search', [Cie10Controller::class, 'search']);
+    Route::put('consultas/{consulta}', [ConsultaController::class, 'update'])
+    ->name('consultas.update');
 
     // Ruta para verificar si existe una consulta de inicio
     Route::get('/consultas/verificar-inicio/{pacienteId}', [ConsultaController::class, 'verificarConsultaInicio'])->name('consultas.verificar-inicio');

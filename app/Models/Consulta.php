@@ -67,6 +67,8 @@ class Consulta extends Model
         'biomicroscopia_ca_oi',
         'biomicroscopia_iris_oi',
         'biomicroscopia_cristalino_oi',
+        //
+        'fondo_ojo_posiciones',
         'fondo_ojo_retina_p_od',
         'fondo_ojo_macula_od',
         'fondo_ojo_vitreo_od',
@@ -91,6 +93,21 @@ class Consulta extends Model
         'exam_old_distancia_eje_od' ,
         'exam_old_distancia_eje_oi' ,
         'exam_old_distancia_dip' ,
+
+        'exam_new_cerca_esfera_od' ,
+        'exam_new_cerca_esfera_oi' ,
+        'exam_new_cerca_cilindro_od' ,
+        'exam_new_cerca_cilindro_oi' ,
+        'exam_new_cerca_eje_od' ,
+        'exam_new_cerca_eje_oi' ,
+        'exam_new_cerca_dip' ,
+        'exam_old_cerca_esfera_od' ,
+        'exam_old_cerca_esfera_oi' ,
+        'exam_old_cerca_cilindro_od' ,
+        'exam_old_cerca_cilindro_oi' ,
+        'exam_old_cerca_eje_od' ,
+        'exam_old_cerca_eje_oi' ,
+        'exam_old_cerca_dip' ,
     ];
 
     /**
@@ -101,6 +118,9 @@ class Consulta extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'fondo_ojo_posiciones' => 'array',
+        'examenes_indicados_img' => 'array',
+        'examenes_indicados_archivos' => 'array',
     ];
 
     public static function rules(): array
@@ -155,6 +175,8 @@ class Consulta extends Model
             'biomicroscopia_ca_oi',
             'biomicroscopia_iris_oi',
             'biomicroscopia_cristalino_oi',
+            //
+            'fondo_ojo_posiciones' => 'nullable|json',
             'fondo_ojo_retina_p_od',
             'fondo_ojo_macula_od',
             'fondo_ojo_vitreo_od',
@@ -178,6 +200,20 @@ class Consulta extends Model
             'exam_old_distancia_eje_od' ,
             'exam_old_distancia_eje_oi' ,
             'exam_old_distancia_dip' ,
+            'exam_new_cerca_esfera_od' ,
+            'exam_new_cerca_esfera_oi' ,
+            'exam_new_cerca_cilindro_od' ,
+            'exam_new_cerca_cilindro_oi' ,
+            'exam_new_cerca_eje_od' ,
+            'exam_new_cerca_eje_oi' ,
+            'exam_new_cerca_dip' ,
+            'exam_old_cerca_esfera_od' ,
+            'exam_old_cerca_esfera_oi' ,
+            'exam_old_cerca_cilindro_od' ,
+            'exam_old_cerca_cilindro_oi' ,
+            'exam_old_cerca_eje_od' ,
+            'exam_old_cerca_eje_oi' ,
+            'exam_old_cerca_dip' ,
         ];
     }
 
@@ -189,5 +225,15 @@ class Consulta extends Model
     public function examen()
     {
         return $this->hasOne(Examen::class);
+    }
+
+    public function terminosMotivoConsulta()
+    {
+        return $this->hasMany(TerminoMotivoConsulta::class);
+    }
+
+    public function terminosBiomicroscopia()
+    {
+        return $this->hasMany(TerminoBiomicroscopia::class);
     }
 }

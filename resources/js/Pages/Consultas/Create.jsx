@@ -75,6 +75,7 @@ export default function ConsultasCreate({ auth }) {
         biomicroscopia_iris_oi: '',
         biomicroscopia_cristalino_oi: '',
         //
+        fondo_ojo_posiciones: '',
         fondo_ojo_retina_p_od:'',
         fondo_ojo_macula_od:'',
         fondo_ojo_vitreo_od:'',
@@ -163,7 +164,7 @@ export default function ConsultasCreate({ auth }) {
      const marcadores = [
         {
             id: 1,
-            top: 'bottom-3', // Posición vertical
+            top: 'top-3', // Posición vertical
             left: 'left-24', // Posición horizontal
             campo: 'fondo_ojo_vitreo_od', // Campo asociado en el estado `data` VITREO
             color: 'blue', // Color del marcador
@@ -176,7 +177,7 @@ export default function ConsultasCreate({ auth }) {
         },
         {
             id: 2,
-            top: 'bottom-20',
+            top: 'top-20',
             left: 'left-24',
             campo: 'fondo_ojo_macula_od',
             color: 'red', // Color del marcador
@@ -228,8 +229,8 @@ export default function ConsultasCreate({ auth }) {
     const marcadoresOI = [
         {
             id: 1,
-            top: 'bottom-3', // Posición vertical
-            right: 'right-24', // Posición horizontal
+            top: 'top-3', // Posición vertical
+            right: 'right-2', // Posición horizontal
             campo: 'fondo_ojo_vitreo_oi', // Campo asociado en el estado `data` VITREO
             color: 'blue', // Color del marcador
             subtitulo: 'Vítreo OI',
@@ -241,8 +242,8 @@ export default function ConsultasCreate({ auth }) {
         },
         {
             id: 2,
-            top: 'bottom-20',
-            right: 'right-24',
+            top: 'top-20',
+            right: 'right-2',
             campo: 'fondo_ojo_macula_oi',
             color: 'red', // Color del marcador
             subtitulo: 'Mácula',
@@ -254,7 +255,7 @@ export default function ConsultasCreate({ auth }) {
         {
             id: 3,
             top: 'top-16',
-            right: 'right-6',
+            right: 'right-2',
             campo: 'fondo_ojo_retina_p_oi',
             color: 'green', // Color del marcador
             subtitulo: 'Retina Periférica',
@@ -266,7 +267,7 @@ export default function ConsultasCreate({ auth }) {
         {
         id: 4,
         top: 'top-20',
-        right: 'right-36',
+        right: 'right-2',
         campo: 'fondo_ojo_disco_o_oi',
         color: 'purple', // Color del marcador
         subtitulo: 'Disco Óptico',
@@ -278,7 +279,7 @@ export default function ConsultasCreate({ auth }) {
     {
         id: 5,
         top: 'top-14',
-        right: 'right-32',
+        right: 'right-2',
         campo: 'fondo_ojo_vasos_oi',
         color: 'orange', // Color del marcador
         subtitulo: 'Vasos Sanguíneos',
@@ -687,8 +688,13 @@ export default function ConsultasCreate({ auth }) {
 
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700">Motivo de Consulta</label>
-                                    <TerminoMotivoConsultaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, motivo_consulta: terms.join(', ') })}/>
+                                    <TerminoMotivoConsultaSearch 
+                                        initialValue={data.motivo_consulta || ''}
+                                        onSelectTerm={(termsArray) => {
+                                            // termsArray es siempre un array aquí
+                                            setData('motivo_consulta', termsArray.join(', '));
+                                        }}
+                                    />
                                 </div>
                                 <hr className='my-8'/>
                                 <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
@@ -702,44 +708,44 @@ export default function ConsultasCreate({ auth }) {
                                         <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_movoculares_od: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData('biomicroscopia_movoculares_od', termsArray.join(', ') )}/>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_movoculares_oi: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData('biomicroscopia_movoculares_oi', termsArray.join(', ') )}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_parpados_od: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_parpados_od: termsArray.join(', ') })}/>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_parpados_oi: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_parpados_oi: termsArray.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cornea_od: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cornea_od: termsArray.join(', ') })}/>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cornea_oi: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cornea_oi: termsArray.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_corneaconj_od: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_corneaconj_od: termsArray.join(', ') })}/>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_corneaconj_oi: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_corneaconj_oi: termsArray.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_ca_od: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_ca_od: termsArray.join(', ') })}/>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_ca_oi: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_ca_oi: termsArray.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_iris_od: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_iris_od: termsArray.join(', ') })}/>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_iris_oi: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_iris_oi: termsArray.join(', ') })}/>
                                         <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cristalino_od: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cristalino_od: termsArray.join(', ') })}/>
                                         <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cristalino_oi: terms.join(', ') })}/>
+                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cristalino_oi: termsArray.join(', ') })}/>
                                     </div>
                                 </div>
 
                                 <FondoOjo
-                                    marcadoresOD={marcadores}
+                                    marcadoresOD={marcadores}  // Cambiado de 'marcadores' a 'marcadoresOD'
                                     marcadoresOI={marcadoresOI}
                                     marcadorActivoOD={marcadorActivo}
                                     marcadorActivoOI={marcadorActivoOI}
@@ -748,6 +754,7 @@ export default function ConsultasCreate({ auth }) {
                                     handleSeleccionOpcionOD={handleSeleccionOpcion}
                                     handleSeleccionOpcionOI={handleSeleccionOpcionOI}
                                     data={data}
+                                    setData={setData}
                                 />                                
 
                                 {/* Campo de búsqueda CIE10 */}
@@ -883,39 +890,39 @@ export default function ConsultasCreate({ auth }) {
                                             <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OI</label>
                                             <label className='border-gray-300 shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_movoculares_od: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_movoculares_od: termsArray.join(', ') })}/>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_movoculares_oi: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_movoculares_oi: termsArray.join(', ') })}/>
                                             <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_parpados_od: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_parpados_od: termsArray.join(', ') })}/>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_parpados_oi: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_parpados_oi: termsArray.join(', ') })}/>
                                             <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cornea_od: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cornea_od: termsArray.join(', ') })}/>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cornea_oi: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cornea_oi: termsArray.join(', ') })}/>
                                             <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_corneaconj_od: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_corneaconj_od: termsArray.join(', ') })}/>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_corneaconj_oi: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_corneaconj_oi: termsArray.join(', ') })}/>
                                             <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_ca_od: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_ca_od: termsArray.join(', ') })}/>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_ca_oi: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_ca_oi: termsArray.join(', ') })}/>
                                             <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_iris_od: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_iris_od: termsArray.join(', ') })}/>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_iris_oi: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_iris_oi: termsArray.join(', ') })}/>
                                             <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cristalino_od: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cristalino_od: termsArray.join(', ') })}/>
                                             <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(terms) => setData({ ...data, biomicroscopia_cristalino_oi: terms.join(', ') })}/>
+                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cristalino_oi: terms.join(', ') })}/>
                                         </div>
                                     </div>
                                     {/* Fondo de Ojo */}
@@ -929,7 +936,8 @@ export default function ConsultasCreate({ auth }) {
                                         handleSeleccionOpcionOD={handleSeleccionOpcion}
                                         handleSeleccionOpcionOI={handleSeleccionOpcionOI}
                                         data={data}
-                                    />              
+                                        setData={setData} // ¡Asegúrate de que esta línea está presente!
+                                    />     
 
                                     {/* Campo de búsqueda CIE10 */}
                                     <div className="mb-4 mt-8">

@@ -10,5 +10,10 @@ class TerminoBiomicroscopia extends Model
     use HasFactory;
 
     protected $table = 'terminos_biomicroscopia';
-    protected $fillable = ['termino'];
+    protected $fillable = ['termino', 'consulta_id'];
+
+    public function consulta()
+    {
+        return $this->belongsTo(Consulta::class);
+    }
 }

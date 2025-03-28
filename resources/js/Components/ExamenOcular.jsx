@@ -1,5 +1,5 @@
 const ExamenOcular = ({ data, setData, edadPaciente }) => {
-
+    
     return (
         <div className='mb-8'>
             <label className="block text-xl font-medium text-gray-700 uppercase">Examen NUEVO</label>
@@ -20,7 +20,7 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             <label className='text-center flex items-center justify-center'>CAE</label>
                             <label className='text-center flex items-center justify-center'>CC</label>
                             <select
-                                value={data.examen_av_sc_od}
+                                value={data.examen_av_sc_od ?? ''}
                                 onChange={(e) => setData('examen_av_sc_od', e.target.value)}
                                 className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
                             >
@@ -40,11 +40,10 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                 <option value="N/M">N/M</option>
                             </select>
                             <select
-                                value={data.examen_av_cae_od}
+                                value={data.examen_av_cae_od ?? ''}
                                 onChange={(e) => setData('examen_av_cae_od', e.target.value)}
                                 className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
-                            >
-                                
+                            >                                
                                 <option value="">Seleccione...</option>
                                 <option value="CD">CD</option>
                                 <option value="MB">MB</option>
@@ -61,7 +60,7 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                 <option value="N/M">N/M</option>
                             </select>
                             <select
-                                value={data.examen_av_cc_od}
+                                value={data.examen_av_cc_od ?? ''}
                                 onChange={(e) => setData('examen_av_cc_od', e.target.value)}
                                 className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
                             >
@@ -82,7 +81,7 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                 <option value="N/M">N/M</option>
                             </select>
                             <select
-                                value={data.examen_av_sc_oi}
+                                value={data.examen_av_sc_oi ?? ''}
                                 onChange={(e) => setData('examen_av_sc_oi', e.target.value)}
                                 className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
                             >
@@ -103,7 +102,7 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                 <option value="N/M">N/M</option>
                             </select>
                             <select
-                                value={data.examen_av_cae_oi}
+                                value={data.examen_av_cae_oi ?? ''}
                                 onChange={(e) => setData('examen_av_cae_oi', e.target.value)}
                                 className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
                             >
@@ -124,7 +123,7 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                 <option value="N/M">N/M</option>
                             </select>
                             <select
-                                value={data.examen_av_cc_oi}
+                                value={data.examen_av_cc_oi ?? ''}
                                 onChange={(e) => setData('examen_av_cc_oi', e.target.value)}
                                 className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
                             >
@@ -151,8 +150,8 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                 {/* Presión Intraocular */}
                 <div className='flex flex-col justify-center items-center w-full py-4 gap-6 border border-gray-200 rounded-md'>
                     <div className='flex justify-center items-center w-auto gap-4'>
-                            <select required
-                                value={data.examen_pi_tipo}
+                            <select
+                                value={data.examen_pi_tipo ?? ''}
                                 onChange={(e) => setData('examen_pi_tipo', e.target.value)}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                             >
@@ -175,7 +174,7 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     const value = e.target.value;
                                     // Validar que solo se ingresen números
                                     if (/^\d*$/.test(value)) {
-                                        setData('examen_pi_od', `${value} mmHg`);
+                                        setData('examen_pi_od', value ? `${value} mmHg` : '');
                                     }
                                 }}
                                 className="block w-full rounded-md border-[#8FDBF1] shadow-sm" // Padding a la derecha
@@ -198,7 +197,7 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     const value = e.target.value;
                                     // Validar que solo se ingresen números
                                     if (/^\d*$/.test(value)) {
-                                        setData('examen_pi_oi', `${value} mmHg`);
+                                        setData('examen_pi_oi', value ? `${value} mmHg` : '');
                                     }
                                 }}
                                 className="block w-full rounded-md border-[#8FDBF1] shadow-sm" // Padding a la derecha
@@ -525,39 +524,39 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     <label className="border border-[#8FDBF1] py-2  text-center">Ojo Derecho</label>
                                     <input
                                         type="text"
-                                        value={data.exam_old_distancia_esfera_od ?? ''}
+                                        value={data.exam_old_cerca_esfera_od ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_distancia_esfera_od', value);
+                                                setData('exam_old_cerca_esfera_od', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
                                     />
                                     <input
                                         type="text"
-                                        value={data.exam_old_distancia_cilindro_od ?? ''}
+                                        value={data.exam_old_cerca_cilindro_od ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_distancia_cilindro_od', value);
+                                                setData('exam_old_cerca_cilindro_od', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
                                     />
                                     <input
                                         type="text"
-                                        value={data.exam_old_distancia_eje_od ?? ''}
+                                        value={data.exam_old_cerca_eje_od ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_distancia_eje_od', value);
+                                                setData('exam_old_cerca_eje_od', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
@@ -565,39 +564,39 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     <label className="border border-[#8FDBF1] py-2  text-center">Ojo Izquierdo</label>
                                     <input
                                         type="text"
-                                        value={data.exam_old_distancia_esfera_oi ?? ''}
+                                        value={data.exam_old_cerca_esfera_oi ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_distancia_esfera_oi', value);
+                                                setData('exam_old_cerca_esfera_oi', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
                                     />
                                     <input
                                         type="text"
-                                        value={data.exam_old_distancia_cilindro_oi ?? ''}
+                                        value={data.exam_old_cerca_cilindro_oi ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_distancia_cilindro_oi', value);
+                                                setData('exam_old_cerca_cilindro_oi', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
                                     />
                                     <input
                                         type="text"
-                                        value={data.exam_old_distancia_eje_oi ?? ''}
+                                        value={data.exam_old_cerca_eje_oi ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_distancia_eje_oi', value);
+                                                setData('exam_old_cerca_eje_oi', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
@@ -607,13 +606,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     <label className="h-[22%]  text-center uppercase">DIP</label>
                                     <input
                                             type="text"
-                                            value={data.exam_old_distancia_dip ?? ''}
+                                            value={data.exam_old_cerca_dip ?? ''}
                                             maxLength={6}
                                             minLength={0}
                                             onChange={(e) => {
                                                 const value = e.target.value;
                                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                    setData('exam_old_distancia_dip', value);
+                                                    setData('exam_old_cerca_dip', value);
                                                 }
                                             }}
                                             className="block w-full border-[#8FDBF1] shadow-sm  h-[78%]"
@@ -752,39 +751,39 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     <label className="border border-[#8FDBF1] py-2  text-center">Ojo Derecho</label>
                                     <input
                                         type="text"
-                                        value={data.exam_new_distancia_esfera_od ?? ''}
+                                        value={data.exam_new_cerca_esfera_od ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_distancia_esfera_od', value);
+                                                setData('exam_new_cerca_esfera_od', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
                                     />
                                     <input
                                         type="text"
-                                        value={data.exam_new_distancia_cilindro_od ?? ''}
+                                        value={data.exam_new_cerca_cilindro_od ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_distancia_cilindro_od', value);
+                                                setData('exam_new_cerca_cilindro_od', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
                                     />
                                     <input
                                         type="text"
-                                        value={data.exam_new_distancia_eje_od ?? ''}
+                                        value={data.exam_new_cerca_eje_od ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_distancia_eje_od', value);
+                                                setData('exam_new_cerca_eje_od', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
@@ -792,39 +791,39 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     <label className="border border-[#8FDBF1] py-2  text-center">Ojo Izquierdo</label>
                                     <input
                                         type="text"
-                                        value={data.exam_new_distancia_esfera_oi ?? ''}
+                                        value={data.exam_new_cerca_esfera_oi ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_distancia_esfera_oi', value);
+                                                setData('exam_new_cerca_esfera_oi', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
                                     />
                                     <input
                                         type="text"
-                                        value={data.exam_new_distancia_cilindro_oi ?? ''}
+                                        value={data.exam_new_cerca_cilindro_oi ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_distancia_cilindro_oi', value);
+                                                setData('exam_new_cerca_cilindro_oi', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
                                     />
                                     <input
                                         type="text"
-                                        value={data.exam_new_distancia_eje_oi ?? ''}
+                                        value={data.exam_new_cerca_eje_oi ?? ''}
                                         maxLength={6}
                                         minLength={0}
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_distancia_eje_oi', value);
+                                                setData('exam_new_cerca_eje_oi', value);
                                             }
                                         }}
                                         className="block w-full border-[#8FDBF1] shadow-sm "
@@ -834,13 +833,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     <label className="h-[22%]  text-center uppercase">DIP</label>
                                     <input
                                             type="text"
-                                            value={data.exam_new_distancia_dip ?? ''}
+                                            value={data.exam_new_cerca_dip ?? ''}
                                             maxLength={6}
                                             minLength={0}
                                             onChange={(e) => {
                                                 const value = e.target.value;
                                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                    setData('exam_new_distancia_dip', value);
+                                                    setData('exam_new_cerca_dip', value);
                                                 }
                                             }}
                                             className="block w-full border-[#8FDBF1] shadow-sm  h-[78%]"
