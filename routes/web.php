@@ -5,6 +5,7 @@ use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\ConsultaController; // Controlador común para funcionalidades compartidas
 use App\Http\Controllers\Cie10Controller;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -46,16 +47,21 @@ Route::middleware('auth')->group(function () {
     Route::put('consultas/{consulta}', [ConsultaController::class, 'update'])
     ->name('consultas.update');
 
+    Route::get('/dashboard/top-cie10', [DashboardController::class, 'getTopCie10']);
+
     // Ruta para verificar si existe una consulta de inicio
     Route::get('/consultas/verificar-inicio/{pacienteId}', [ConsultaController::class, 'verificarConsultaInicio'])->name('consultas.verificar-inicio');
 
     // Ruta para buscar paciente por DNI (POST)
-    Route::post('/consultas/buscar-paciente', [ConsultaController::class, 'buscarPacientePorDNI'])->name('consultas.buscar-paciente');
+    Route::match(['get', 'post'], '/consultas/buscar-paciente', [ConsultaController::class, 'buscarPaciente'])
+->name('consultas.buscar-paciente');
 
     // Ruta para generar PDF (común para ambos tipos de consulta)
     Route::get('/consultas/{id}/generar-pdf', [ConsultaController::class, 'generarPDF'])->name('consultas.generarPDF');
 
+    // Rutas para términos de biomicroscopía
     Route::get('/terminos-biomicroscopia/search', [ConsultaController::class, 'buscarTerminosBiomicroscopia']);
+    Route::post('/terminos-biomicroscopia', [ConsultaController::class, 'guardarTerminoBiomicroscopia']);
     Route::get('/terminos-motivo-consulta/search', [ConsultaController::class, 'buscarTerminosMotivoConsulta']);
 });
 

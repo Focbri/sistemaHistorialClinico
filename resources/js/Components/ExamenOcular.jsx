@@ -1,8 +1,14 @@
-const ExamenOcular = ({ data, setData, edadPaciente }) => {
-    
+const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
+    // Función dummy para cuando esté en modo lectura
+    const handleChange = (field, value) => {
+        if (!readOnly && setData) {
+            setData(field, value);
+        }
+    };
+ 
     return (
         <div className='mb-8'>
-            <label className="block text-xl font-medium text-gray-700 uppercase">Examen NUEVO</label>
+            <label className="block text-xl font-medium text-gray-700 uppercase">Examen</label>
             <div className='grid grid-cols-2 gap-12 p-4 rounded-md'>
                 {/* Agudeza Visual */}
                 <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
@@ -21,8 +27,11 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             <label className='text-center flex items-center justify-center'>CC</label>
                             <select
                                 value={data.examen_av_sc_od ?? ''}
-                                onChange={(e) => setData('examen_av_sc_od', e.target.value)}
-                                className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
+                                onChange={(e) => handleChange('examen_av_sc_od', e.target.value)}
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}                                             
                             >
                                 <option value="">Seleccione...</option>
                                 <option value="CD">CD</option>
@@ -41,8 +50,11 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             </select>
                             <select
                                 value={data.examen_av_cae_od ?? ''}
-                                onChange={(e) => setData('examen_av_cae_od', e.target.value)}
-                                className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
+                                onChange={(e) => handleChange('examen_av_cae_od', e.target.value)}
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}                                                    
                             >                                
                                 <option value="">Seleccione...</option>
                                 <option value="CD">CD</option>
@@ -61,8 +73,11 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             </select>
                             <select
                                 value={data.examen_av_cc_od ?? ''}
-                                onChange={(e) => setData('examen_av_cc_od', e.target.value)}
-                                className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
+                                onChange={(e) => handleChange('examen_av_cc_od', e.target.value)}
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}                                                    
                             >
                                 
                                 <option value="">Seleccione...</option>
@@ -82,8 +97,11 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             </select>
                             <select
                                 value={data.examen_av_sc_oi ?? ''}
-                                onChange={(e) => setData('examen_av_sc_oi', e.target.value)}
-                                className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
+                                onChange={(e) => handleChange('examen_av_sc_oi', e.target.value)}
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}                                                    
                             >
                                 
                                 <option value="">Seleccione...</option>
@@ -103,8 +121,11 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             </select>
                             <select
                                 value={data.examen_av_cae_oi ?? ''}
-                                onChange={(e) => setData('examen_av_cae_oi', e.target.value)}
-                                className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
+                                onChange={(e) => handleChange('examen_av_cae_oi', e.target.value)}
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}                                                    
                             >
                                 
                                 <option value="">Seleccione...</option>
@@ -124,8 +145,11 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             </select>
                             <select
                                 value={data.examen_av_cc_oi ?? ''}
-                                onChange={(e) => setData('examen_av_cc_oi', e.target.value)}
-                                className="mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
+                                onChange={(e) => handleChange('examen_av_cc_oi', e.target.value)}
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}                                                    
                             >
                                 
                                 <option value="">Seleccione...</option>
@@ -152,13 +176,16 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                     <div className='flex justify-center items-center w-auto gap-4'>
                             <select
                                 value={data.examen_pi_tipo ?? ''}
-                                onChange={(e) => setData('examen_pi_tipo', e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                onChange={(e) => handleChange('examen_pi_tipo', e.target.value)}
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}
                             >
                                 <option value="">Elige el Tipo de Presión Intraocular:</option>
-                                <option value="aplanatica">Tipo de Presión Aplanatica</option>
-                                <option value="manual">Tipo de Presión Manual</option>
-                                <option value="neumatica">Tipo de Presión Neumatica</option>
+                                <option value="Aplanatica">Tipo de Presión Aplanatica</option>
+                                <option value="Manual">Tipo de Presión Manual</option>
+                                <option value="Neumatica">Tipo de Presión Neumatica</option>
                             </select>
                     </div>
                     <div className='grid grid-cols-2 gap-4'>
@@ -174,10 +201,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     const value = e.target.value;
                                     // Validar que solo se ingresen números
                                     if (/^\d*$/.test(value)) {
-                                        setData('examen_pi_od', value ? `${value} mmHg` : '');
+                                        handleChange('examen_pi_od', value ? `${value} mmHg` : '');
                                     }
                                 }}
-                                className="block w-full rounded-md border-[#8FDBF1] shadow-sm" // Padding a la derecha
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}
                                 placeholder=" "
                             />
                             <span className="absolute flex items-center right-0 bottom-0 mr-3 my-2 pointer-events-none text-gray-400">
@@ -197,10 +227,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     const value = e.target.value;
                                     // Validar que solo se ingresen números
                                     if (/^\d*$/.test(value)) {
-                                        setData('examen_pi_oi', value ? `${value} mmHg` : '');
+                                        handleChange('examen_pi_oi', value ? `${value} mmHg` : '');
                                     }
                                 }}
-                                className="block w-full rounded-md border-[#8FDBF1] shadow-sm" // Padding a la derecha
+                                disabled={readOnly}
+                                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}
                                 placeholder=" "
                             />
                             <span className="absolute flex items-center right-0 bottom-0 mr-3 my-2 pointer-events-none text-gray-400">
@@ -228,10 +261,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_ar_sph_od', value);
+                                    handleChange('examen_ar_sph_od', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                            className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            }`}
                         />
                         <input
                             type="text"
@@ -241,10 +277,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_ar_cyl_od', value);
+                                    handleChange('examen_ar_cyl_od', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                         />
                         <input
                             type="text"
@@ -254,10 +293,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_ar_ax_od', value);
+                                    handleChange('examen_ar_ax_od', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                         />
                         <label className='flex justify-end items-center px-2'>OI</label>
                         <input
@@ -268,10 +310,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_ar_sph_oi', value);
+                                    handleChange('examen_ar_sph_oi', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                         />
                         <input
                             type="text"
@@ -281,10 +326,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_ar_cyl_oi', value);
+                                    handleChange('examen_ar_cyl_oi', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                         />
                         <input
                             type="text"
@@ -294,10 +342,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_ar_ax_oi', value);
+                                    handleChange('examen_ar_ax_oi', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
                         />
                     </div>
                 </div>
@@ -321,10 +372,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_keratometria_qd1_od', value);
+                                    handleChange('examen_keratometria_qd1_od', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                            className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            }`}
                         />
                         <input
                             type="text"
@@ -334,10 +388,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_keratometria_qd2_od', value);
+                                    handleChange('examen_keratometria_qd2_od', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                            className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            }`}
                         />
                         <input
                             type="text"
@@ -347,10 +404,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_keratometria_eje_od', value);
+                                    handleChange('examen_keratometria_eje_od', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                            className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            }`}
                         />
                         <label className='flex justify-end items-center px-2'>OI</label>
                         <input
@@ -361,10 +421,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_keratometria_qd1_oi', value);
+                                    handleChange('examen_keratometria_qd1_oi', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                            className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            }`}
                         />
                         <input
                             type="text"
@@ -374,10 +437,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_keratometria_qd2_oi', value);
+                                    handleChange('examen_keratometria_qd2_oi', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                            className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            }`}
                         />
                         <input
                             type="text"
@@ -387,18 +453,21 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                    setData('examen_keratometria_eje_oi', value);
+                                    handleChange('examen_keratometria_eje_oi', value);
                                 }
                             }}
-                            className="block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                            disabled={readOnly}
+                    className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
                         />
                     </div>
                 </div>
 
-                {/* EXAMEN ANTIGUO */}
+                {/* EXAMEN previo */}
                 <div className="flex flex-col">
                     <div className="mb-4 w-full text-center uppercase text-lg">
-                        <h2>Examen Antiguo</h2>
+                        <h2>Examen Previo</h2>
                     </div>
                     <div className="flex flex-col mb-8">
                         <div className="flex justify-start uppercase font-bold">
@@ -419,10 +488,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_old_distancia_esfera_od', value);
+                                            handleChange('exam_old_distancia_esfera_od', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <input
                                     type="text"
@@ -432,10 +504,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_old_distancia_cilindro_od', value);
+                                            handleChange('exam_old_distancia_cilindro_od', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <input
                                     type="text"
@@ -445,10 +520,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_old_distancia_eje_od', value);
+                                            handleChange('exam_old_distancia_eje_od', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <label className="border border-[#8FDBF1] py-2  text-center">Ojo Izquierdo</label>
                                 <input
@@ -459,10 +537,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_old_distancia_esfera_oi', value);
+                                            handleChange('exam_old_distancia_esfera_oi', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <input
                                     type="text"
@@ -472,10 +553,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_old_distancia_cilindro_oi', value);
+                                            handleChange('exam_old_distancia_cilindro_oi', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <input
                                     type="text"
@@ -485,10 +569,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_old_distancia_eje_oi', value);
+                                            handleChange('exam_old_distancia_eje_oi', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                             </div>
                             <div className="flex flex-col">
@@ -501,10 +588,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_distancia_dip', value);
+                                                handleChange('exam_old_distancia_dip', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm  h-[78%]"
+                                        disabled={readOnly}
+                                        className={`block w-full border-[#8FDBF1] shadow-sm h-[78%] ${
+                                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                            }`}
                                     />
                             </div>
                         </div>
@@ -530,10 +620,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_cerca_esfera_od', value);
+                                                handleChange('exam_old_cerca_esfera_od', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <input
                                         type="text"
@@ -543,10 +636,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_cerca_cilindro_od', value);
+                                                handleChange('exam_old_cerca_cilindro_od', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <input
                                         type="text"
@@ -556,10 +652,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_cerca_eje_od', value);
+                                                handleChange('exam_old_cerca_eje_od', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <label className="border border-[#8FDBF1] py-2  text-center">Ojo Izquierdo</label>
                                     <input
@@ -570,10 +669,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_cerca_esfera_oi', value);
+                                                handleChange('exam_old_cerca_esfera_oi', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <input
                                         type="text"
@@ -583,10 +685,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_cerca_cilindro_oi', value);
+                                                handleChange('exam_old_cerca_cilindro_oi', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <input
                                         type="text"
@@ -596,10 +701,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_old_cerca_eje_oi', value);
+                                                handleChange('exam_old_cerca_eje_oi', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                 </div>
                                 <div className="flex flex-col">
@@ -612,10 +720,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                             onChange={(e) => {
                                                 const value = e.target.value;
                                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                    setData('exam_old_cerca_dip', value);
+                                                    handleChange('exam_old_cerca_dip', value);
                                                 }
                                             }}
-                                            className="block w-full border-[#8FDBF1] shadow-sm  h-[78%]"
+                                            disabled={readOnly}
+                                            className={`block w-full border-[#8FDBF1] shadow-sm h-[78%] ${
+                                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                            }`}
                                         />
                                 </div>
                             </div>
@@ -626,7 +737,7 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                 {/* EXAMEN NUEVO */}
                 <div className="flex flex-col">
                     <div className="mb-4 w-full text-center uppercase text-lg">
-                        <h2>Examen Nuevo</h2>
+                        <h2>Examen Actual</h2>
                     </div>
                     <div className="flex flex-col mb-8">
                         <div className="flex justify-start uppercase font-bold">
@@ -647,10 +758,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_new_distancia_esfera_od', value);
+                                            handleChange('exam_new_distancia_esfera_od', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <input
                                     type="text"
@@ -660,10 +774,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_new_distancia_cilindro_od', value);
+                                            handleChange('exam_new_distancia_cilindro_od', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <input
                                     type="text"
@@ -673,10 +790,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_new_distancia_eje_od', value);
+                                            handleChange('exam_new_distancia_eje_od', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <label className="border border-[#8FDBF1] py-2  text-center">Ojo Izquierdo</label>
                                 <input
@@ -687,10 +807,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_new_distancia_esfera_oi', value);
+                                            handleChange('exam_new_distancia_esfera_oi', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <input
                                     type="text"
@@ -700,10 +823,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_new_distancia_cilindro_oi', value);
+                                            handleChange('exam_new_distancia_cilindro_oi', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                                 <input
                                     type="text"
@@ -713,10 +839,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                     onChange={(e) => {
                                         const value = e.target.value;
                                         if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                            setData('exam_new_distancia_eje_oi', value);
+                                            handleChange('exam_new_distancia_eje_oi', value);
                                         }
                                     }}
-                                    className="block w-full border-[#8FDBF1] shadow-sm "
+                                    disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                 />
                             </div>
                             <div className="flex flex-col">
@@ -729,10 +858,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_distancia_dip', value);
+                                                handleChange('exam_new_distancia_dip', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm  h-[78%]"
+                                        disabled={readOnly}
+                                        className={`block w-full border-[#8FDBF1] shadow-sm h-[78%] ${
+                                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                            }`}
                                     />
                             </div>
                         </div>
@@ -757,10 +889,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_cerca_esfera_od', value);
+                                                handleChange('exam_new_cerca_esfera_od', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <input
                                         type="text"
@@ -770,10 +905,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_cerca_cilindro_od', value);
+                                                handleChange('exam_new_cerca_cilindro_od', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <input
                                         type="text"
@@ -783,10 +921,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_cerca_eje_od', value);
+                                                handleChange('exam_new_cerca_eje_od', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <label className="border border-[#8FDBF1] py-2  text-center">Ojo Izquierdo</label>
                                     <input
@@ -797,10 +938,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_cerca_esfera_oi', value);
+                                                handleChange('exam_new_cerca_esfera_oi', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <input
                                         type="text"
@@ -810,10 +954,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_cerca_cilindro_oi', value);
+                                                handleChange('exam_new_cerca_cilindro_oi', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                     <input
                                         type="text"
@@ -823,10 +970,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                         onChange={(e) => {
                                             const value = e.target.value;
                                             if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setData('exam_new_cerca_eje_oi', value);
+                                                handleChange('exam_new_cerca_eje_oi', value);
                                             }
                                         }}
-                                        className="block w-full border-[#8FDBF1] shadow-sm "
+                                        disabled={readOnly}
+                                    className={`block w-full border-[#8FDBF1] shadow-sm ${
+                                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                    }`}
                                     />
                                 </div>
                                 <div className="flex flex-col">
@@ -839,10 +989,13 @@ const ExamenOcular = ({ data, setData, edadPaciente }) => {
                                             onChange={(e) => {
                                                 const value = e.target.value;
                                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                    setData('exam_new_cerca_dip', value);
+                                                    handleChange('exam_new_cerca_dip', value);
                                                 }
                                             }}
-                                            className="block w-full border-[#8FDBF1] shadow-sm  h-[78%]"
+                                            disabled={readOnly}
+                                            className={`block w-full border-[#8FDBF1] shadow-sm h-[78%] ${
+                                                readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                            }`}
                                         />
                                 </div>
                             </div>

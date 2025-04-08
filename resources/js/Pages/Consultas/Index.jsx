@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 
 export default function ConsultasIndex({ auth, consultas, links }) {
     console.log('Consultas recibidas:', consultas); // Depuración
@@ -8,32 +9,56 @@ export default function ConsultasIndex({ auth, consultas, links }) {
 
     const [searchDni, setSearchDni] = useState('');
 
+    const [showPdfNotification, setShowPdfNotification] = useState(false);
+    const [pdfNotificationMessage, setPdfNotificationMessage] = useState('');
+
     // Función para buscar consultas por DNI del paciente
     const handleSearch = (e) => {
         e.preventDefault();
         router.get(route('consultas.index'), { dni: searchDni || undefined });
     };
 
-    // Función para eliminar una consulta
-    const handleDelete = (id) => {
-        if (confirm('¿Estás seguro de que deseas eliminar esta consulta?')) {
-            router.delete(route('consultas.destroy', id));
+    // Función para eliminar una consulta (con modal de confirmación)
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [consultaToDelete, setConsultaToDelete] = useState(null);
+
+    const openDeleteModal = (consultaId) => {
+        setConsultaToDelete(consultaId);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (consultaToDelete) {
+            router.delete(route('consultas.destroy', consultaToDelete), {
+                onSuccess: () => {
+                    setIsDeleteModalOpen(false);
+                }
+            });
         }
     };
 
+    // Función para descargar PDF con notificación
     const descargarPDF = async (id) => {
         try {
             const response = await fetch(route('consultas.generarPDF', id));
             const result = await response.json();
     
             if (result.success) {
-                alert('PDF generado y guardado correctamente.');
+                setPdfNotificationMessage('PDF generado y guardado correctamente');
+                setShowPdfNotification(true);
+                
+                // Ocultar notificación después de 5 segundos
+                setTimeout(() => {
+                    setShowPdfNotification(false);
+                }, 5000);
             } else {
-                alert(result.message || 'Error al generar el PDF');
+                setPdfNotificationMessage(result.message || 'Error al generar el PDF');
+                setShowPdfNotification(true);
             }
         } catch (error) {
             console.error('Error al generar el PDF:', error);
-            alert('Error al generar el PDF');
+            setPdfNotificationMessage('Error al generar el PDF');
+            setShowPdfNotification(true);
         }
     };
 
@@ -43,6 +68,57 @@ export default function ConsultasIndex({ auth, consultas, links }) {
             header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Consultas</h2>}
         >
             <Head title="Consultas" />
+
+            {/* Modal de Confirmación para Eliminar */}
+            <Dialog
+                open={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                className="relative z-50"
+            >
+                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+                <div className="fixed inset-0 flex items-center justify-center p-4">
+                    <DialogPanel className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                        <DialogTitle className="text-lg font-bold text-gray-900">
+                            Confirmar Eliminación
+                        </DialogTitle>
+                        <Description className="mt-2">
+                            ¿Estás seguro de que deseas eliminar esta consulta?
+                        </Description>
+                        <div className="mt-6 flex justify-end space-x-3">
+                            <button
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
+                            >
+                                Eliminar
+                            </button>
+                        </div>
+                    </DialogPanel>
+                </div>
+            </Dialog>
+
+            {/* Notificación de PDF */}
+            {showPdfNotification && (
+                <div className="fixed top-4 right-4 z-50">
+                    <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center animate-fade-in-up">
+                        <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{pdfNotificationMessage}</span>
+                        <button 
+                            onClick={() => setShowPdfNotification(false)}
+                            className="ml-4 text-white hover:text-gray-200"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -118,7 +194,7 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                                             </Link>
                                                             {(auth.user.role === 'admin' || auth.user.role === 'root') && (
                                                                 <button
-                                                                    onClick={() => handleDelete(consulta.id)}
+                                                                    onClick={() => openDeleteModal(consulta.id)}
                                                                     className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                                                                 >
                                                                     Eliminar

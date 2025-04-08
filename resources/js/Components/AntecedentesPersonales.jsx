@@ -8,10 +8,18 @@ const AntecedentesPersonales = ({
     showAlergiasText,
     setShowAlergiasText, 
     showOtrosText, 
-    setShowOtrosText 
+    setShowOtrosText, 
+    readOnly = false
 }) => { // Aquí se abre el cuerpo de la función
+    
+    // Función dummy para cuando esté en modo lectura
+    const handleChange = (field, value) => {
+        if (!readOnly && setData) {
+            setData(field, value);
+        }
+    };
     return (
-        <div className="grid grid-cols-2 gap-4 border border-gray-200 p-4 rounded-md mb-8">
+        <div className="grid grid-cols-2 gap-4 border border-gray-200 p-4 rounded-md mb-8">    
             {/* Campo HTA */}
             <div className="mb-4">
                 <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
@@ -28,8 +36,11 @@ const AntecedentesPersonales = ({
                     <input
                         type="text"
                         value={data.antecedentes_personales_hta || ''}
-                        onChange={(e) => setData('antecedentes_personales_hta', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                        onChange={(e) => handleChange('antecedentes_personales_hta', e.target.value)}
+                        disabled={readOnly}
+                        className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                            readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}   
                         placeholder="Detalles de HTA"
                     />
                 )}
@@ -51,8 +62,11 @@ const AntecedentesPersonales = ({
                     <input
                         type="text"
                         value={data.antecedentes_personales_dm || ''}
-                        onChange={(e) => setData('antecedentes_personales_dm', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                        onChange={(e) => handleChange('antecedentes_personales_dm', e.target.value)}
+                        disabled={readOnly}
+                        className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                            readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`} 
                         placeholder="Detalles de DM"
                     />
                 )}
@@ -74,8 +88,11 @@ const AntecedentesPersonales = ({
                     <input
                         type="text"
                         value={data.antecedentes_personales_alergias || ''}
-                        onChange={(e) => setData('antecedentes_personales_alergias', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                        onChange={(e) => handleChange('antecedentes_personales_alergias', e.target.value)}
+                        disabled={readOnly}
+                        className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                            readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`} 
                         placeholder="Detalles de Alergias"
                     />
                 )}
@@ -97,8 +114,11 @@ const AntecedentesPersonales = ({
                     <input
                         type="text"
                         value={data.antecedentes_personales_otros || ''}
-                        onChange={(e) => setData('antecedentes_personales_otros', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                        onChange={(e) => handleChange('antecedentes_personales_otros', e.target.value)}
+                        disabled={readOnly}
+                        className={`mt-1 text-xs block w-full rounded-md border-gray-300 shadow-sm max-h-10 ${
+                            readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`} 
                         placeholder="Detalles de Otros"
                     />
                 )}

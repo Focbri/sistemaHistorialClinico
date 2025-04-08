@@ -12,13 +12,14 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use phpDocumentor\Reflection\DocBlock\Tags\Var_;
 
 class ConsultaController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request) 
     {
         $query = Consulta::with('paciente');
     
@@ -68,11 +69,11 @@ class ConsultaController extends Controller
 
     public function show(Consulta $consulta)
     {
-        // Cargar la relación con el paciente
-        $consulta->load('paciente');
-
+        // Cargar las relaciones necesarias
+        $consulta->load(['paciente', 'examen']);
+        
         return Inertia::render('Consultas/Show', [
-            'consulta' => $consulta,
+            'consulta' => $consulta->toArray(), // Asegúrate de convertir a array
         ]);
     }
 
@@ -178,7 +179,7 @@ class ConsultaController extends Controller
                 'examen_av_sc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
                 'examen_av_cae_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
                 'examen_av_cc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
-                'examen_pi_tipo' => 'nullable|in:aplanatica,manual,neumatica',
+                'examen_pi_tipo' => 'nullable|in:Aplanatica,Manual,Neumatica',
                 'examen_pi_od' => 'nullable|string',
                 'examen_pi_oi' => 'nullable|string',
                 'examen_ar_sph_od' => 'nullable|string',
@@ -564,6 +565,20 @@ class ConsultaController extends Controller
                 }
             }
 
+            // Después de crear la consulta, asociar términos si es necesario
+            if ($request->has('biomicroscopia_terms')) {
+                $terms = explode(',', $request->biomicroscopia_terms);
+                
+                foreach ($terms as $term) {
+                    TerminoBiomicroscopia::updateOrCreate(
+                        ['termino' => trim($term), 'consulta_id' => $consulta->id],
+                        ['termino' => trim($term)]
+                    );
+                }
+            }
+
+            $this->procesarTerminosMotivoConsulta($request, $consulta);
+            
             // PRUEBA DE DIAGNÓSTICO
             Log::info('DIAGNÓSTICO PRE-INSERCIÓN', [
                 'consulta_existe' => isset($consulta),
@@ -625,7 +640,25 @@ class ConsultaController extends Controller
                 'nuevas_imagenes.*' => 'image|mimes:jpeg,png,jpg|max:2048',
                 'nuevos_archivos' => 'nullable|array|max:4',
                 'nuevos_archivos.*' => 'mimes:pdf,doc,docx,xls,xlsx|max:5120',
-                'files_to_delete' => 'nullable|json'
+                'files_to_delete' => 'nullable|json',
+                // Campos de biomicroscopía explícitos
+                'biomicroscopia_movoculares_od' => 'nullable|string',
+                'biomicroscopia_parpados_od' => 'nullable|string',
+                'biomicroscopia_cornea_od' => 'nullable|string',
+                'biomicroscopia_corneaconj_od' => 'nullable|string',
+                'biomicroscopia_ca_od' => 'nullable|string',
+                'biomicroscopia_iris_od' => 'nullable|string',
+                'biomicroscopia_cristalino_od' => 'nullable|string',
+                'biomicroscopia_movoculares_oi' => 'nullable|string',
+                'biomicroscopia_parpados_oi' => 'nullable|string',
+                'biomicroscopia_cornea_oi' => 'nullable|string',
+                'biomicroscopia_corneaconj_oi' => 'nullable|string',
+                'biomicroscopia_ca_oi' => 'nullable|string',
+                'biomicroscopia_iris_oi' => 'nullable|string',
+                'biomicroscopia_cristalino_oi' => 'nullable|string',
+                
+                // Campo para términos de biomicroscopía
+                'terminos_biomicroscopia' => 'nullable|string' // Cadena separada por coma
             ]);
 
             $validatedExamenData = $request->validate([
@@ -635,7 +668,7 @@ class ConsultaController extends Controller
                 'examen_av_sc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
                 'examen_av_cae_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
                 'examen_av_cc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
-                'examen_pi_tipo' => 'nullable|in:aplanatica,manual,neumatica',
+                'examen_pi_tipo' => 'nullable|in:Aplanatica,Manual,Neumatica',
                 'examen_pi_od' => 'nullable|string',
                 'examen_pi_oi' => 'nullable|string',
                 'examen_ar_sph_od' => 'nullable|string',
@@ -708,6 +741,35 @@ class ConsultaController extends Controller
             // Buscar la consulta
             $consulta = Consulta::findOrFail($id);
 
+            // 1. Actualizar campos directos de biomicroscopía
+            $biomicroscopiaFields = [
+                'movoculares_od', 'parpados_od', 'cornea_od', 'corneaconj_od',
+                'ca_od', 'iris_od', 'cristalino_od', 'movoculares_oi',
+                'parpados_oi', 'cornea_oi', 'corneaconj_oi', 'ca_oi',
+                'iris_oi', 'cristalino_oi'
+            ];
+
+            foreach ($biomicroscopiaFields as $field) {
+                $key = 'biomicroscopia_' . $field;
+                $consulta->$key = $request->input($key, '');
+            }
+
+            // 2. Manejar términos de biomicroscopía (solo catálogo, sin relación directa)
+            if ($request->filled('terminos_biomicroscopia')) {
+                $terminos = explode(',', $request->terminos_biomicroscopia);
+                
+                foreach ($terminos as $termino) {
+                    $termino = trim($termino);
+                    if (!empty($termino)) {
+                        // Buscar o crear término sin asociar a consulta (catálogo general)
+                        TerminoBiomicroscopia::firstOrCreate(
+                            ['termino' => $termino],
+                            ['termino' => $termino] // consulta_id permanecerá null
+                        );
+                    }
+                }
+            }
+
             // Verificar si el paciente_id cambió
             if ($request->paciente_id != $consulta->paciente_id) {
                 return back()->withErrors(['paciente_id' => 'No se puede cambiar el paciente asociado a la consulta']);
@@ -746,16 +808,6 @@ class ConsultaController extends Controller
              // Obtener archivos existentes (filtrados)
             $existingImages = $this->parseFileData($consulta->examenes_indicados_img);
             $existingFiles = $this->parseFileData($consulta->examenes_indicados_archivos);
-            
-             // Filtrar para quitar los eliminados
-            $filteredImages = array_filter($existingImages, function($img) use ($filesToDelete) {
-                return !in_array($img['ruta'], $filesToDelete);
-            });
-            
-            $filteredFiles = array_filter($existingFiles, function($file) use ($filesToDelete) {
-                return !in_array($file['ruta'], $filesToDelete);
-            });
-
 
             // Procesar nuevas imágenes
             $imagenes = [];
@@ -828,8 +880,31 @@ class ConsultaController extends Controller
                 $consulta->examen()->create($validatedExamenData);
             }
             
-              // Procesar términos de biomicroscopia
-            $this->procesarTerminosBiomicroscopia($request, $consulta);           
+            if ($request->filled('terminos_biomicroscopia')) {
+                // 1. Eliminar términos antiguos asociados a esta consulta
+                TerminoBiomicroscopia::where('consulta_id', $consulta->id)->delete();
+                
+                // 2. Procesar nuevos términos
+                $terminos = array_unique(
+                    array_filter(
+                        array_map('trim', explode(',', $request->terminos_biomicroscopia)),
+                        fn($t) => !empty($t)
+                    )
+                );
+            
+                foreach ($terminos as $termino) {
+                    TerminoBiomicroscopia::create([
+                        'termino' => $termino,
+                        'consulta_id' => $consulta->id // Asociar explícitamente a la consulta
+                    ]);
+                    
+                    // También agregar al catálogo general si no existe
+                    TerminoBiomicroscopia::firstOrCreate(
+                        ['termino' => $termino, 'consulta_id' => null],
+                        ['termino' => $termino]
+                    );
+                }
+            }          
 
             // Procesar términos de motivo de consulta
             $this->procesarTerminosMotivoConsulta($request, $consulta);
@@ -858,6 +933,53 @@ class ConsultaController extends Controller
             ];
         }
         return $archivos;
+    }
+
+    public function buscarTerminosBiomicroscopia(Request $request)
+    {
+        $query = $request->input('query');
+        
+        $terminos = TerminoBiomicroscopia::when($query, function ($q) use ($query) {
+                return $q->where('termino', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->pluck('termino');
+        
+        return response()->json($terminos);
+    }
+
+    /**
+     * Guarda un nuevo término de biomicroscopía
+     */
+    public function guardarTerminoBiomicroscopia(Request $request)
+    {
+        $request->validate([
+            'termino' => 'required|string|max:255',
+            'consulta_id' => 'nullable|exists:consultas,id'
+        ]);
+
+        try {
+            // Para el catálogo general (consulta_id = null)
+            $terminoGeneral = TerminoBiomicroscopia::firstOrCreate(
+                ['termino' => $request->termino, 'consulta_id' => null],
+                ['termino' => $request->termino]
+            );
+
+            // Si viene consulta_id, crear también la relación específica
+            if ($request->consulta_id) {
+                TerminoBiomicroscopia::firstOrCreate(
+                    ['termino' => $request->termino, 'consulta_id' => $request->consulta_id],
+                    ['termino' => $request->termino]
+                );
+            }
+
+            return response()->json($terminoGeneral, 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al guardar el término: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     protected function parseFileData($data)
@@ -964,177 +1086,145 @@ class ConsultaController extends Controller
         }
     }
 
-    // Métodos auxiliares para procesar términos
-    private function procesarTerminosBiomicroscopia($request, $consulta)
+    protected function procesarTerminosBiomicroscopia($request, $consulta)
     {
-        $camposBiomicroscopia = [
-            'biomicroscopia_movoculares_od',
-            'biomicroscopia_parpados_od',
-            'biomicroscopia_cornea_od',
-            'biomicroscopia_corneaconj_od',
-            'biomicroscopia_ca_od',
-            'biomicroscopia_iris_od',
-            'biomicroscopia_cristalino_od',
-            'biomicroscopia_movoculares_oi',
-            'biomicroscopia_parpados_oi',
-            'biomicroscopia_cornea_oi',
-            'biomicroscopia_corneaconj_oi',
-            'biomicroscopia_ca_oi',
-            'biomicroscopia_iris_oi',
-            'biomicroscopia_cristalino_oi'
-        ];
+        if (!$request->filled('terminos_biomicroscopia')) {
+            return;
+        }
 
-        // Eliminar términos existentes para evitar duplicados
+        // Eliminar términos existentes para esta consulta
         TerminoBiomicroscopia::where('consulta_id', $consulta->id)->delete();
 
-        foreach ($camposBiomicroscopia as $campo) {
-            if (!empty($request->$campo)) {
-                $terminos = array_map('trim', preg_split('/[,;]+/', $request->$campo));
-                $terminosUnicos = array_unique(array_filter($terminos));
+        $terminos = array_filter(
+            array_map('trim', explode(',', $request->terminos_biomicroscopia)),
+            fn($t) => !empty($t)
+        );
 
-                foreach ($terminosUnicos as $termino) {
-                    TerminoBiomicroscopia::create([
-                        'termino' => $termino,
-                        'consulta_id' => $consulta->id
-                    ]);
-                }
-            }
+        foreach ($terminos as $termino) {
+            // Guardar término asociado a la consulta
+            TerminoBiomicroscopia::create([
+                'termino' => $termino,
+                'consulta_id' => $consulta->id
+            ]);
+            
+            // También agregar al catálogo general si no existe
+            TerminoBiomicroscopia::firstOrCreate(
+                ['termino' => $termino, 'consulta_id' => null],
+                ['termino' => $termino]
+            );
         }
     }
     
-    private function procesarTerminosMotivoConsulta($request, $consulta)
+    protected function procesarTerminosMotivoConsulta(Request $request, Consulta $consulta)
     {
-        if (!empty($request->motivo_consulta)) {
-            // Eliminar términos existentes para evitar duplicados
-            TerminoMotivoConsulta::where('consulta_id', $consulta->id)->delete();
+        if (empty($request->motivo_consulta)) {
+            return;
+        }
 
-            $terminos = array_map('trim', preg_split('/[,;.\n]+/', $request->motivo_consulta));
-            $terminosUnicos = array_unique(array_filter($terminos));
+        // Eliminar términos existentes para esta consulta
+        TerminoMotivoConsulta::where('consulta_id', $consulta->id)->delete();
 
-            foreach ($terminosUnicos as $termino) {
+        // Procesar términos del motivo de consulta
+        $terminos = array_map('trim', preg_split('/[,;.\n]+/', $request->motivo_consulta));
+        $terminosUnicos = array_unique(array_filter($terminos));
+
+        foreach ($terminosUnicos as $termino) {
+            try {
                 TerminoMotivoConsulta::create([
                     'consulta_id' => $consulta->id,
                     'termino_mc' => $termino
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error al guardar término de motivo de consulta:', [
+                    'error' => $e->getMessage(),
+                    'termino' => $termino,
+                    'consulta_id' => $consulta->id
                 ]);
             }
         }
     }
 
-    public function buscarPacientePorDNI(Request $request)
+    // En tu controlador (ConsultasController.php)
+    public function buscarPaciente(Request $request)
     {
-        $dni = trim($request->input('dni')); // Eliminar espacios en blanco
-        Log::info('Buscando paciente con DNI:', ['dni' => $dni]);
+        $request->validate([
+            'dni' => 'required|string|max:8'
+        ]);
 
-        // Buscar el paciente por DNI
-        $paciente = Paciente::where('dni', $dni)->first();
+        $paciente = Paciente::where('dni', $request->dni)
+            ->select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno', 'edad', 'sexo', 'telefono', 'direccion', 'email', 'fecha_nacimiento', 'estado_civil', 'ocupacion','procedencia', 'acompañante', 'referido', 'peso')
+            ->first();
 
-        if ($paciente) {
-            Log::info('Paciente encontrado:', ['paciente' => $paciente]);
+        if (!$paciente) {
             return response()->json([
-                'success' => true,
-                'paciente' => [
-                    'id' => $paciente->id,
-                    'nombres' => $paciente->nombres,
-                    'apellido_paterno' => $paciente->apellido_paterno,
-                    'apellido_materno' => $paciente->apellido_materno,
-                    'dni' => $paciente->dni,
-                    'telefono' => $paciente->telefono,
-                    'email' => $paciente->email,
-                    'fecha_nacimiento' => $paciente->fecha_nacimiento,
-                    'edad' => $paciente->edad,
-                    'sexo' => $paciente->sexo,
-                    'procedencia' => $paciente->procedencia,
-                    'acompañante' => $paciente->acompañante,
-                    'referido' => $paciente->referido,
-                    'peso' => $paciente->peso,
-                    'estado_civil' => $paciente->estado_civil,
-                    'ocupacion' => $paciente->ocupacion,
-                    'direccion' => $paciente->direccion,
-                ],
-            ]);
+                'success' => false,
+                'message' => 'Paciente no encontrado'
+            ], 404);
         }
-        
-        Log::warning('Paciente no encontrado para DNI:', ['dni' => $dni]);
-        return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
+
+        return response()->json([
+            'success' => true,
+            'paciente' => $paciente
+        ]);
     }
 
     public function generarPDF($id)
     {
         try {
-            // Obtener la consulta
-            $consulta = Consulta::findOrFail($id);
+            // Obtener la consulta con relaciones
+            $consulta = Consulta::with(['paciente', 'examen'])->findOrFail($id);
             
             if (!$consulta->paciente) {
                 Log::error('La consulta no tiene un paciente asociado:', ['consulta_id' => $id]);
                 return redirect()->back()->with('error', 'La consulta no tiene un paciente asociado.');
             }
 
-            Log::info('Consulta encontrada:', ['consulta' => $consulta]);
+            // Fechas importantes
+            $fechaActual = now()->format('d/m/Y');
+            $horaActual = now()->format('H:i');
+            $fechaConsulta = $consulta->created_at->format('d/m/Y');
 
-            // Obtener la fecha actual
-            $fechaActual = now()->format('d/m/Y'); // Formato: día/mes/año
+            // Convertir imágenes a base64
+            $images = [
+                'logo' => $this->imageToBase64(public_path('img/logoVisualOsf.png')),
+                'ojo_derecho' => $this->imageToBase64(public_path('img/fondo_ojo_derecho.png')),
+                'ojo_izquierdo' => $this->imageToBase64(public_path('img/fondo_ojo_izquierdo.png'))
 
-            // Convertir la imagen del fondo de ojo a base64
-            $imagePathFondoOjo = public_path('img/fondo_ojo.png');
-            if (!file_exists($imagePathFondoOjo)) {
-                Log::error('La imagen del fondo de ojo no existe en la ruta:', ['ruta' => $imagePathFondoOjo]);
-                return redirect()->back()->with('error', 'La imagen del fondo de ojo no existe.');
-            }
-            $imageDataFondoOjo = base64_encode(file_get_contents($imagePathFondoOjo));
-            $imageSrcFondoOjo = 'data:image/png;base64,' . $imageDataFondoOjo;
-            Log::info('Imagen del fondo de ojo convertida a base64:', ['imageSrcFondoOjo' => $imageSrcFondoOjo]);
+            ];
 
-            // Convertir la imagen del logo a base64
-            $imagePathLogo = public_path('img/logoVisualOsf.png');
-            if (!file_exists($imagePathLogo)) {
-                Log::error('La imagen del logo no existe en la ruta:', ['ruta' => $imagePathLogo]);
-                return redirect()->back()->with('error', 'La imagen del logo no existe.');
-            }
-            $imageDataLogo = base64_encode(file_get_contents($imagePathLogo));
-            $imageSrcLogo = 'data:image/png;base64,' . $imageDataLogo;
-            Log::info('Imagen del logo convertida a base64:', ['imageSrcLogo' => $imageSrcLogo]);
+            // Obtener el código de consulta (usar el existente o generar uno)
+            $codigoConsulta = $consulta->codigo_consulta ?? 'CON-' . str_pad($consulta->id, 6, '0', STR_PAD_LEFT);
 
             // Pasar datos a la vista
             $pdf = Pdf::loadView('consultas.pdf', [
                 'consulta' => $consulta,
-                'imageSrcFondoOjo' => $imageSrcFondoOjo, // Pasar la imagen del fondo de ojo en base64
-                'imageSrcLogo' => $imageSrcLogo, // Pasar la imagen del logo en base64
-                'fechaActual' => $fechaActual, // Pasar la fecha actual
+                'images' => $images,
+                'fechaActual' => $fechaActual,
+                'horaActual' => $horaActual,
+                'fechaConsulta' => $fechaConsulta,
+                'codigoConsulta' => $codigoConsulta  // Pasar el código a la vista
             ]);
 
             // Configurar DomPDF
             $pdf->setOptions([
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => true, // Habilitar carga de recursos remotos
+                'isRemoteEnabled' => true,
                 'defaultFont' => 'sans-serif',
-                'enable_css_float' => true, // Habilitar soporte para CSS float
+                'enable_css_float' => true,
+                'dpi' => 300
             ]);
 
-            // Ruta de la carpeta del paciente
-            $carpetaPaciente = 'pacientes/' . $consulta->paciente->dni;
+            // Guardar el PDF
+            $filePath = $this->guardarPDF($consulta, $pdf);
 
-            $carpetaHistorialClinico = $carpetaPaciente . '/historial_clinico';
-
-             // Crear la carpeta si no existe
-            if (!Storage::disk('public')->exists($carpetaHistorialClinico)) {
-                Storage::disk('public')->makeDirectory($carpetaHistorialClinico);
-            }
-
-            // Nombre del archivo PDF
-            $nombreArchivo = 'consulta_' . $consulta->id . '-' . $consulta->paciente->dni . '.pdf';
-            Log::info('Nombre del archivo PDF:', ['nombreArchivo' => $nombreArchivo]);
-
-            // Guardar el PDF en la carpeta de historial clínico
-            Storage::disk('public')->put($carpetaHistorialClinico . '/' . $nombreArchivo, $pdf->output());
-
-            // Retornar una respuesta JSON o redirigir
             return response()->json([
                 'success' => true,
                 'message' => 'PDF generado y guardado correctamente.',
-                'path' => $carpetaHistorialClinico . '/' . $nombreArchivo,
+                'path' => $filePath,
+                'download_url' => Storage::url($filePath)
             ]);
+
         } catch (\Exception $e) {
-            // Manejar errores
             Log::error('Error al generar el PDF:', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
@@ -1143,6 +1233,31 @@ class ConsultaController extends Controller
         }
     }
 
+    // Método auxiliar para convertir imágenes a base64
+    private function imageToBase64($path)
+    {
+        if (!file_exists($path)) {
+            throw new \Exception("Imagen no encontrada: $path");
+        }
+        $type = pathinfo($path, PATHINFO_EXTENSION);
+        $data = file_get_contents($path);
+        return 'data:image/' . $type . ';base64,' . base64_encode($data);
+    }
+
+    // Método auxiliar para guardar el PDF
+    private function guardarPDF($consulta, $pdf)
+    {
+        $directory = 'pacientes/' . $consulta->paciente->dni . '/historial_clinico';
+        $filename = 'consulta_' . $consulta->id . '_' . now()->format('YmdHis') . '.pdf';
+        
+        if (!Storage::disk('public')->exists($directory)) {
+            Storage::disk('public')->makeDirectory($directory);
+        }
+        
+        Storage::disk('public')->put($directory . '/' . $filename, $pdf->output());
+        
+        return $directory . '/' . $filename;
+    }
     // Verificar si existe una consulta de inicio para el paciente
     public function verificarConsultaInicio($pacienteId)
     {
@@ -1160,23 +1275,21 @@ class ConsultaController extends Controller
         }
     }
 
-    public function buscarTerminosBiomicroscopia(Request $request)
-    {
-        $query = $request->input('query');
-
-        $terminos = TerminoBiomicroscopia::where('termino', 'LIKE', "%$query%")
-            ->pluck('termino');
-
-        return response()->json($terminos);
-    }
-
     public function buscarTerminosMotivoConsulta(Request $request)
     {
-        $query = $request->input('query');
+        $query = trim($request->input('query', ''));
+        
+        if (empty($query)) {
+            return response()->json([]);
+        }
 
-        $terminos_mc = TerminoMotivoConsulta::where('termino_mc', 'LIKE', "%$query%")
+        $terminos = TerminoMotivoConsulta::select('termino_mc')
+            ->where('termino_mc', 'LIKE', "%{$query}%")
+            ->groupBy('termino_mc')
+            ->orderBy('termino_mc')
+            ->limit(10)
             ->pluck('termino_mc');
-
-        return response()->json($terminos_mc);
+            
+        return response()->json($terminos);
     }
 }

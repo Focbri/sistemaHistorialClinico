@@ -3,17 +3,47 @@ import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
+    const { flash } = usePage().props;
+    const [showNotification, setShowNotification] = useState(false);
+    const [notificationMessage, setNotificationMessage] = useState('');
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
 
+    useEffect(() => {
+        if (flash.success) {
+            setNotificationMessage(flash.success);
+            setShowNotification(true);
+            
+            const timer = setTimeout(() => {
+                setShowNotification(false);
+            }, 5000);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [flash]);
     return (
-        <div className="min-h-screen bg-[#7CDBFB]">
-            <nav className="border-b border-gray-100 bg-white">
+        <div className="min-h-screen bg-[#F5F5F5]">
+            {/* Notificación Flash */}
+            {showNotification && (
+                <div className="fixed top-4 right-4 z-50">
+                    <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center">
+                        <span>{notificationMessage}</span>
+                        <button 
+                            onClick={() => setShowNotification(false)}
+                            className="ml-4 text-white hover:text-gray-200"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <nav className=" bg-[#005B96]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">

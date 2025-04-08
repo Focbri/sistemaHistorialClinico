@@ -10,6 +10,9 @@ export default defineConfig({
         }),
         react(),
     ],
+    optimizeDeps: {
+        include: ['react', 'react-dom', 'react-modal'],
+    },
     server: {
         hmr: {
             host: 'localhost',

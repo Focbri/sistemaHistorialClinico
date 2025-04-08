@@ -1,7 +1,13 @@
 import React from "react";
 
 // components/PlanSelector.jsx
-const PlanSelector = React.memo(({ opcionesPlan, handleSeleccionPlan, showPlanText, setShowPlanText }) => {
+const PlanSelector = React.memo(({ opcionesPlan, handleSeleccionPlan, showPlanText, setShowPlanText, readOnly = false }) => {
+    // Función dummy para cuando esté en modo lectura
+    const handleChange = (field, value) => {
+        if (!readOnly && setData) {
+            setData(field, value);
+        }
+    };
     return (
         <div className="mb-4">
             <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">
@@ -23,7 +29,9 @@ const PlanSelector = React.memo(({ opcionesPlan, handleSeleccionPlan, showPlanTe
                                 id={`plan-${opcion.id}`}
                                 checked={opcion.seleccionado}
                                 onChange={() => handleSeleccionPlan(opcion.id)}
-                                className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                className={`rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50${
+                                    readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                                }`}   
                             />
                             <label
                                 htmlFor={`plan-${opcion.id}`}

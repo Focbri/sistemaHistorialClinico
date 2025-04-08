@@ -15,7 +15,7 @@ class Consulta extends Model
      */
     use HasFactory;
 
-    protected $fillable = [
+    protected $fillable = [ 
         'paciente_id',
         'codigo_consulta',
         'antecedentes_personales_hta',

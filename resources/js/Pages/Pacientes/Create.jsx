@@ -1,7 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useEffect, useRef, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function PacientesCreate({ auth }) {
+    const fileInputRef = useRef(null);
+    const [previewImage, setPreviewImage] = useState(null);
+
     const { data, setData, post, errors } = useForm({
         apellido_paterno: '',
         apellido_materno: '',
@@ -19,11 +23,35 @@ export default function PacientesCreate({ auth }) {
         procedencia: '',
         acompañante: '',
         referido: '',
+        foto_perfil: '',
     });
+
+     // Manejar cambio de imagen
+     const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData('foto_perfil', file);
+            
+            // Crear vista previa
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('pacientes.store'));
+        post(route('pacientes.store'), {
+            onError: (errors) => {
+                // Inertia automáticamente manejará los errores de validación
+                // que muestras en tu formulario
+                if (errors.dni && errors.dni.includes('ya ha sido tomado')) {
+                    // Puedes manejar errores específicos aquí si lo necesitas
+                }
+            }
+        });
     };
 
     return (
@@ -38,6 +66,7 @@ export default function PacientesCreate({ auth }) {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <form onSubmit={handleSubmit}>
+                                {/*SECCION SUPERIRO DE DATOS */}
                                 <div className='mb-8'>
                                     <h3 className="text-2xl uppercase font-semibold leading-tight text-gray-800 border-b">Datos Personales</h3>
                                 </div>
@@ -75,6 +104,7 @@ export default function PacientesCreate({ auth }) {
                                         </div>
                                     </div>
                                     {/*SEGUNDO BLOQUE DE DATOS PERSONALES*/ }
+                                    
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Fecha Nacimiento</label>
@@ -142,11 +172,16 @@ export default function PacientesCreate({ auth }) {
                                             <div className="mb-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">DNI</label>
                                                 <input required
-                                                    type="text"
+                                                    type="number"
+                                                    min={8}
+                                                    max={99999999}
                                                     maxLength={8}
-                                                    minLength={8}
+                                                    onChange={(e) => {
+                                                        if (e.target.value.length <= 8) {
+                                                            setData('dni', e.target.value);
+                                                        }
+                                                    }}
                                                     value={data.dni}
-                                                    onChange={(e) => setData('dni', e.target.value)}
                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                                 />
                                                 {errors.dni && <p className="text-sm text-red-500">{errors.dni}</p>}
@@ -257,10 +292,16 @@ export default function PacientesCreate({ auth }) {
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Teléfono</label>
                                             <input required
-                                                type="text"
-                                                maxLength={9}
+                                                type="number"                                                
                                                 value={data.telefono}
-                                                onChange={(e) => setData('telefono', e.target.value)}
+                                                min={0}
+                                                max={999999999}
+                                                maxLength={9}
+                                                onChange={(e) => {
+                                                    if (e.target.value.length <= 9) {
+                                                        setData('telefono', e.target.value);
+                                                    }
+                                                }}
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                             />
                                             {errors.telefono && <p className="text-sm text-red-500">{errors.telefono}</p>}

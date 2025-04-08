@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 //use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Consulta;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class Paciente extends Model
 {
@@ -33,6 +35,7 @@ class Paciente extends Model
         'procedencia',
         'acompañante',
         'referido',
+        'foto_perfil',
     ];
 
     /**

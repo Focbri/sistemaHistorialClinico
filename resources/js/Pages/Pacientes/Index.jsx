@@ -1,14 +1,45 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 
 export default function PacientesIndex({ auth, pacientes }) {
     const [searchDni, setSearchDni] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [pacienteToDelete, setPacienteToDelete] = useState(null);
 
     // Función para buscar pacientes por DNI
     const handleSearch = (e) => {
         e.preventDefault();
         router.get(route('pacientes.index'), { dni: searchDni });
+    };
+
+    // Abrir modal de confirmación
+    const openDeleteModal = (paciente) => {
+        setPacienteToDelete(paciente);
+        setIsDeleteModalOpen(true);
+    };
+
+    // Cerrar modal
+    const closeDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setPacienteToDelete(null);
+    };
+
+     // Confirmar eliminación
+     const confirmDelete = () => {
+        if (pacienteToDelete) {
+            router.delete(route('pacientes.destroy', pacienteToDelete.id), {
+                onSuccess: () => {
+                    closeDeleteModal();
+                    // Inertia manejará automáticamente la recarga de la página
+                },
+                onError: () => {
+                    closeDeleteModal();
+                    // Puedes agregar aquí un toast de error si lo deseas
+                },
+            });
+        }
     };
 
     const handleDelete = (id) => {
@@ -32,6 +63,44 @@ export default function PacientesIndex({ auth, pacientes }) {
             header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Pacientes</h2>}
         >
             <Head title="Pacientes" />
+
+            {/* Modal de Confirmación */}
+            <Dialog
+                open={isDeleteModalOpen}
+                onClose={closeDeleteModal}
+                className="relative z-50"
+            >
+                {/* Fondo oscuro */}
+                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+                {/* Contenedor del modal centrado */}
+                <div className="fixed inset-0 flex items-center justify-center p-4">
+                    <DialogPanel className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                        <DialogTitle className="text-lg font-bold text-gray-900">
+                            Confirmar Eliminación
+                        </DialogTitle>
+                        
+                        <Description className="mt-2">
+                            ¿Estás seguro de que deseas eliminar al paciente {pacienteToDelete?.nombres} {pacienteToDelete?.apellido_paterno} (DNI: {pacienteToDelete?.dni}) y todas sus consultas relacionadas?
+                        </Description>
+
+                        <div className="mt-6 flex justify-end space-x-3">
+                            <button
+                                onClick={closeDeleteModal}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            >
+                                Eliminar
+                            </button>
+                        </div>
+                    </DialogPanel>
+                </div>
+            </Dialog>
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -101,9 +170,10 @@ export default function PacientesIndex({ auth, pacientes }) {
                                                             Editar
                                                         </Link>
 
+                                                        {/* Modifica solo el botón de eliminar para usar el nuevo modal */}
                                                         {(auth.user.role === 'admin' || auth.user.role === 'root') && (
                                                             <button
-                                                                onClick={() => handleDelete(paciente.id)}
+                                                                onClick={() => openDeleteModal(paciente)}
                                                                 className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                                                             >
                                                                 Eliminar

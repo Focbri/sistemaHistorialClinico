@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import { useState, useEffect, useCallback } from 'react';
 
 import PacienteForm from '@/Components/PacienteForm';
@@ -118,14 +118,51 @@ export default function ConsultasCreate({ auth }) {
         exam_old_cerca_dip: '',
     });
 
+    // Estado para controlar qué secciones están expandidas
+    const [expandedSections, setExpandedSections] = useState({
+        antecedentesPersonales: false,
+        antecedentesFamiliares: false,
+        cirugiasPrevias: false,
+        motivoConsulta: false,
+        examenOcular: false,
+        biomicroscopia: false,
+        fondoOjo: false,
+        diagnostico: false,
+        tratamiento: false,
+        plan: false,
+        examenesIndicados: false,
+        evoluciones: false
+    });
+
+    // Función para alternar secciones (modificada)
+    const toggleSection = (section) => {
+        setExpandedSections(prev => {
+            // Crear un nuevo objeto con todas las secciones cerradas
+            const newSections = Object.keys(prev).reduce((acc, key) => {
+                acc[key] = false;
+                return acc;
+            }, {});
+            
+            // Abrir solo la sección seleccionada si no estaba ya abierta
+            newSections[section] = !prev[section];
+            
+            return newSections;
+        });
+    };
+
     const [showHTAText, setShowHTAText] = useState(false);
     const [showDMText, setShowDMText] = useState(false);
-    const [showAlergiasText, setShowAlergiasText] = useState(false);
+    const [showAlergiasText, setShowAlergiasText] = useState(false); 
     const [showPlanText, setShowPlanText] = useState(false);
     const [showOtrosText, setShowOtrosText] = useState(false);
 
-    const [pacienteEncontrado, setPacienteEncontrado] = useState(false);
+    const [historialDiagnosticos, setHistorialDiagnosticos] = useState([]);
+
     const [tipoConsulta, setTipoConsulta] = useState('inicio'); // Estado para el tipo de consulta
+
+    // Estado para controlar si es la primera consulta
+    const [isFirstConsulta, setIsFirstConsulta] = useState(false);
+    const [pacienteEncontrado, setPacienteEncontrado] = useState(false);
 
     const [opcionesPlan, setOpcionesPlan] = useState([
         { id: 1, nombre: 'Plan A', seleccionado: false },
@@ -342,10 +379,34 @@ export default function ConsultasCreate({ auth }) {
         return () => document.removeEventListener('mousedown', handleClickOutsideOI);
     }, [marcadorActivoOI]);
 
-    // Función para buscar paciente
+    useEffect(() => {
+        setData('tipo_consulta', tipoConsulta);
+    }, [tipoConsulta]);
+
+     // Efecto para verificar consulta inicial cuando cambia el paciente_id
+     useEffect(() => {
+        const verificarTipoConsulta = async () => {
+            if (data.paciente_id) {
+                try {
+                    const response = await fetch(`/consultas/verificar-inicio/${data.paciente_id}`);
+                    const result = await response.json();
+                    
+                    setIsFirstConsulta(!result.existe);
+                    setData('tipo_consulta', result.existe ? 'evolucion' : 'inicio');
+                } catch (error) {
+                    console.error('Error verificando consulta inicial:', error);
+                    setIsFirstConsulta(false);
+                    setData('tipo_consulta', 'evolucion');
+                }
+            }
+        };
+        
+        verificarTipoConsulta();
+    }, [data.paciente_id]);
+    
     const buscarPaciente = async () => {
         if (!data.dni) return;
-    
+        
         try {
             const response = await fetch('/consultas/buscar-paciente', {
                 method: 'POST',
@@ -356,49 +417,37 @@ export default function ConsultasCreate({ auth }) {
                 body: JSON.stringify({ dni: data.dni.trim() }),
             });
     
-            if (!response.ok) {
-                throw new Error('Paciente no encontrado');
-            }
+            if (!response.ok) throw new Error('Paciente no encontrado');
     
             const result = await response.json();
+            console.log('Respuesta del servidor:', result); // Para depuración
     
-            if (result.success) {
-                setData({
-                    ...data,
+            if (result.success && result.paciente) {
+                setData(prev => ({
+                    ...prev,
                     paciente_id: result.paciente.id,
-                    nombres: result.paciente.nombres,
-                    apellido_paterno: result.paciente.apellido_paterno,
-                    apellido_materno: result.paciente.apellido_materno,
-                    telefono: result.paciente.telefono,
-                    email: result.paciente.email,
-                    fecha_nacimiento: result.paciente.fecha_nacimiento,
-                    edad: result.paciente.edad,
-                    sexo: result.paciente.sexo,
-                    peso: result.paciente.peso,
-                    dni: result.paciente.dni,
-                    estado_civil: result.paciente.estado_civil,
-                    ocupacion: result.paciente.ocupacion,
-                    procedencia: result.paciente.procedencia,
-                    direccion: result.paciente.direccion,
-                    acompañante: result.paciente.acompañante,
-                    referido: result.paciente.referido,
-                });
-    
+                    nombres: result.paciente.nombres || '',
+                    apellido_paterno: result.paciente.apellido_paterno || '',
+                    apellido_materno: result.paciente.apellido_materno || '',
+                    telefono: result.paciente.telefono || '',
+                    email: result.paciente.email || '',
+                    fecha_nacimiento: result.paciente.fecha_nacimiento || '',
+                    edad: result.paciente.edad || '',
+                    sexo: result.paciente.sexo || '',
+                    peso: result.paciente.peso || '',
+                    estado_civil: result.paciente.estado_civil || '',
+                    ocupacion: result.paciente.ocupacion || '',
+                    direccion: result.paciente.direccion || '',
+                    procedencia: result.paciente.procedencia || '',
+                    acompañante: result.paciente.acompañante || '',
+                    referido: result.paciente.referido || '',
+                }));
                 setPacienteEncontrado(true);
-    
-                // Verificar si ya existe una consulta de inicio para este paciente
-                const existeConsultaInicio = await verificarConsultaInicio(result.paciente.id);
-                if (existeConsultaInicio) {
-                    setTipoConsulta('evolucion'); // Cambiar a tipo EVOLUCION
-                    setData('tipo_consulta', 'evolucion'); // Actualizar el campo en el estado de data
-                } else {
-                    setTipoConsulta('inicio'); // Mantener tipo INICIO
-                    setData('tipo_consulta', 'inicio'); // Actualizar el campo en el estado de data
-                }
             } else {
-                throw new Error(result.message || 'Paciente no encontrado');
+                throw new Error(result.message || 'Datos del paciente incompletos');
             }
         } catch (error) {
+            console.error('Error al buscar paciente:', error);
             alert(error.message);
             setPacienteEncontrado(false);
         }
@@ -499,6 +548,7 @@ export default function ConsultasCreate({ auth }) {
 
         // Crear un FormData para enviar las imágenes
         const formData = new FormData();
+        setData('tipo_consulta', tipoConsulta);
         
         formData.append('paciente_id', data.paciente_id);
         formData.append('tipo_consulta', data.tipo_consulta);
@@ -529,533 +579,889 @@ export default function ConsultasCreate({ auth }) {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
+            onSuccess: () => {
+                // Limpiar el formulario o redirigir
+                setPreviewImages([]);
+                setPreviewArchivos([]);
+            },
+            onError: (errors) => {
+                if (errors.tipo_consulta) {
+                    alert('Error: ' + errors.tipo_consulta);
+                    // Forzar a tipo evolución si hubo error
+                    setData('tipo_consulta', 'evolucion');
+                }
+            }
         });
     };
 
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Crear Nueva Consulta</h2>}
         >
             <Head title="Crear Nueva Consulta" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 bg-white border-b border-gray-200">
+            <div>
+                <div className="mx-auto">
+                    <div className="overflow-hidden bg-white shadow-sm">
+                        <div className="bg-[#FFFFFF]">
                             <form onSubmit={handleSubmit}>
-                                {/* Campo para ingresar el DNI y buscar paciente */}
-                                <PacienteForm
-                                    data={data}
-                                    setData={setData}
-                                    pacienteEncontrado={pacienteEncontrado}
-                                    buscarPaciente={buscarPaciente}
-                                    errors={errors}
-                                />
-
-                                {/* Mostrar datos del paciente encontrado */}
-                                {pacienteEncontrado && (
-                                    <div className="mb-8 py-4 px-8 border border-gray-200 rounded-md">
-                                        <div className='mb-4'>
-                                            <label className="inline-block text-xl font-medium text-black border-b-2 border-black uppercase">Datos Personales</label>
-                                        </div>                                       
-                                        <div className='grid grid-cols-2 gap-4'>
-                                            <div className='flex flex-col'>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Apellido Paterno:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.apellido_paterno}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Apellido Materno:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.apellido_materno}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Nombres:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.nombres}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className='flex flex-col'>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Fecha de Nacimiento:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.fecha_nacimiento}</p>
-                                                </div>
-                                                <div className='grid grid-cols-2 '>
-                                                    <div className="mb-1 flex gap-2">
-                                                        <label className="text-sm text-gray-700"><strong>Edad:</strong></label>
-                                                        <p className="text-sm text-gray-700">{data.edad}</p>
-                                                    </div>
-                                                    <div className="mb-1 flex gap-2">
-                                                        <label className="text-sm text-gray-700"><strong>Peso:</strong></label>
-                                                        <p className="text-sm text-gray-700">{data.peso}</p>
-                                                    </div>
-                                                    <div className="mb-1 flex gap-2">
-                                                        <label className="text-sm text-gray-700"><strong>Sexo:</strong></label>
-                                                        <p className="text-sm text-gray-700">{data.sexo}</p>
-                                                    </div>
-                                                    <div className="mb-1 flex gap-2">
-                                                        <label className="text-sm text-gray-700"><strong>DNI:</strong></label>
-                                                        <p className="text-sm text-gray-700">{data.dni}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <hr className='my-6'/>
-                                        <div className='grid grid-cols-2 gap-4'>
-                                            <div className='flex flex-col'>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Estado Civil:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.estado_civil}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Ocupación:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.ocupacion}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Procedencia:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.procedencia}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Domicilio:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.direccion}</p>
-                                                </div>
-                                            </div>
-                                            <div className='flex flex-col'>
-                                                <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Acompañante:</strong></label>
-                                                <p className="text-sm text-gray-700">{data.acompañante}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Referido:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.referido}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Teléfono:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.telefono}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Email:</strong></label>
-                                                    <p className="text-sm text-gray-700">{data.email}</p>
-                                                </div>
-                                            </div>
-                                        </div>                                        
-                                        
+                                {/* SECCION PARA Mostrar datos del paciente (siempre visible, pero vacío inicialmente) */}
+                                <div className="py-4 px-4 bg-[#FFFFFF]">
+                                    <div className='flex items-center justify-end'>
+                                        {/* SECCION para ingresar el DNI y buscar paciente */}
+                                        <PacienteForm
+                                            data={data}
+                                            setData={setData}
+                                            pacienteEncontrado={pacienteEncontrado}
+                                            buscarPaciente={buscarPaciente}
+                                            errors={errors}
+                                        />
                                     </div>
-                                )}
+                                    
+                                    <div className='grid grid-cols-4 gap-4 mt-4'>
+                                    {/* Columna 1: Imagen del paciente - ocupa 1 parte */}
+                                    <div className='flex flex-col items-center col-span-1'>
+                                        <div className='w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-2'>
+                                            {data.foto ? (
+                                                <img 
+                                                    src={data.foto} 
+                                                    alt="Foto del paciente" 
+                                                    className="w-full h-full rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="text-gray-500">Sin foto</span>
+                                            )}
+                                        </div>
+                                        <button
+                                            type='button'
+                                            className="text-sm text-blue-500 hover:text-blue-700"
+                                            onClick={() => document.getElementById('file-upload').click()}
+                                        >
+                                            Cambiar foto
+                                        </button>
+                                        <input 
+                                            id="file-upload"
+                                            type="file" 
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                if (e.target.files[0]) {
+                                                    const reader = new FileReader();
+                                                    reader.onload = (event) => {
+                                                        setData('foto', event.target.result);
+                                                    };
+                                                    reader.readAsDataURL(e.target.files[0]);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Columna 2: Datos concatenados del paciente - ocupa 2 partes */}
+                                    <div className='flex flex-col col-span-2'>
+                                        <div className="mb-2">
+                                            <p className="text-lg text-[#333333]">
+                                                {`${data.nombres || ''}, ${data.apellido_paterno || ''} ${data.apellido_materno || ''}`.trim() || '-'}
+                                            </p>
+                                        </div>
+                                        <div className='grid grid-cols-2'>
+                                            <div className="mb-2">
+                                            <p className="text-sm text-[#333333]">
+                                                {`${data.fecha_nacimiento || ''} (${data.edad || ''} años)`.trim() || '-'}
+                                            </p>
+                                            </div>
+                                            
+                                            <div className="mb-2 flex gap-4">
+                                                <p className="text-sm text-[#333333]">{`DNI: ${data.dni || ''}`.trim() || '-'}</p>
+                                                <p className="text-sm text-[#333333]">{`Sexo: ${data.sexo || ''}`.trim() || '-'}</p>
+                                            </div>
+                                            
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`TELF: ${data.telefono || ''} / ${data.peso || ''} kg`.trim() || '-'}</p>
+                                            </div>
+                                            
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`EMAIL: ${data.email || ''}`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`Peso: ${data.peso || ''} kg`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`ESTADO CIVIL: ${data.estado_civil || ''}`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`OCUPACION: ${data.ocupacion || ''}`.trim() || '-'}</p>
+                                            </div>
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`PROCEDENCIA: ${data.procedencia || ''}`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`DOMICILIO: ${data.direccion || ''}`.trim() || '-'}</p>
+                                            </div>
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`ACOMPAÑANTE: ${data.acompañante || ''}`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`REFERIDO: ${data.referido || ''}`.trim() || '-'}</p>
+                                            </div>                                    
+                                        </div>
+                                    </div>
+
+                                    {/* Columna 3: Historial de diagnósticos - ocupa 1 parte */}
+                                    <div className='flex flex-col col-span-1'>
+                                        <label className="text-sm font-semibold text-[#333333] mb-2">Historial de Diagnósticos:</label>
+                                        <div className="border border-gray-200 rounded-md p-2 overflow-y-auto">
+                                            {data.historialDiagnosticos && data.historialDiagnosticos.length > 0 ? (
+                                                <ul className="space-y-1">
+                                                    {data.historialDiagnosticos.map((diagnostico, index) => (
+                                                        <li key={index} className="text-sm p-1 hover:bg-gray-100 rounded">
+                                                            {diagnostico.fecha} - {diagnostico.codigo}: {diagnostico.descripcion}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-sm text-gray-500">No hay diagnósticos registrados</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
 
 {/*--------------------------- Campos Consulta INICIO ------------------------------------------------------*/}
 
-                                {tipoConsulta === 'inicio' && ( // Mostrar solo si es tipo INICIO
-                                <>
-                                    <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
-                                        <h2>Consulta de Inicio</h2>
-                                    </div>
-                                    <AntecedentesPersonales
-                                        data={data}
-                                        setData={setData}
-                                        showHTAText={showHTAText}
-                                        setShowHTAText={setShowHTAText}
-                                        showDMText={showDMText}
-                                        setShowDMText={setShowDMText}
-                                        showAlergiasText={showAlergiasText}
-                                        setShowAlergiasText={setShowAlergiasText}
-                                        showOtrosText={showOtrosText}
-                                        setShowOtrosText={setShowOtrosText}
-                                    />
-                                    
-                                    <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Antecedentes Patológicos Familiares</label>
-                                    <input
-                                        type="text"
-                                        value={data.antecedentes_patologicos_familiares}
-                                        onChange={(e) => setData('antecedentes_patologicos_familiares', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                    />
-                                    {errors.antecedentes_patologicos_familiares && <p className="text-sm text-red-500">{errors.antecedentes_patologicos_familiares}</p>}
-                                    </div>
-
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Cirugías Previas</label>
-                                    <input
-                                        type="text"
-                                        value={data.cirugias_previas}
-                                        onChange={(e) => setData('cirugias_previas', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                    />
-                                    {errors.cirugias_previas && <p className="text-sm text-red-500">{errors.cirugias_previas}</p>}
-                                </div>
-
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Motivo de Consulta</label>
-                                    <TerminoMotivoConsultaSearch 
-                                        initialValue={data.motivo_consulta || ''}
-                                        onSelectTerm={(termsArray) => {
-                                            // termsArray es siempre un array aquí
-                                            setData('motivo_consulta', termsArray.join(', '));
-                                        }}
-                                    />
-                                </div>
-                                <hr className='my-8'/>
-                                <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
-                                <hr className='my-8'/>
-
-                                <div className='mb-4'>
-                                    <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
-                                    <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
-                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
-                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
-                                        <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
-                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData('biomicroscopia_movoculares_od', termsArray.join(', ') )}/>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData('biomicroscopia_movoculares_oi', termsArray.join(', ') )}/>
-                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_parpados_od: termsArray.join(', ') })}/>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_parpados_oi: termsArray.join(', ') })}/>
-                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cornea_od: termsArray.join(', ') })}/>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cornea_oi: termsArray.join(', ') })}/>
-                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_corneaconj_od: termsArray.join(', ') })}/>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_corneaconj_oi: termsArray.join(', ') })}/>
-                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_ca_od: termsArray.join(', ') })}/>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_ca_oi: termsArray.join(', ') })}/>
-                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_iris_od: termsArray.join(', ') })}/>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_iris_oi: termsArray.join(', ') })}/>
-                                        <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cristalino_od: termsArray.join(', ') })}/>
-                                        <TerminoBiomicroscopiaSearch
-                                        onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cristalino_oi: termsArray.join(', ') })}/>
-                                    </div>
-                                </div>
-
-                                <FondoOjo
-                                    marcadoresOD={marcadores}  // Cambiado de 'marcadores' a 'marcadoresOD'
-                                    marcadoresOI={marcadoresOI}
-                                    marcadorActivoOD={marcadorActivo}
-                                    marcadorActivoOI={marcadorActivoOI}
-                                    handleMarkerClickOD={handleMarkerClick}
-                                    handleMarkerClickOI={handleMarkerClickOI}
-                                    handleSeleccionOpcionOD={handleSeleccionOpcion}
-                                    handleSeleccionOpcionOI={handleSeleccionOpcionOI}
-                                    data={data}
-                                    setData={setData}
-                                />                                
-
-                                {/* Campo de búsqueda CIE10 */}
-                                <div className="mb-4 mt-8">
-                                    <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
-                                    <Cie10Search onSelectResult={handleSelectResult} />
-                                    {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
-                                </div>
-
-                                {/* Mostrar las opciones seleccionadas */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Opciones Seleccionadas</label>
-                                    <div className="mt-2 p-2 border border-gray-200 rounded-md">
-                                        {selectedResults.map((result, index) => (
-                                            <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
-                                                <span>{result}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
-                                    <input
-                                        type="text"
-                                        value={data.tratamiento}
-                                        onChange={(e) => setData('tratamiento', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                    />
-                                    {errors.tratamiento && <p className="text-sm text-red-500">{errors.tratamiento}</p>}
-                                </div>
-
-                                <PlanSelector
-                                    opcionesPlan={opcionesPlan}
-                                    handleSeleccionPlan={handleSeleccionPlan}
-                                    showPlanText={showPlanText}
-                                    setShowPlanText={setShowPlanText}
-                                />
-                                
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Imágenes)</label>
-                                    <input
-                                        type="file"
-                                        onChange={handleFileChangeImages} // Nueva función para manejar imágenes
-                                        multiple // Permitir múltiples archivos
-                                        accept="image/*" // Solo permitir imágenes
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.examenes_indicados_img && (
-                                        <p className="text-sm text-red-500">{errors.examenes_indicados_img}</p>
-                                    )}
-
-                                    {/* Mostrar previsualizaciones de imágenes */}
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        {previewImages.map((image, index) => (
-                                            <div key={index} className="relative">
-                                                <img
-                                                    src={image.preview}
-                                                    alt={`Previsualización ${index + 1}`}
-                                                    className="w-24 h-24 object-cover rounded-md"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveImage(index, 'img')} // Eliminar imagen
-                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                                                >
-                                                    &times;
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Archivos)</label>
-                                    <input
-                                        type="file"
-                                        onChange={handleFileChangeArchivos} // Nueva función para manejar archivos
-                                        multiple // Permitir múltiples archivos
-                                        accept=".pdf,.doc,.docx,.xls,.xlsx" // Solo permitir archivos específicos
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                    />
-                                    {errors.examenes_indicados_archivos && (
-                                        <p className="text-sm text-red-500">{errors.examenes_indicados_archivos}</p>
-                                    )}
-
-                                    {/* Mostrar nombres de archivos subidos */}
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        {previewArchivos.map((archivo, index) => (
-                                            <div key={index} className="relative">
-                                                <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveArchivo(index, 'archivos')} // Eliminar archivo
-                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                                                >
-                                                    &times;
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                    </>
-                                )}
-
-{/*--------------------------------Campos Consulta EVOLUCION ---------------------------------------------------*/}
-                                 
-                                {tipoConsulta === 'evolucion' && ( // Mostrar solo si es tipo EVOLUCION
-                                    <> 
-                                    <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
-                                        <h2>Consulta de Evolución</h2>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 uppercase">Evoluciones</label>
-                                        <input
-                                            type="text"
-                                            value={data.evoluciones}
-                                            onChange={(e) => setData('evoluciones', e.target.value)}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        />
-                                        {errors.evoluciones && <p className="text-sm text-red-500">{errors.evoluciones}</p>}
-                                    </div>
-                                    <hr className='my-8'/>
-                                    <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
-                                    <hr className='my-8'/>
-
-                                    <div className='mb-4'>
-                                        <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
-                                        <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
-                                            <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>Examen Fisico</label>
-                                            <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OD</label>
-                                            <label className='flex justify-center items-center py-2 border border-gray-300 shadow-sm'>OI</label>
-                                            <label className='border-gray-300 shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_movoculares_od: termsArray.join(', ') })}/>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_movoculares_oi: termsArray.join(', ') })}/>
-                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_parpados_od: termsArray.join(', ') })}/>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_parpados_oi: termsArray.join(', ') })}/>
-                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cornea_od: termsArray.join(', ') })}/>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cornea_oi: termsArray.join(', ') })}/>
-                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea Conjuntiva</label>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_corneaconj_od: termsArray.join(', ') })}/>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_corneaconj_oi: termsArray.join(', ') })}/>
-                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_ca_od: termsArray.join(', ') })}/>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_ca_oi: termsArray.join(', ') })}/>
-                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_iris_od: termsArray.join(', ') })}/>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_iris_oi: termsArray.join(', ') })}/>
-                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cristalino_od: termsArray.join(', ') })}/>
-                                            <TerminoBiomicroscopiaSearch
-                                            onSelectTerm={(termsArray) => setData({ ...data, biomicroscopia_cristalino_oi: terms.join(', ') })}/>
-                                        </div>
-                                    </div>
-                                    {/* Fondo de Ojo */}
-                                    <FondoOjo
-                                        marcadoresOD={marcadores}
-                                        marcadoresOI={marcadoresOI}
-                                        marcadorActivoOD={marcadorActivo}
-                                        marcadorActivoOI={marcadorActivoOI}
-                                        handleMarkerClickOD={handleMarkerClick}
-                                        handleMarkerClickOI={handleMarkerClickOI}
-                                        handleSeleccionOpcionOD={handleSeleccionOpcion}
-                                        handleSeleccionOpcionOI={handleSeleccionOpcionOI}
-                                        data={data}
-                                        setData={setData} // ¡Asegúrate de que esta línea está presente!
-                                    />     
-
-                                    {/* Campo de búsqueda CIE10 */}
-                                    <div className="mb-4 mt-8">
-                                        <label className="block text-sm font-medium text-gray-700">Impresión Diagnóstica (CIE10)</label>
-                                        <Cie10Search onSelectResult={handleSelectResult} />
-                                        {errors.impresion_diagnostica && <p className="text-sm text-red-500">{errors.impresion_diagnostica}</p>}
-                                    </div>
-
-                                    {/* Mostrar las opciones seleccionadas */}
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700">Opciones Seleccionadas</label>
-                                        <div className="mt-2 p-2 border border-gray-200 rounded-md">
-                                            {selectedResults.map((result, index) => (
-                                                <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
-                                                    <span>{result}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
-                                        <input
-                                            type="text"
-                                            value={data.tratamiento}
-                                            onChange={(e) => setData('tratamiento', e.target.value)}
-                                            className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                        />
-                                        {errors.tratamiento && <p className="text-sm text-red-500">{errors.tratamiento}</p>}
-                                    </div>
-
-                                    <PlanSelector
-                                        opcionesPlan={opcionesPlan}
-                                        handleSeleccionPlan={handleSeleccionPlan}
-                                        showPlanText={showPlanText}
-                                        setShowPlanText={setShowPlanText}
-                                    />
-
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Imágenes)</label>
-                                        <input
-                                            type="file"
-                                            onChange={handleFileChangeImages} // Nueva función para manejar imágenes
-                                            multiple // Permitir múltiples archivos
-                                            accept="image/*" // Solo permitir imágenes
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        />
-                                        {errors.examenes_indicados_img && (
-                                            <p className="text-sm text-red-500">{errors.examenes_indicados_img}</p>
-                                        )}
-
-                                        {/* Mostrar previsualizaciones de imágenes */}
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            {previewImages.map((image, index) => (
-                                                <div key={index} className="relative">
-                                                    <img
-                                                        src={image.preview}
-                                                        alt={`Previsualización ${index + 1}`}
-                                                        className="w-24 h-24 object-cover rounded-md"
-                                                    />
+                                {/* Contenedor principal con sidebar y contenido */}
+                                <div className="flex flex-col md:flex-row">
+                                    {/* Sidebar */}
+                                    <div className="w-full md:w-64 bg-[#005b96] p-4 flex-shrink-0">
+                                        <div className="sticky top-4 space-y-2">
+                                            <h3 className="text-2xl text-center mb-2">
+                                                {data.tipo_consulta === 'inicio' 
+                                                    ? 'Consulta Inicial' 
+                                                    : 'Consulta Evolución'}
+                                            </h3>
+                                            
+                                            {data.tipo_consulta === 'inicio' ? (
+                                                <>
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleRemoveImage(index, 'img')} // Eliminar imagen
-                                                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                        onClick={() => toggleSection('antecedentesPersonales')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.antecedentesPersonales ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
-                                                        &times;
+                                                        Antecedentes Personales
                                                     </button>
-                                                </div>
-                                            ))}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('antecedentesFamiliares')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.antecedentesFamiliares ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Antecedentes Familiares
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('cirugiasPrevias')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.cirugiasPrevias ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Cirugías Previas
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('motivoConsulta')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.motivoConsulta ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Motivo de Consulta
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('examenOcular')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenOcular ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Examen Ocular
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('biomicroscopia')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.biomicroscopia ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Biomicroscopia
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('fondoOjo')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.fondoOjo ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Fondo de Ojo
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('diagnostico')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.diagnostico ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Diagnóstico
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('tratamiento')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.tratamiento ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Tratamiento
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('plan')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.plan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Plan
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('examenesIndicados')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenesIndicados ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Exámenes Indicados
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('evoluciones')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.evoluciones ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Evoluciones
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('examenOcular')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenOcular ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Examen Ocular
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('biomicroscopia')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.biomicroscopia ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Biomicroscopia
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('fondoOjo')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.fondoOjo ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Fondo de Ojo
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('diagnostico')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.diagnostico ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Diagnóstico
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('tratamiento')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.tratamiento ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Tratamiento
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('plan')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.plan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Plan
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('examenesIndicados')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenesIndicados ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Exámenes Indicados
+                                                    </button>
+                                                </>
+                                            )}
+                                            <div className="flex items-center justify-center">
+                                                <Link
+                                                    href={route('consultas.index')}
+                                                    className="px-4 py-2 text-white bg-gray-500 rounded hover:bg-gray-600"
+                                                >
+                                                    Cancelar
+                                                </Link>
+                                                <button
+                                                    type="submit"
+                                                    className="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                                    disabled={processing}
+                                                >
+                                                    Guardar
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Archivos)</label>
-                                        <input
-                                            type="file"
-                                            onChange={handleFileChangeArchivos} // Nueva función para manejar archivos
-                                            multiple // Permitir múltiples archivos
-                                            accept=".pdf,.doc,.docx,.xls,.xlsx" // Solo permitir archivos específicos
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        />
-                                        {errors.examenes_indicados_archivos && (
-                                            <p className="text-sm text-red-500">{errors.examenes_indicados_archivos}</p>
+                                    {/* Contenido principal */}
+                                    <div className="flex-1 border-t-2 border-gray-200 p-4">
+                                        {data.tipo_consulta === 'inicio' && (
+                                            <>
+                                                {/* 1. Antecedentes Personales */}
+                                                {expandedSections.antecedentesPersonales && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Registre los antecedentes médicos personales del paciente, incluyendo HTA, DM, alergias y otros.
+                                                            </p>
+                                                            <AntecedentesPersonales
+                                                                data={data}
+                                                                setData={setData}
+                                                                showHTAText={showHTAText}
+                                                                setShowHTAText={setShowHTAText}
+                                                                showDMText={showDMText}
+                                                                setShowDMText={setShowDMText}
+                                                                showAlergiasText={showAlergiasText}
+                                                                setShowAlergiasText={setShowAlergiasText}
+                                                                showOtrosText={showOtrosText}
+                                                                setShowOtrosText={setShowOtrosText}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 2. Antecedentes Patológicos Familiares */}
+                                                {expandedSections.antecedentesFamiliares && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Registre los antecedentes médicos relevantes en la familia del paciente.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <input
+                                                                    type="text"
+                                                                    value={data.antecedentes_patologicos_familiares}
+                                                                    onChange={(e) => setData('antecedentes_patologicos_familiares', e.target.value)}
+                                                                    className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 3. Cirugías Previas */}
+                                                {expandedSections.cirugiasPrevias && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Registre cualquier procedimiento quirúrgico previo que haya tenido el paciente.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <input
+                                                                    type="text"
+                                                                    value={data.cirugias_previas}
+                                                                    onChange={(e) => setData('cirugias_previas', e.target.value)}
+                                                                    className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 4. Motivo de Consulta */}
+                                                {expandedSections.motivoConsulta && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                {tipoConsulta === 'inicio' 
+                                                                    ? 'Registre el motivo principal por el cual el paciente acude a consulta.'
+                                                                    : 'Describa la evolución del paciente desde la última consulta.'}
+                                                            </p>
+                                                            {tipoConsulta === 'inicio' ? (
+                                                                <TerminoMotivoConsultaSearch 
+                                                                    initialValue={data.motivo_consulta || ''}
+                                                                    onSelectTerm={(termsArray) => {
+                                                                        setData('motivo_consulta', termsArray.join(', '));
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <input
+                                                                    type="text"
+                                                                    value={data.evoluciones}
+                                                                    onChange={(e) => setData('evoluciones', e.target.value)}
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 5. Examen Ocular */}
+                                                {expandedSections.examenOcular && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
+                                                            </p>
+                                                            <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 6. Biomicroscopia */}
+                                                {expandedSections.biomicroscopia && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className='mb-4'>
+                                                            <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
+                                                            <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_od', value)}/>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Conjuntiva</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_oi', value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 7. Fondo de Ojo */}
+                                                {expandedSections.fondoOjo && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Documente los hallazgos del examen de fondo de ojo para ambos ojos.
+                                                            </p>
+                                                            <FondoOjo
+                                                                marcadoresOD={marcadores}
+                                                                marcadoresOI={marcadoresOI}
+                                                                marcadorActivoOD={marcadorActivo}
+                                                                marcadorActivoOI={marcadorActivoOI}
+                                                                handleMarkerClickOD={handleMarkerClick}
+                                                                handleMarkerClickOI={handleMarkerClickOI}
+                                                                handleSeleccionOpcionOD={handleSeleccionOpcion}
+                                                                handleSeleccionOpcionOI={handleSeleccionOpcionOI}
+                                                                data={data}
+                                                                setData={setData}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 8. Impresión Diagnóstica */}
+                                                {expandedSections.diagnostico && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <Cie10Search onSelectResult={handleSelectResult} />
+                                                            </div>
+                                                            <div className="mb-4">
+                                                                <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                                                    {selectedResults.map((result, index) => (
+                                                                        <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                                            <span>{result}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 9. Tratamiento */}
+                                                {expandedSections.tratamiento && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Especifique el tratamiento indicado para el paciente.
+                                                            </p>
+                                                            <input
+                                                                type="text"
+                                                                value={data.tratamiento}
+                                                                onChange={(e) => setData('tratamiento', e.target.value)}
+                                                                className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 10. Plan */}
+                                                {expandedSections.plan && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione el plan de manejo para el paciente.
+                                                            </p>
+                                                            <PlanSelector
+                                                                opcionesPlan={opcionesPlan}
+                                                                handleSeleccionPlan={handleSeleccionPlan}
+                                                                showPlanText={showPlanText}
+                                                                setShowPlanText={setShowPlanText}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 11. Exámenes Indicados */}
+                                                {expandedSections.examenesIndicados && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Adjunte imágenes o documentos de exámenes complementarios (máximo 4 archivos por tipo).
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Imágenes)</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeImages}
+                                                                    multiple
+                                                                    accept="image/*"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewImages.map((image, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <img
+                                                                                src={image.preview}
+                                                                                alt={`Previsualización ${index + 1}`}
+                                                                                className="w-24 h-24 object-cover rounded-md"
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveImage(index, 'img')}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Documentos)</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeArchivos}
+                                                                    multiple
+                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewArchivos.map((archivo, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveArchivo(index, 'archivos')}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
 
-                                        {/* Mostrar nombres de archivos subidos */}
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            {previewArchivos.map((archivo, index) => (
-                                                <div key={index} className="relative">
-                                                    <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveArchivo(index, 'archivos')} // Eliminar archivo
-                                                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                                                    >
-                                                        &times;
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>                         
-                                    </>
-                                )}                                
+                                        {data.tipo_consulta === 'evolucion' && (
+                                            <>
+                                                {/* 1. Evoluciones */}
+                                                {expandedSections.evoluciones && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <input
+                                                                type="text"
+                                                                value={data.evoluciones}
+                                                                onChange={(e) => setData('evoluciones', e.target.value)}
+                                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 5. Examen Ocular */}
+                                                {expandedSections.examenOcular && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
+                                                            </p>
+                                                            <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 6. Biomicroscopia */}
+                                                {expandedSections.biomicroscopia && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className='mb-4'>
+                                                            <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
+                                                            <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_od', value)}/>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Conjuntiva</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_oi', value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 7. Fondo de Ojo */}
+                                                {expandedSections.fondoOjo && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Documente los hallazgos del examen de fondo de ojo para ambos ojos.
+                                                            </p>
+                                                            <FondoOjo
+                                                                marcadoresOD={marcadores}
+                                                                marcadoresOI={marcadoresOI}
+                                                                marcadorActivoOD={marcadorActivo}
+                                                                marcadorActivoOI={marcadorActivoOI}
+                                                                handleMarkerClickOD={handleMarkerClick}
+                                                                handleMarkerClickOI={handleMarkerClickOI}
+                                                                handleSeleccionOpcionOD={handleSeleccionOpcion}
+                                                                handleSeleccionOpcionOI={handleSeleccionOpcionOI}
+                                                                data={data}
+                                                                setData={setData}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 8. Impresión Diagnóstica */}
+                                                {expandedSections.diagnostico && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <Cie10Search onSelectResult={handleSelectResult} />
+                                                            </div>
+                                                            <div className="mb-4">
+                                                                <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                                                    {selectedResults.map((result, index) => (
+                                                                        <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                                            <span>{result}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 9. Tratamiento */}
+                                                {expandedSections.tratamiento && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Especifique el tratamiento indicado para el paciente.
+                                                            </p>
+                                                            <input
+                                                                type="text"
+                                                                value={data.tratamiento}
+                                                                onChange={(e) => setData('tratamiento', e.target.value)}
+                                                                className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 10. Plan */}
+                                                {expandedSections.plan && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione el plan de manejo para el paciente.
+                                                            </p>
+                                                            <PlanSelector
+                                                                opcionesPlan={opcionesPlan}
+                                                                handleSeleccionPlan={handleSeleccionPlan}
+                                                                showPlanText={showPlanText}
+                                                                setShowPlanText={setShowPlanText}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 11. Exámenes Indicados */}
+                                                {expandedSections.examenesIndicados && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Adjunte imágenes o documentos de exámenes complementarios (máximo 4 archivos por tipo).
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Imágenes)</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeImages}
+                                                                    multiple
+                                                                    accept="image/*"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewImages.map((image, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <img
+                                                                                src={image.preview}
+                                                                                alt={`Previsualización ${index + 1}`}
+                                                                                className="w-24 h-24 object-cover rounded-md"
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveImage(index, 'img')}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
 
-                                <div className="flex items-center justify-end">
-                                    <Link
-                                        href={route('consultas.index')}
-                                        className="px-4 py-2 text-white bg-gray-500 rounded hover:bg-gray-600"
-                                    >
-                                        Cancelar
-                                    </Link>
-                                    <button
-                                        type="submit"
-                                        className="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
-                                        disabled={processing}
-                                    >
-                                        Guardar
-                                    </button>
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Documentos)</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeArchivos}
+                                                                    multiple
+                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewArchivos.map((archivo, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveArchivo(index, 'archivos')}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </form>
                         </div>
