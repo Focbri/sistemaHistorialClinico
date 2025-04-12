@@ -15,7 +15,7 @@ class Consulta extends Model
      */
     use HasFactory;
 
-    protected $fillable = [ 
+    protected $fillable = [  
         'paciente_id',
         'codigo_consulta',
         'antecedentes_personales_hta',
@@ -24,7 +24,10 @@ class Consulta extends Model
         'antecedentes_personales_otros',
         'antecedentes_patologicos_familiares',
         'cirugias_previas',
-        'motivo_consulta',
+        'motivo_consulta_inicio',
+        'motivo_consulta_signos',
+        'motivo_consulta_enfermedad',
+        'motivo_consulta_otros',
         'impresion_diagnostica',
         'tratamiento',
         'plan',
@@ -108,6 +111,7 @@ class Consulta extends Model
         'exam_old_cerca_eje_od' ,
         'exam_old_cerca_eje_oi' ,
         'exam_old_cerca_dip' ,
+        'comentario',
     ];
 
     /**
@@ -121,6 +125,8 @@ class Consulta extends Model
         'fondo_ojo_posiciones' => 'array',
         'examenes_indicados_img' => 'array',
         'examenes_indicados_archivos' => 'array',
+        'cirugias_previas' => 'array',
+        'antecedentes_patologicos_familiares'=> 'array',
     ];
 
     public static function rules(): array
@@ -132,8 +138,8 @@ class Consulta extends Model
             'antecedentes_personales_alergias' => 'nullable|string',
             'antecedentes_personales_dm' => 'nullable|string',
             'antecedentes_personales_otros' => 'nullable|string',
-            'antecedentes_patologicos_familiares' => 'nullable|string',
-            'cirugias_previas' => 'nullable|string',
+            'antecedentes_patologicos_familiares' => 'nullable|json',
+            'cirugias_previas' => 'nullable|json',
             'motivo_consulta' => 'required|string',
             'impresion_diagnostica' => 'required|string',
             'tratamiento' => 'nullable|string',
@@ -161,6 +167,10 @@ class Consulta extends Model
             'examen_keratometria_qd1_oi' => 'nullable|string',
             'examen_keratometria_qd2_oi' => 'nullable|string',
             'examen_keratometria_eje_oi' => 'nullable|string',
+            'motivo_consulta_inicio',
+            'motivo_consulta_signos',
+            'motivo_consulta_enfermedad',
+            'motivo_consulta_otros',
             'biomicroscopia_movoculares_od',
             'biomicroscopia_parpados_od',
             'biomicroscopia_cornea_od',
@@ -214,6 +224,7 @@ class Consulta extends Model
             'exam_old_cerca_eje_od' ,
             'exam_old_cerca_eje_oi' ,
             'exam_old_cerca_dip' ,
+            'comentario' => 'nullable|string',
         ];
     }
 
@@ -221,6 +232,11 @@ class Consulta extends Model
     public function paciente()
     {
         return $this->belongsTo(Paciente::class, 'paciente_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
     public function examen()
     {

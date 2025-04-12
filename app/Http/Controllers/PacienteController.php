@@ -9,6 +9,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class PacienteController extends Controller
 {
@@ -17,10 +18,13 @@ class PacienteController extends Controller
      */
     public function index(Request $request)
     {
-        // Filtrar pacientes por DNI si se proporciona
         $pacientes = Paciente::when($request->dni, function ($query, $dni) {
             return $query->where('dni', 'like', "%$dni%");
-        })->get();
+        })
+        ->orderBy('apellido_paterno')
+        ->orderBy('apellido_materno')
+        ->orderBy('nombres')
+        ->get();
 
         return inertia('Pacientes/Index', ['pacientes' => $pacientes]);
     }
@@ -30,59 +34,7 @@ class PacienteController extends Controller
      */
     public function create()
     {
-        // Obtener la lista de pacientes para el formulario
-        $pacientes = Paciente::all();
-
-        // Retornar la vista de Inertia con los datos de los pacientes
-        return inertia('Pacientes/Create', ['pacientes' => $pacientes]);
-    }
-
-        /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        $paciente = Paciente::findOrFail($id);
-        
-        // Preparar datos para la vista
-        $pacienteData = $paciente->toArray();
-
-        $parseFiles = function ($jsonData) {
-            if (empty($jsonData)) return [];
-            
-            try {
-                $parsed = is_array($jsonData) ? $jsonData : json_decode($jsonData, true);
-                
-                return array_map(function ($item) {
-                    if (is_array($item)) {
-                        return [
-                            'ruta' => $item['ruta'] ?? $item['path'] ?? $item,
-                            'nombre_original' => $item['nombre_original'] ?? basename($item['ruta'] ?? $item),
-                            'tipo' => $item['tipo'] ?? (str_contains($item['ruta'] ?? $item, 'imagenes') ? 'image' : 'file')
-                        ];
-                    }
-                    return [
-                        'ruta' => $item,
-                        'nombre_original' => basename($item),
-                        'tipo' => str_contains($item, 'imagenes') ? 'image' : 'file'
-                    ];
-                }, is_array($parsed) ? $parsed : [$parsed]);
-            } catch (\Exception $e) {
-                return [];
-            }
-        };
-
-        $paciente->foto_perfil = $parseFiles($paciente->foto_perfil);
-        
-        // Agregar la URL completa de la imagen si existe
-        if ($paciente->foto_perfil) {
-            $cleanPath = str_replace(['public/', 'storage/'], '', $paciente->foto_perfil);
-            $pacienteData['foto_perfil_url'] = asset('storage/'.$cleanPath);
-        } else {
-            $pacienteData['foto_perfil_url'] = null;
-        }
-        
-        return inertia('Pacientes/Edit', ['paciente' => $pacienteData]);
+        return inertia('Pacientes/Create');
     }
 
     /**
@@ -90,32 +42,62 @@ class PacienteController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate($this->getValidationRules());
-
-        DB::beginTransaction();
-        
         try {
-            $paciente = Paciente::create($request->except('foto_perfil'));
-
-            if ($request->hasFile('nuevas_imagenes')) {
-                foreach ($request->file('nuevas_imagenes') as $file) {
-                    $path = $file->store('pacientes/' . $paciente->id . '/imagenes');
-                    $imagenes[] = [
-                        'ruta' => $path,
-                        'nombre_original' => $file->getClientOriginalName() // Guardar nombre original
-                    ];
-                }
-            }
-
-            DB::commit();
-            
-            return redirect()->route('pacientes.index')
-                ->with('success', 'Paciente registrado exitosamente.');
+            $validatedData = $request->validate([
+                // Datos del paciente
+                'nombres' => 'required|string|max:255',
+                'apellido_paterno' => 'required|string|max:255',
+                'apellido_materno' => 'required|string|max:255',
+                'dni' => 'required|string|size:8|unique:pacientes,dni,',
+                'fecha_nacimiento' => 'required|date',
+                'edad' => 'required|integer|min:0|max:120',
+                'sexo' => 'required|in:M,F',
+                'estado_civil' => 'nullable|string|max:50',
+                'ocupacion' => 'nullable|string|max:100',
+                'procedencia' => 'nullable|string|max:100',
+                'direccion' => 'required|string|max:255',
+                'telefono' => 'required|string|max:15',
+                'email' => 'nullable|email|max:255',
+                'acompañante' => 'nullable|string|max:100',
+                'referido' => 'nullable|string|max:100',
+                'peso' => 'nullable|numeric|min:0|max:300',
                 
+                // Foto de perfil
+                'foto_perfil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            ]);
+
+            // Crear el paciente
+            $paciente = new Paciente();
+            $paciente->fill($validatedData);
+
+            // Procesar foto de perfil
+        if ($request->hasFile('foto_perfil')) {
+            $file = $request->file('foto_perfil');
+            $nombreOriginal = $file->getClientOriginalName();
+            
+            // Limpiar el nombre del archivo
+            $nombreArchivo = pathinfo($nombreOriginal, PATHINFO_FILENAME);
+            $extension = $file->extension();
+            $nombreUnico = $this->sanitizeFileName($nombreArchivo) . '_' . time() . '.' . $extension;
+            
+            $path = $file->storeAs(
+                'pacientes/' . $request->dni . '/fotos_perfil',
+                $nombreUnico,
+                'public'
+            );
+            
+            $paciente->foto_perfil = $path;
+        }
+
+        $paciente->save();
+
+            return redirect()->route('pacientes.index')
+            ->with('success', 'Paciente creado correctamente.');
+            
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error al crear paciente: '.$e->getMessage());
-            return back()->with('error', 'Error al registrar el paciente: '.$e->getMessage());
+            return redirect()->back()
+                ->withErrors(['message' => 'Error al crear el paciente: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -124,117 +106,353 @@ class PacienteController extends Controller
      */
     public function show(Paciente $paciente)
     {
-        return Inertia::render('Pacientes/Show', [
+        $pacienteData = $this->preparePacienteData($paciente);
+        return Inertia::render('Pacientes/Show', ['paciente' => $pacienteData]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        $paciente = Paciente::findOrFail($id);
+    
+        return Inertia::render('Pacientes/Edit', [
             'paciente' => $paciente,
+            'foto_perfil_url' => $paciente->foto_perfil 
+                ? Storage::url($paciente->foto_perfil)
+                : null,
         ]);
     }
+
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
     {
+        try {
+            $validatedData = $request->validate([
+                // Datos del paciente
+                'nombres' => 'required|string|max:255',
+                'apellido_paterno' => 'required|string|max:255',
+                'apellido_materno' => 'required|string|max:255',
+                'dni' => 'required|string|size:8|unique:pacientes,dni,'.$id,
+                'fecha_nacimiento' => 'required|date',
+                'edad' => 'required|integer|min:0|max:120',
+                'sexo' => 'required|in:M,F',
+                'estado_civil' => 'nullable|string|max:50',
+                'ocupacion' => 'nullable|string|max:100',
+                'procedencia' => 'nullable|string|max:100',
+                'direccion' => 'required|string|max:255',
+                'telefono' => 'required|string|max:15',
+                'email' => 'nullable|email|max:255',
+                'acompañante' => 'nullable|string|max:100',
+                'referido' => 'nullable|string|max:100',
+                'peso' => 'nullable|numeric|min:0|max:300',
+                
+                // Foto de perfil
+                'foto_perfil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'foto_perfil_existente' => 'nullable|string',
+                'files_to_delete' => 'nullable|json',
+            ]);
+
+            $paciente = Paciente::findOrFail($id);
+
+            // Procesar archivos a eliminar
+            $filesToDelete = $request->filled('files_to_delete') 
+                ? json_decode($request->input('files_to_delete'), true) ?? []
+                : [];
+
+            foreach ($filesToDelete as $filePath) {
+                if (Storage::disk('public')->exists($filePath)) {
+                    Storage::disk('public')->delete($filePath);
+                }
+            }
+
+            // Procesar nueva foto de perfil
+            $fotoPerfil = $paciente->foto_perfil;
+            
+            if ($request->hasFile('foto_perfil')) {
+                // Eliminar foto anterior si existe
+                if ($fotoPerfil && Storage::disk('public')->exists($fotoPerfil)) {
+                    Storage::disk('public')->delete($fotoPerfil);
+                }
+                
+                 // Guardar nueva foto con nombre original
+                $file = $request->file('foto_perfil');
+                $nombreOriginal = $file->getClientOriginalName();
+                $nombreArchivo = pathinfo($nombreOriginal, PATHINFO_FILENAME);
+                $extension = $file->extension();
+                $nombreUnico = $this->sanitizeFileName($nombreArchivo) . '_' . time() . '.' . $extension;
+                
+                $path = $file->storeAs(
+                    'pacientes/' . $paciente->dni . '/fotos_perfil',
+                    $nombreUnico,
+                    'public'
+                );
+                
+                $fotoPerfil = $path;
+                } elseif (empty($request->foto_perfil_existente) && $fotoPerfil) {
+                    // Si se eliminó la foto existente y no se subió una nueva
+                    if (Storage::disk('public')->exists($fotoPerfil)) {
+                        Storage::disk('public')->delete($fotoPerfil);
+                    }
+                    $fotoPerfil = null;
+                }
+            // Actualizar paciente
+            $paciente->update(array_merge($validatedData, [
+                'foto_perfil' => $fotoPerfil
+            ]));
+
+            return redirect()->route('pacientes.index')->with('success', 'Paciente actualizado correctamente.');
+            
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withErrors(['message' => 'Error al actualizar el paciente: ' . $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Paciente $paciente)
+    {
         DB::beginTransaction();
         
         try {
-            $paciente = Paciente::findOrFail($id);
-            $rules = $this->getValidationRules($id, true);
-            $validatedData = $request->validate($rules);
-
-            // Procesar eliminación de imagen
-            if ($request->input('eliminar_foto')) { // No 'eliminar_foto'
-                $this->limpiarImagenesPaciente($paciente->dni);
-                $paciente->foto_perfil = null;
-            }
-
-            // Procesar nueva imagen
-            if ($request->hasFile('foto_perfil')) {
-                $this->limpiarImagenesPaciente($paciente->dni);
-                
-                $path = $this->guardarFotoPerfil($request->file('foto_perfil'), $paciente->dni);
-                
-                if (!Storage::disk('public')->exists($path)) {
-                    throw new \Exception("La imagen no existe en la ruta especificada");
-                }
-                
-                // Actualizar directamente el modelo, no usar update()
-                $paciente->foto_perfil = $path;
-            }
-
-            // Actualizar los demás campos
-            $paciente->fill($validatedData);
-            $paciente->save(); // Esto guardará todos los cambios, incluido foto_perfil
+            // Eliminar foto de perfil si existe
+            $this->eliminarFotoPerfil($paciente);
+            
+            // Eliminar carpeta del paciente
+            $this->eliminarCarpetaPaciente($paciente->dni);
+            
+            // Eliminar el paciente
+            $paciente->delete();
 
             DB::commit();
-            
+
             return redirect()->route('pacientes.index')
-                ->with('success', 'Paciente actualizado correctamente.');
-                
+                ->with('success', 'Paciente eliminado correctamente');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error en update: '.$e->getMessage(), [
-                'paciente_id' => $id,
-                'error_trace' => $e->getTraceAsString()
-            ]);
-            return back()->with('error', 'Error al actualizar: '.$e->getMessage());
+            Log::error('Error al eliminar paciente: '.$e->getMessage());
+            
+            return redirect()->back()
+                ->withErrors(['error' => 'Error al eliminar paciente: '.$e->getMessage()]);
         }
     }
 
-    protected function guardarFotoPerfil($file, $dni, $useOriginalName = false)
+    protected function sanitizeFileName($filename)
+    {
+        // Reemplaza caracteres no permitidos
+        $filename = preg_replace("/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_]/", "", $filename);
+        // Reemplaza múltiples espacios o guiones por un solo guión bajo
+        $filename = preg_replace("/[\s-]+/", "_", $filename);
+        // Convierte a minúsculas
+        $filename = strtolower($filename);
+        // Elimina guiones bajos al inicio y final
+        $filename = trim($filename, "_");
+        
+        return $filename;
+    }
+
+    /**
+     * Validación de datos del paciente
+     */
+    protected function validatePacienteData(Request $request, $id = null, $forUpdate = false)
+    {
+        $rules = [
+            'apellido_paterno' => 'string|max:255',
+            'apellido_materno' => 'string|max:255',
+            'nombres' => 'string|max:255',
+            'fecha_nacimiento' => 'date',
+            'edad' => 'integer',
+            'peso' => 'numeric',
+            'dni' => 'string|max:20|unique:pacientes,dni,'.$id,
+            'sexo' => 'in:M,F',
+            'estado_civil' => 'in:soltero,casado,divorciado,viudo',
+            'ocupacion' => 'string|max:255',
+            'direccion' => 'string|max:255',
+            'telefono' => 'string|max:20',
+            'email' => 'nullable|email|max:255',
+            'procedencia' => 'in:Ancon,Ate,Barranco,Breña,Carabayllo,Chaclacayo,Chorrillos,Cienegilla,Comas,El Agustino,Independencia,Jesús María,La Molina,La Victoria,Lima,Lince,Los Olivos,Lurigancho,Lurín,Magdalena del Mar,Miraflores,Pachacamac,Pucusana,Pueblo Libre,Puente Piedra,Punta Hermosa,Punta Negra,Rimac,San Bartolo,San Borja,San Isidro,San Juan de Lurigancho,San Juan de Miraflores,San Luis,San Martín de Porres,San Miguel,Santa Anita,Santa María del Mar,Santa Rosa,Santiago de Surco,Surquillo,Villa El Salvador,Villa María del Triunfo',
+            'acompañante' => 'nullable|string|max:255',
+            'referido' => 'in:Recomendación de un amigo o familiar,Facebook,Instagram,TikTok,WhatsApp,Búsqueda en Google,Publicidad en línea,Boca a boca,Sitio web o blog,Reseñas en línea,Correo electrónico,Eventos o ferias',
+            'foto_perfil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'eliminar_foto' => 'nullable|boolean',
+        ];
+
+        return $request->validate($rules);
+    }
+
+    /**
+     * Prepara los datos del paciente para la vista
+     */
+    protected function preparePacienteData(Paciente $paciente)
+    {
+        $pacienteData = $paciente->toArray();
+        
+        // Procesar foto de perfil
+        $pacienteData['foto_perfil'] = $this->parseFileData($paciente->foto_perfil);
+        
+        // Agregar URL de la foto
+        if (!empty($pacienteData['foto_perfil']) && isset($pacienteData['foto_perfil']['ruta'])) {
+            $pacienteData['foto_perfil_url'] = url(Storage::url($pacienteData['foto_perfil']['ruta'])).'?t='.time();
+        } else {
+            $pacienteData['foto_perfil_url'] = null;
+        }
+        
+        return $pacienteData;
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    protected function guardarArchivosPaciente($files, $dni, $tipo = 'otros')
     {
         $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $dni);
-        $carpeta = "pacientes/{$dniClean}/perfil";
+        $archivos = [];
         
-        // Crear directorio si no existe (con permisos 0755)
-        if (!Storage::disk('public')->exists($carpeta)) {
-            Storage::disk('public')->makeDirectory($carpeta, 0755, true);
-        }
-        
-        // Generar nombre único para el archivo
-        $nombreArchivo = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
-                       . '_' . time()
-                       . '.' . $file->getClientOriginalExtension();
-        
-        // Guardar el archivo
-        $path = $file->storeAs(
-            $carpeta,
-            $nombreArchivo,
-            'public' // Asegúrate de usar el disco 'public'
-        );
-        
-        return $path; // Esto retornará algo como "pacientes/12345678/perfil/nombre_1234567890.jpg"
+        $carpetaBase = "pacientes/{$dniClean}";
+        $subcarpeta = ($tipo === 'imagen') ? 'imagenes' : 'archivos';
+        $carpetaCompleta = "{$carpetaBase}/{$subcarpeta}";
+
+        // Crear directorio si no existe
+        Storage::disk('public')->makeDirectory($carpetaCompleta, 0755, true);
+
+        foreach ($files as $file) {
+            $nombreOriginal = $file->getClientOriginalName();
+            $extension = $file->extension();
+            $nombreUnico = pathinfo($nombreOriginal, PATHINFO_FILENAME) . '_' . time() . '.' . $extension;
+            
+            $path = $file->storeAs(
+                $carpetaCompleta,
+                $nombreUnico,
+                'public'
+            );
+            
+            $archivos[] = [
+                'ruta' => $path,
+                'nombre_original' => $nombreOriginal,
+                'nombre_guardado' => $nombreUnico,
+                'tipo' => $tipo
+            ];
+        }        
+        return $archivos;
     }
 
-    protected function limpiarImagenesPaciente($dni)
+    /**
+     * Método para procesar y validar archivos de pacientes
+     */
+    protected function procesarArchivosPaciente(Request $request, Paciente $paciente, $filesToDelete = [])
     {
-        $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $dni);
-        $carpeta = "pacientes/{$dniClean}/perfil";
+        $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $paciente->dni);
+        $carpetaBase = "pacientes/{$dniClean}";
         
-        if (Storage::disk('public')->exists($carpeta)) {
-            // Eliminar solo los archivos dentro del directorio, no el directorio mismo
-            $files = Storage::disk('public')->files($carpeta);
-            Storage::disk('public')->delete($files);
+        // Procesar foto de perfil (caso especial)
+        if ($request->hasFile('foto_perfil')) {
+            $this->eliminarFotoPerfil($paciente);
+            $path = $this->guardarFotoPerfil($request->file('foto_perfil'), $paciente->dni);
+            $paciente->foto_perfil = $path;
+        } elseif ($request->input('eliminar_foto')) {
+            $this->eliminarFotoPerfil($paciente);
+            $paciente->foto_perfil = null;
+        }
+
+        // Procesar otros archivos (similar al de consultas pero adaptado)
+        $archivosProcesados = [
+            'imagenes' => [],
+            'archivos' => []
+        ];
+
+        // Procesar imágenes médicas si existen
+        if ($request->hasFile('imagenes_medicas')) {
+            $archivosProcesados['imagenes'] = $this->guardarArchivosPaciente(
+                $request->file('imagenes_medicas'),
+                $paciente->dni,
+                'imagen'
+            );
+        }
+
+        // Procesar documentos si existen
+        if ($request->hasFile('documentos')) {
+            $archivosProcesados['archivos'] = $this->guardarArchivosPaciente(
+                $request->file('documentos'),
+                $paciente->dni,
+                'documento'
+            );
+        }
+
+        // Eliminar archivos marcados para borrar
+        if (!empty($filesToDelete)) {
+            foreach ($filesToDelete as $filePath) {
+                if (Storage::disk('public')->exists($filePath)) {
+                    Storage::disk('public')->delete($filePath);
+                }
+            }
+        }
+
+        return $archivosProcesados;
+    }
+
+    /**
+     * Método para parsear datos de archivos (compatible con ambos controladores)
+     */
+    protected function parseFileData($data)
+    {
+        if (empty($data)) return [];        
+        try {
+            $parsed = is_array($data) ? $data : json_decode($data, true);
+            
+            return array_map(function ($item) {
+                if (is_array($item)) {
+                    return [
+                        'ruta' => $item['ruta'] ?? $item['path'] ?? $item,
+                        'nombre_original' => $item['nombre_original'] ?? basename($item['ruta'] ?? $item),
+                        'nombre_guardado' => $item['nombre_guardado'] ?? basename($item['ruta'] ?? $item),
+                        'tipo' => $item['tipo'] ?? (str_contains($item['ruta'] ?? $item, 'imagenes') ? 'image' : 'file')
+                    ];
+                }
+                return [
+                    'ruta' => $item,
+                    'nombre_original' => basename($item),
+                    'nombre_guardado' => basename($item),
+                    'tipo' => str_contains($item, 'imagenes') ? 'image' : 'file'
+                ];
+            }, is_array($parsed) ? $parsed : [$parsed]);
+        } catch (\Exception $e) {
+            Log::error('Error al parsear datos de archivo: '.$e->getMessage());
+            return [];
         }
     }
 
-    public function updateImagen(Paciente $paciente, Request $request)
+    /**
+     * Método para actualizar imagen de perfil (API)
+     */
+    public function updateImagen($id, Request $request)
     {
-        $request->validate([
+        $paciente = Paciente::findOrFail($id);
+        $validator = Validator::make($request->all(), [
             'foto_perfil' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         DB::beginTransaction();
         
         try {
             // Eliminar imagen anterior si existe
-            if ($paciente->foto_perfil) {
-                Storage::disk('public')->delete($paciente->foto_perfil);
-            }
+            $this->eliminarFotoPerfil($paciente);
 
             // Guardar nueva imagen
-            $path = $request->file('foto_perfil')->store(
-                "pacientes/{$paciente->dni}/perfil", 
-                'public'
-            );
+            $path = $this->guardarFotoPerfil($request->file('foto_perfil'), $paciente->dni);
 
             // Actualizar en base de datos
             $paciente->foto_perfil = $path;
@@ -244,7 +462,7 @@ class PacienteController extends Controller
             
             return response()->json([
                 'success' => true,
-                'foto_perfil_url' => asset(Storage::url($path)),
+                'foto_perfil_url' => Storage::url($path),
                 'message' => 'Imagen actualizada correctamente'
             ]);
 
@@ -259,16 +477,17 @@ class PacienteController extends Controller
         }
     }
 
+    /**
+     * Método para eliminar imagen de perfil (API)
+     */
     public function deleteImagen(Paciente $paciente)
     {
         DB::beginTransaction();
         
         try {
-            if ($paciente->foto_perfil) {
-                Storage::disk('public')->delete($paciente->foto_perfil);
-                $paciente->foto_perfil = null;
-                $paciente->save();
-            }
+            $this->eliminarFotoPerfil($paciente);
+            $paciente->foto_perfil = null;
+            $paciente->save();
 
             DB::commit();
             
@@ -288,93 +507,96 @@ class PacienteController extends Controller
         }
     }
 
-
-    private function getValidationRules($id = null, $forUpdate = false)
+    /**
+     * Método para eliminar la foto de perfil
+     */
+    protected function eliminarFotoPerfil(Paciente $paciente)
     {
-        $rules = [
-            'apellido_paterno' => 'string|max:255',
-            'apellido_materno' => 'string|max:255',
-            'nombres' => 'string|max:255',
-            'fecha_nacimiento' => 'date',
-            'edad' => 'integer',
-            'peso' => 'numeric',
-            'dni' => 'string|max:20|unique:pacientes,dni,'.$id,
-            'sexo' => 'in:M,F',
-            'estado_civil' => 'in:soltero,casado,divorciado,viudo',
-            'ocupacion' => 'string|max:255',
-            'direccion' => 'string|max:255',
-            'telefono' => 'string|max:20',
-            'email' => 'nullable|email|max:255',
-            'procedencia' => 'in:Ancon,Ate,Barranco,Breña,Carabayllo,Chaclacayo,Chorrillos,Cienegilla,Comas,El Agustino,Independencia,Jesús María,La Molina,La Victoria,Lima,Lince,Los Olivos,Lurigancho,Lurín,Magdalena del Mar,Miraflores,Pachacamac,Pucusana,Pueblo Libre,Puente Piedra,Punta Hermosa,Punta Negra,Rimac,San Bartolo,San Borja,San Isidro,San Juan de Lurigancho,San Juan de Miraflores,San Luis,San Martín de Porres,San Miguel,Santa Anita,Santa María del Mar,Santa Rosa,Santiago de Surco,Surquillo,Villa El Salvador,Villa María del Triunfo',
-            'acompañante' => 'nullable|string|max:255',
-            'referido' => 'in:Recomendación de un amigo o familiar,Facebook,Instagram,TikTok,WhatsApp,Búsqueda en Google,Publicidad en línea,Boca a boca,Sitio web o blog,Reseñas en línea,Correo electrónico,Eventos o ferias',
-            'foto_perfil' => 'nullable|array|max:4', // Máximo 4 imágenes
-            'foto_perfil.*' => 'file|mimes:jpg,jpeg,png|max:2048', // Cada imagen debe ser un archivo válido
-        ];
-
-        // Solo hacer campos requeridos para creación (store)
-        if (!$forUpdate) {
-            $requiredRules = [
-                'apellido_paterno', 'apellido_materno', 'nombres', 'fecha_nacimiento',
-                'edad', 'peso', 'dni', 'sexo', 'estado_civil', 'ocupacion',
-                'direccion', 'telefono', 'procedencia', 'referido'
-            ];
+        if ($paciente->foto_perfil && Storage::disk('public')->exists($paciente->foto_perfil)) {
+            Storage::disk('public')->delete($paciente->foto_perfil);
             
-            foreach ($requiredRules as $field) {
-                $rules[$field] = 'required|'.$rules[$field];
+            // Opcional: eliminar carpeta si está vacía
+            $carpeta = dirname($paciente->foto_perfil);
+            if (count(Storage::disk('public')->files($carpeta)) === 0) {
+                Storage::disk('public')->deleteDirectory($carpeta);
             }
         }
-
-        return $rules;
     }
 
-    public function destroy($id)
+    /**
+     * Método para guardar foto de perfil
+     */
+    protected function guardarFotoPerfil($file, $dni)
     {
         try {
-            $paciente = Paciente::findOrFail($id);
-            Log::info('Eliminando paciente:', ['id' => $paciente->id]);
-
-            // Eliminar la carpeta del paciente con todo su contenido
-            $this->eliminarCarpetaPaciente($paciente->dni);
-
-            $paciente->delete();
-            Log::info('Paciente eliminado correctamente');
-            return redirect()->route('pacientes.index')->with('success', 'Paciente y consultas eliminados correctamente.');
+            $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $dni);
+            if (empty($dniClean)) {
+                throw new \Exception('DNI no válido para crear carpeta');
+            }
+            
+            $carpeta = "pacientes/{$dniClean}/perfil";
+            
+            // Crear directorio si no existe
+            Storage::disk('public')->makeDirectory($carpeta, 0755, true);
+            
+            // Generar nombre único para el archivo
+            $nombreArchivo = 'perfil_'.time().'.'.$file->extension();
+            
+            // Guardar el archivo
+            $path = $file->storeAs(
+                $carpeta,
+                $nombreArchivo,
+                'public'
+            );
+            
+            return $path;
         } catch (\Exception $e) {
-            Log::error('Error al eliminar paciente:', ['error' => $e->getMessage()]);
-            return redirect()->route('pacientes.index')->with('error', 'Ocurrió un error al eliminar el paciente.');
+            Log::error('Error al guardar foto: '.$e->getMessage());
+            return null;
         }
     }
 
+    /**
+     * Método para eliminar toda la carpeta de un paciente
+     */
     protected function eliminarCarpetaPaciente($dni)
     {
-        $carpetaPaciente = "pacientes/{$dni}";
-        if (Storage::disk('public')->exists($carpetaPaciente)) {
-            Storage::disk('public')->deleteDirectory($carpetaPaciente);
+        $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $dni);
+        $carpeta = "pacientes/{$dniClean}";
+        
+        if (Storage::disk('public')->exists($carpeta)) {
+            Storage::disk('public')->deleteDirectory($carpeta);
         }
     }
 
+    /**
+     * Método para renombrar carpeta cuando cambia el DNI
+     */
     protected function renombrarCarpetaPaciente($oldDni, $newDni)
     {
-        $oldPath = "pacientes/{$oldDni}";
-        $newPath = "pacientes/{$newDni}";
+        $oldDniClean = preg_replace('/[^A-Za-z0-9]/', '', $oldDni);
+        $newDniClean = preg_replace('/[^A-Za-z0-9]/', '', $newDni);
+        
+        $oldPath = "pacientes/{$oldDniClean}";
+        $newPath = "pacientes/{$newDniClean}";
 
         if (Storage::disk('public')->exists($oldPath)) {
             Storage::disk('public')->move($oldPath, $newPath);
             
-            // Obtener el paciente primero
+            // Actualizar rutas en la base de datos
             $paciente = Paciente::where('dni', $newDni)->first();
             
-            // Verificar si existe el paciente y tiene foto_perfil
-            if ($paciente && $paciente->foto_perfil) {
-                // Actualizar rutas en la base de datos
-                $paciente->update([
-                    'foto_perfil' => Str::replaceFirst(
-                        "pacientes/{$oldDni}/", 
-                        "pacientes/{$newDni}/", 
+            if ($paciente) {
+                // Actualizar foto de perfil si existe
+                if ($paciente->foto_perfil) {
+                    $paciente->foto_perfil = Str::replaceFirst(
+                        "pacientes/{$oldDniClean}/", 
+                        "pacientes/{$newDniClean}/", 
                         $paciente->foto_perfil
-                    )
-                ]);
+                    );
+                }
+                
+                $paciente->save();
             }
         }
     }

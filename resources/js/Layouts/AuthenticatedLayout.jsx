@@ -55,10 +55,10 @@ export default function AuthenticatedLayout({ header, children }) {
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
+                                    href={route('inicio')}
+                                    active={route().current('inicio')}
                                 >
-                                    Dashboard
+                                    Inicio
                                 </NavLink>
                                 <NavLink
                                     href={route('pacientes.index')}
@@ -71,6 +71,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                     active={route().current('consultas.index')}
                                 >
                                     Consultas
+                                </NavLink>
+                                <NavLink
+                                    href={route('dashboard.index')}
+                                    active={route().current('dashboard.index')}
+                                >
+                                    Reportes
                                 </NavLink>
                                 {/* Mostrar opción de "Crear Usuario" solo para administradores */}
                                 {(user.role === 'admin' || user.role === 'root') && (
@@ -180,8 +186,8 @@ export default function AuthenticatedLayout({ header, children }) {
                 >
                     <div className="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
+                            href={route('inicio')}
+                            active={route().current('inicio')}
                         >
                             Dashboard
                         </ResponsiveNavLink>
@@ -196,6 +202,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             active={route().current('consultas.index')}
                         >
                             Consultas
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('dashboard.index')}
+                            active={route().current('dashboard.index')}
+                        >
+                            Reportes
                         </ResponsiveNavLink>
                         {/* Mostrar opción de "Crear Usuario" solo para administradores */}
                         {(user.role === 'admin' || user.role === 'root') && (

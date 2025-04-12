@@ -5,8 +5,10 @@ import { Head, Link, useForm } from '@inertiajs/react';
 export default function PacientesCreate({ auth }) {
     const fileInputRef = useRef(null);
     const [previewImage, setPreviewImage] = useState(null);
+    const [documentos, setDocumentos] = useState([]);
+    const [documentosPreview, setDocumentosPreview] = useState([]);
 
-    const { data, setData, post, errors } = useForm({
+    const { data, setData, post, errors, processing } = useForm({
         apellido_paterno: '',
         apellido_materno: '',
         nombres: '',
@@ -23,13 +25,19 @@ export default function PacientesCreate({ auth }) {
         procedencia: '',
         acompañante: '',
         referido: '',
-        foto_perfil: '',
+        foto_perfil: null, // Cambiado a null para manejar archivos
     });
 
-     // Manejar cambio de imagen
-     const handleImageChange = (e) => {
+     // Manejar cambio de imagen de perfil
+    const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Validar tamaño máximo (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('La imagen no debe superar los 2MB');
+                return;
+            }
+
             setData('foto_perfil', file);
             
             // Crear vista previa
@@ -41,18 +49,112 @@ export default function PacientesCreate({ auth }) {
         }
     };
 
+    // Eliminar imagen seleccionada
+    const removeImage = () => {
+        setData('foto_perfil', null);
+        setPreviewImage(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    // Manejar cambio de documentos adjuntos
+    const handleDocumentosChange = (e) => {
+        const files = Array.from(e.target.files);
+        
+        // Validar cantidad máxima (5 documentos)
+        if (files.length + documentos.length > 5) {
+            alert('Solo puedes subir un máximo de 5 documentos');
+            return;
+        }
+
+        const newDocumentos = files.map(file => {
+            // Validar tamaño máximo por documento (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert(`El documento ${file.name} supera el límite de 5MB`);
+                return null;
+            }
+            return file;
+        }).filter(Boolean); // Filtrar los documentos que pasaron la validación
+
+        // Crear previsualizaciones para imágenes
+        const newPreviews = newDocumentos.map(file => ({
+            file,
+            preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+            name: file.name
+        }));
+
+        setData('documentos', [...documentos, ...newDocumentos]);
+        setDocumentos([...documentos, ...newDocumentos]);
+        setDocumentosPreview([...documentosPreview, ...newPreviews]);
+    };
+
+    // Eliminar documento adjunto
+    const removeDocumento = (index) => {
+        const updatedDocumentos = [...documentos];
+        updatedDocumentos.splice(index, 1);
+
+        const updatedPreviews = [...documentosPreview];
+        updatedPreviews.splice(index, 1);
+
+        setData('documentos', updatedDocumentos);
+        setDocumentos(updatedDocumentos);
+        setDocumentosPreview(updatedPreviews);
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        
+        // Crear FormData para enviar archivos
+        const formData = new FormData();
+        
+        // Agregar todos los campos excepto archivos
+        Object.keys(data).forEach(key => {
+            if (key !== 'foto_perfil' && key !== 'documentos') {
+                formData.append(key, data[key]);
+            }
+        });
+
+        // Agregar foto de perfil si existe
+        if (data.foto_perfil) {
+            formData.append('foto_perfil', data.foto_perfil);
+        }
+
+        // Agregar documentos si existen
+        if (data.documentos && data.documentos.length > 0) {
+            data.documentos.forEach((file, index) => {
+                formData.append(`documentos[${index}]`, file);
+            });
+        }
+
         post(route('pacientes.store'), {
-            onError: (errors) => {
-                // Inertia automáticamente manejará los errores de validación
-                // que muestras en tu formulario
-                if (errors.dni && errors.dni.includes('ya ha sido tomado')) {
-                    // Puedes manejar errores específicos aquí si lo necesitas
-                }
+            data: formData,
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                // Limpiar previsualizaciones después del envío exitoso
+                setPreviewImage(null);
+                setDocumentos([]);
+                setDocumentosPreview([]);
             }
         });
     };
+
+    // Calcular edad automáticamente cuando cambia la fecha de nacimiento
+    useEffect(() => {
+        if (data.fecha_nacimiento) {
+            const birthDate = new Date(data.fecha_nacimiento);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            setData('edad', age.toString());
+        }
+    }, [data.fecha_nacimiento]);
 
     return (
         <AuthenticatedLayout
@@ -65,8 +167,56 @@ export default function PacientesCreate({ auth }) {
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
-                            <form onSubmit={handleSubmit}>
-                                {/*SECCION SUPERIRO DE DATOS */}
+                            <form onSubmit={handleSubmit} encType="multipart/form-data">
+                                {/* SECCIÓN DE FOTO DE PERFIL */}
+                                <div className="mb-8 bg-white shadow rounded-lg p-6">
+                                    <h3 className="text-lg font-medium mb-4">Foto de Perfil</h3>
+                                    <div className="flex items-center space-x-6">
+                                        <div className="shrink-0">
+                                            {previewImage ? (
+                                                <img 
+                                                    className="h-24 w-24 object-cover rounded-full" 
+                                                    src={previewImage} 
+                                                    alt="Preview" 
+                                                />
+                                            ) : (
+                                                <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center">
+                                                    <span className="text-gray-500">Sin foto</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <label className="block">
+                                                <span className="sr-only">Seleccionar foto</span>
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    onChange={handleImageChange}
+                                                    accept="image/jpeg,image/png,image/jpg"
+                                                    className="block w-full text-sm text-gray-500
+                                                    file:mr-4 file:py-2 file:px-4
+                                                    file:rounded-md file:border-0
+                                                    file:text-sm file:font-semibold
+                                                    file:bg-blue-50 file:text-blue-700
+                                                    hover:file:bg-blue-100"
+                                                />
+                                                <p className="mt-1 text-sm text-gray-500">JPEG, JPG o PNG (Max. 2MB)</p>
+                                                {errors.foto_perfil && <p className="mt-1 text-sm text-red-600">{errors.foto_perfil}</p>}
+                                            </label>
+                                            {previewImage && (
+                                                <button
+                                                    type="button"
+                                                    onClick={removeImage}
+                                                    className="text-sm text-red-600 hover:text-red-800"
+                                                >
+                                                    Eliminar imagen
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* SECCIÓN DE DATOS PERSONALES */}
                                 <div className='mb-8'>
                                     <h3 className="text-2xl uppercase font-semibold leading-tight text-gray-800 border-b">Datos Personales</h3>
                                 </div>
@@ -355,26 +505,28 @@ export default function PacientesCreate({ auth }) {
                                         </div>
                                     </div>          
                                 </div>                    
-
-                                <div className="flex items-center justify-end">
+                                
+                                {/* BOTONES DE ACCIÓN */}
+                                <div className="flex items-center justify-end mt-8 space-x-4">
                                     <Link
                                         href={route('pacientes.index')}
-                                        className="px-4 py-2 text-white bg-gray-500 rounded hover:bg-gray-600"
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                     >
                                         Cancelar
                                     </Link>
                                     <button
                                         type="submit"
-                                        className="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                        disabled={processing}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                     >
-                                        Guardar
+                                        {processing ? 'Guardando...' : 'Guardar Paciente'}
                                     </button>
                                 </div>
                             </form>
-                            </div>
-                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
         </AuthenticatedLayout>
     );
-};
+}

@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, router } from '@inertiajs/react';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import PacienteForm from '@/Components/PacienteForm';
 import Cie10Search from '@/Components/Cie10Search';
@@ -29,7 +29,10 @@ export default function ConsultasCreate({ auth }) {
         antecedentes_personales_otros: '',
         antecedentes_patologicos_familiares: '',
         cirugias_previas: '',
-        motivo_consulta: '',
+        motivo_consulta_inicio: '',
+        motivo_consulta_signos: '',
+        motivo_consulta_enfermedad: '',
+        motivo_consulta_otros: '',
         impresion_diagnostica: '',
         tratamiento: '',
         plan: '',
@@ -116,6 +119,8 @@ export default function ConsultasCreate({ auth }) {
         exam_old_cerca_eje_od: '',
         exam_old_cerca_eje_oi: '',
         exam_old_cerca_dip: '',
+        //
+        comentario: '',
     });
 
     // Estado para controlar qué secciones están expandidas
@@ -201,64 +206,33 @@ export default function ConsultasCreate({ auth }) {
      const marcadores = [
         {
             id: 1,
-            top: 'top-3', // Posición vertical
-            left: 'left-24', // Posición horizontal
             campo: 'fondo_ojo_vitreo_od', // Campo asociado en el estado `data` VITREO
             color: 'blue', // Color del marcador
             subtitulo: 'Vítreo',
-            opciones: [
-                { id: 1, nombre: 'VITREO 1' },
-                { id: 2, nombre: 'VITREO 2' },
-                { id: 3, nombre: 'VITREO 3' },
-            ],
         },
         {
             id: 2,
-            top: 'top-20',
-            left: 'left-24',
             campo: 'fondo_ojo_macula_od',
             color: 'red', // Color del marcador
             subtitulo: 'Mácula',
-            opciones: [
-                { id: 1, nombre: 'MACULA A' },
-                { id: 2, nombre: 'MACULA B' },
-            ],
         },
         {
             id: 3,
-            top: 'top-16',
-            left: 'left-6',
             campo: 'fondo_ojo_retina_p_od',
             color: 'green', // Color del marcador
             subtitulo: 'Retina Periférica',
-            opciones: [
-                { id: 1, nombre: 'RETINA P. 1' },
-                { id: 2, nombre: 'RETINA P. 2' },
-            ],
         },
         {
         id: 4,
-        top: 'top-20',
-        left: 'left-36',
         campo: 'fondo_ojo_disco_o_od',
         color: 'purple', // Color del marcador
         subtitulo: 'Disco Óptico',
-        opciones: [
-            { id: 1, nombre: 'DISCO OPT. P' },
-            { id: 2, nombre: 'DISCO OPT. G' },
-        ],
     },
     {
         id: 5,
-        top: 'top-14',
-        left: 'left-32',
         campo: 'fondo_ojo_vasos_od',
         color: 'orange', // Color del marcador
         subtitulo: 'Vasos Sanguíneos',
-        opciones: [
-            { id: 1, nombre: 'VASOS X' },
-            { id: 2, nombre: 'VASOS Y' },
-        ],
     },
     ];
 
@@ -266,64 +240,33 @@ export default function ConsultasCreate({ auth }) {
     const marcadoresOI = [
         {
             id: 1,
-            top: 'top-3', // Posición vertical
-            right: 'right-2', // Posición horizontal
             campo: 'fondo_ojo_vitreo_oi', // Campo asociado en el estado `data` VITREO
             color: 'blue', // Color del marcador
             subtitulo: 'Vítreo OI',
-            opciones: [
-                { id: 1, nombre: 'OI VITREO 1' },
-                { id: 2, nombre: 'OI VITREO 2' },
-                { id: 3, nombre: 'OI VITREO 3' },
-            ],
         },
         {
             id: 2,
-            top: 'top-20',
-            right: 'right-2',
             campo: 'fondo_ojo_macula_oi',
             color: 'red', // Color del marcador
             subtitulo: 'Mácula',
-            opciones: [
-                { id: 1, nombre: 'OI MACULA A' },
-                { id: 2, nombre: 'OI MACULA B' },
-            ],
         },
         {
             id: 3,
-            top: 'top-16',
-            right: 'right-2',
             campo: 'fondo_ojo_retina_p_oi',
             color: 'green', // Color del marcador
             subtitulo: 'Retina Periférica',
-            opciones: [
-                { id: 1, nombre: 'OI RETINA P. 1' },
-                { id: 2, nombre: 'OI RETINA P. 2' },
-            ],
         },
         {
         id: 4,
-        top: 'top-20',
-        right: 'right-2',
         campo: 'fondo_ojo_disco_o_oi',
         color: 'purple', // Color del marcador
         subtitulo: 'Disco Óptico',
-        opciones: [
-            { id: 1, nombre: 'OI DISCO OPT. P' },
-            { id: 2, nombre: 'OI DISCO OPT. G' },
-        ],
     },
     {
         id: 5,
-        top: 'top-14',
-        right: 'right-2',
         campo: 'fondo_ojo_vasos_oi',
         color: 'orange', // Color del marcador
         subtitulo: 'Vasos Sanguíneos',
-        opciones: [
-            { id: 1, nombre: 'OI VASOS X' },
-            { id: 2, nombre: 'OI VASOS Y' },
-        ],
     },
     ];
 
@@ -338,22 +281,7 @@ export default function ConsultasCreate({ auth }) {
     };
 
     // Manejar selección de una opción
-    const handleSeleccionOpcion = (opcion) => {
-        if (marcadorActivo) {
-            const marcador = marcadores.find(m => m.id === marcadorActivo);
-            setData(marcador.campo, opcion.nombre); // Actualiza el campo correspondiente en el estado `data`
-            setMarcadorActivo(null); // Cierra el contenedor de opciones
-        }
-    };
-
-    // Manejar selección de una opción OJO IZQUIERDO
-    const handleSeleccionOpcionOI = (opcionOI) => {
-        if (marcadorActivoOI) {
-            const marcadorOI = marcadoresOI.find(mOI => mOI.id === marcadorActivoOI);
-            setData(marcadorOI.campo, opcionOI.nombre); // Actualiza el campo correspondiente en el estado `data`
-            setMarcadorActivoOI(null); // Cierra el contenedor de opciones
-        }
-    };
+    
 
     // Cerrar el contenedor de opciones al hacer clic fuera
     useEffect(() => {
@@ -403,6 +331,13 @@ export default function ConsultasCreate({ auth }) {
         
         verificarTipoConsulta();
     }, [data.paciente_id]);
+
+    // Agrega este efecto para cargar el historial cuando el paciente cambia o el tipo de consulta es evolución
+    useEffect(() => {
+        if (data.paciente_id) {
+            cargarHistorialDiagnosticos();
+        }
+    }, [data.paciente_id]);
     
     const buscarPaciente = async () => {
         if (!data.dni) return;
@@ -420,8 +355,7 @@ export default function ConsultasCreate({ auth }) {
             if (!response.ok) throw new Error('Paciente no encontrado');
     
             const result = await response.json();
-            console.log('Respuesta del servidor:', result); // Para depuración
-    
+            
             if (result.success && result.paciente) {
                 setData(prev => ({
                     ...prev,
@@ -441,8 +375,22 @@ export default function ConsultasCreate({ auth }) {
                     procedencia: result.paciente.procedencia || '',
                     acompañante: result.paciente.acompañante || '',
                     referido: result.paciente.referido || '',
+                    foto_perfil: result.paciente.foto_perfil || '',
                 }));
+                
                 setPacienteEncontrado(true);
+                
+                // Determinar tipo de consulta basado en si tiene consulta inicial
+                setData('tipo_consulta', result.tieneConsultaInicial ? 'evolucion' : 'inicio');
+                
+                // Si tiene consulta inicial, cargar historial
+                if (result.tieneConsultaInicial) {
+                    const histResponse = await fetch(`/consultas/historial-diagnosticos/${result.paciente.id}`);
+                    if (histResponse.ok) {
+                        const histData = await histResponse.json();
+                        setHistorialDiagnosticos(histData.diagnosticos || []);
+                    }
+                }
             } else {
                 throw new Error(result.message || 'Datos del paciente incompletos');
             }
@@ -453,6 +401,99 @@ export default function ConsultasCreate({ auth }) {
         }
     };
 
+    const cargarHistorialDiagnosticos = async () => {
+        if (!data.paciente_id) return;
+        
+        try {
+            const response = await fetch(`/consultas/historial-diagnosticos/${data.paciente_id}`);
+            if (!response.ok) throw new Error('Error al cargar historial');
+            
+            const result = await response.json();
+            setHistorialDiagnosticos(result.diagnosticos || []);
+            
+        } catch (error) {
+            console.error('Error cargando historial:', error);
+            setHistorialDiagnosticos([]);
+        }
+    };
+
+    const MultiInputField = React.memo(({ label, values: propValues, fieldName, setData, className = "" }) => {
+        const [localValues, setLocalValues] = useState(propValues || ['']);
+        const inputRefs = useRef([]);
+    
+        // Sincronizar con los valores del padre cuando cambian externamente
+        useEffect(() => {
+            setLocalValues(propValues || ['']);
+        }, [propValues]);
+    
+        const addInput = () => {
+            setLocalValues(prev => [...prev, '']);
+            // Enfocar el nuevo input después de que se renderice
+            setTimeout(() => {
+                if (inputRefs.current[localValues.length]) {
+                    inputRefs.current[localValues.length].focus();
+                }
+            }, 0);
+        };
+    
+        const updateValue = (index, value) => {
+            setLocalValues(prev => {
+                const newValues = [...prev];
+                newValues[index] = value;
+                return newValues;
+            });
+        };
+    
+        const removeInput = (index) => {
+            if (localValues.length > 1) {
+                setLocalValues(prev => prev.filter((_, i) => i !== index));
+            }
+        };
+    
+        // Actualizar el estado padre solo cuando sea necesario (al perder foco o al eliminar)
+        const handleBlur = () => {
+            setData(fieldName, localValues);
+        };
+    
+        return (
+            <div className={`mb-4 ${className}`}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                {localValues.map((value, index) => (
+                    <div key={index} className="flex items-center mb-2">
+                        <input
+                            type="text"
+                            value={value}
+                            onChange={(e) => updateValue(index, e.target.value)}
+                            onBlur={handleBlur}
+                            className={`flex-1 rounded-md border-[#8FDBF1] shadow-sm ${className}`}
+                            ref={(el) => (inputRefs.current[index] = el)}
+                        />
+                        {index === localValues.length - 1 ? (
+                            <button
+                                type="button"
+                                onClick={addInput}
+                                className="ml-2 p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                            >
+                                +
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    removeInput(index);
+                                    // Actualizar el estado padre inmediatamente al eliminar
+                                    setData(fieldName, localValues.filter((_, i) => i !== index));
+                                }}
+                                className="ml-2 p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                            >
+                                -
+                            </button>
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+    });
     // Función para verificar si ya existe una consulta de inicio
     const verificarConsultaInicio = async (pacienteId) => {
         try {
@@ -542,23 +583,23 @@ export default function ConsultasCreate({ auth }) {
         }
     };
 
-
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // Crear un FormData para enviar las imágenes
+        
+        // No necesitas convertir a string, Laravel lo manejará como array
         const formData = new FormData();
         setData('tipo_consulta', tipoConsulta);
         
-        formData.append('paciente_id', data.paciente_id);
-        formData.append('tipo_consulta', data.tipo_consulta);
-
-        // Agregar campos de texto y otros datos
+        // Agregar todos los campos, incluyendo el array de cirugías
         Object.keys(data).forEach((key) => {
             if (key !== 'examenes_indicados_img' && key !== 'examenes_indicados_archivos') {
-                formData.append(key, data[key]);
+                // Enviar el array directamente
+                formData.append(key, Array.isArray(data[key]) ? JSON.stringify(data[key]) : data[key]);
             }
         });
+        
+        formData.append('paciente_id', data.paciente_id);
+        formData.append('tipo_consulta', data.tipo_consulta);
 
         // Agregar las imágenes seleccionadas
         if (data.examenes_indicados_img && data.examenes_indicados_img.length > 0) {
@@ -606,61 +647,33 @@ export default function ConsultasCreate({ auth }) {
                         <div className="bg-[#FFFFFF]">
                             <form onSubmit={handleSubmit}>
                                 {/* SECCION PARA Mostrar datos del paciente (siempre visible, pero vacío inicialmente) */}
-                                <div className="py-4 px-4 bg-[#FFFFFF]">
-                                    <div className='flex items-center justify-end'>
-                                        {/* SECCION para ingresar el DNI y buscar paciente */}
-                                        <PacienteForm
-                                            data={data}
-                                            setData={setData}
-                                            pacienteEncontrado={pacienteEncontrado}
-                                            buscarPaciente={buscarPaciente}
-                                            errors={errors}
-                                        />
-                                    </div>
-                                    
-                                    <div className='grid grid-cols-4 gap-4 mt-4'>
+                                <div className="py-4 px-4 bg-[#FFFFFF]">                                                                        
+                                    <div className='grid grid-cols-4 gap-4'>
                                     {/* Columna 1: Imagen del paciente - ocupa 1 parte */}
-                                    <div className='flex flex-col items-center col-span-1'>
-                                        <div className='w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-2'>
-                                            {data.foto ? (
+                                    <div className='flex flex-col items-center justify-center col-span-1'>
+                                        <div className='w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-2 overflow-hidden'>
+                                            {data.foto_perfil ? (
                                                 <img 
-                                                    src={data.foto} 
+                                                    src={`/storage/${data.foto_perfil}`}  // Asegúrate de que la ruta sea correcta
                                                     alt="Foto del paciente" 
-                                                    className="w-full h-full rounded-full object-cover"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null; 
+                                                        e.target.src = 'https://via.placeholder.com/150'; // Imagen de respaldo si falla
+                                                    }}
                                                 />
                                             ) : (
                                                 <span className="text-gray-500">Sin foto</span>
                                             )}
                                         </div>
-                                        <button
-                                            type='button'
-                                            className="text-sm text-blue-500 hover:text-blue-700"
-                                            onClick={() => document.getElementById('file-upload').click()}
-                                        >
-                                            Cambiar foto
-                                        </button>
-                                        <input 
-                                            id="file-upload"
-                                            type="file" 
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => {
-                                                if (e.target.files[0]) {
-                                                    const reader = new FileReader();
-                                                    reader.onload = (event) => {
-                                                        setData('foto', event.target.result);
-                                                    };
-                                                    reader.readAsDataURL(e.target.files[0]);
-                                                }
-                                            }}
-                                        />
+                                        {/* Elimina el botón de cambiar foto o mantenlo como visualización estática si lo prefieres */}
+                                        <span className="text-sm text-gray-500">Foto del paciente</span>
                                     </div>
-
                                     {/* Columna 2: Datos concatenados del paciente - ocupa 2 partes */}
                                     <div className='flex flex-col col-span-2'>
                                         <div className="mb-2">
                                             <p className="text-lg text-[#333333]">
-                                                {`${data.nombres || ''}, ${data.apellido_paterno || ''} ${data.apellido_materno || ''}`.trim() || '-'}
+                                                {`${data.nombres || ''} ${data.apellido_paterno || ''} ${data.apellido_materno || ''}`.trim() || '-'}
                                             </p>
                                         </div>
                                         <div className='grid grid-cols-2'>
@@ -712,21 +725,27 @@ export default function ConsultasCreate({ auth }) {
                                     </div>
 
                                     {/* Columna 3: Historial de diagnósticos - ocupa 1 parte */}
-                                    <div className='flex flex-col col-span-1'>
-                                        <label className="text-sm font-semibold text-[#333333] mb-2">Historial de Diagnósticos:</label>
-                                        <div className="border border-gray-200 rounded-md p-2 overflow-y-auto">
-                                            {data.historialDiagnosticos && data.historialDiagnosticos.length > 0 ? (
-                                                <ul className="space-y-1">
-                                                    {data.historialDiagnosticos.map((diagnostico, index) => (
-                                                        <li key={index} className="text-sm p-1 hover:bg-gray-100 rounded">
-                                                            {diagnostico.fecha} - {diagnostico.codigo}: {diagnostico.descripcion}
+                                    <div className='flex flex-col col-span-1 p-2'>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="text-sm font-semibold text-[#333333]">Historial de Diagnósticos:</label>                                            
+                                        </div>
+                                        {historialDiagnosticos.length > 0 ? (
+                                            <div className="bg-gray-50 p-4 rounded max-h-64 overflow-y-auto">
+                                                <ul className="space-y-2">
+                                                    {historialDiagnosticos.map((item, index) => (
+                                                        <li key={index} className="border-b pb-2 last:border-b-0">
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="font-medium">{item.fecha}</span>
+                                                                <span className="text-blue-600">{item.tipo === 'inicio' ? 'Inicial' : 'Evolución'}</span>
+                                                            </div>
+                                                            <div className="mt-1 text-gray-700 whitespace-pre-wrap text-xs">{item.diagnostico}</div>
                                                         </li>
                                                     ))}
                                                 </ul>
-                                            ) : (
-                                                <p className="text-sm text-gray-500">No hay diagnósticos registrados</p>
-                                            )}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-500">No hay historial de diagnósticos</p>
+                                        )}
                                     </div>
                                 </div>
                                 </div>
@@ -737,6 +756,15 @@ export default function ConsultasCreate({ auth }) {
                                 <div className="flex flex-col md:flex-row">
                                     {/* Sidebar */}
                                     <div className="w-full md:w-64 bg-[#005b96] p-4 flex-shrink-0">
+                                        <div className='flex items-center justify-end'>                                        
+                                            <PacienteForm
+                                                data={data}
+                                                setData={setData}
+                                                pacienteEncontrado={pacienteEncontrado}
+                                                buscarPaciente={buscarPaciente}
+                                                errors={errors}
+                                            />
+                                        </div>
                                         <div className="sticky top-4 space-y-2">
                                             <h3 className="text-2xl text-center mb-2">
                                                 {data.tipo_consulta === 'inicio' 
@@ -823,6 +851,13 @@ export default function ConsultasCreate({ auth }) {
                                                     >
                                                         Exámenes Indicados
                                                     </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('comentario')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.comentario ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Comentario
+                                                    </button>
                                                 </>
                                             ) : (
                                                 <>
@@ -882,6 +917,13 @@ export default function ConsultasCreate({ auth }) {
                                                     >
                                                         Exámenes Indicados
                                                     </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('comentario')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.comentario ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Comentario
+                                                    </button>
                                                 </>
                                             )}
                                             <div className="flex items-center justify-center">
@@ -936,12 +978,13 @@ export default function ConsultasCreate({ auth }) {
                                                                 Registre los antecedentes médicos relevantes en la familia del paciente.
                                                             </p>
                                                             <div className="mb-4">
-                                                                <input
-                                                                    type="text"
-                                                                    value={data.antecedentes_patologicos_familiares}
-                                                                    onChange={(e) => setData('antecedentes_patologicos_familiares', e.target.value)}
-                                                                    className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                                />
+                                                                <MultiInputField
+                                                                label="Antecedentes Patológicos Familiares"
+                                                                values={data.antecedentes_patologicos_familiares}
+                                                                fieldName="antecedentes_patologicos_familiares"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -954,12 +997,13 @@ export default function ConsultasCreate({ auth }) {
                                                                 Registre cualquier procedimiento quirúrgico previo que haya tenido el paciente.
                                                             </p>
                                                             <div className="mb-4">
-                                                                <input
-                                                                    type="text"
-                                                                    value={data.cirugias_previas}
-                                                                    onChange={(e) => setData('cirugias_previas', e.target.value)}
-                                                                    className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                                />
+                                                            <MultiInputField
+                                                                label="Cirugías Previas"
+                                                                values={data.cirugias_previas}
+                                                                fieldName="cirugias_previas"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -968,26 +1012,23 @@ export default function ConsultasCreate({ auth }) {
                                                 {expandedSections.motivoConsulta && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
                                                         <div className="p-4">
-                                                            <p className="text-sm text-gray-500 mb-4">
-                                                                {tipoConsulta === 'inicio' 
-                                                                    ? 'Registre el motivo principal por el cual el paciente acude a consulta.'
-                                                                    : 'Describa la evolución del paciente desde la última consulta.'}
-                                                            </p>
-                                                            {tipoConsulta === 'inicio' ? (
-                                                                <TerminoMotivoConsultaSearch 
-                                                                    initialValue={data.motivo_consulta || ''}
-                                                                    onSelectTerm={(termsArray) => {
-                                                                        setData('motivo_consulta', termsArray.join(', '));
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <input
-                                                                    type="text"
-                                                                    value={data.evoluciones}
-                                                                    onChange={(e) => setData('evoluciones', e.target.value)}
-                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                                />
-                                                            )}
+                                                        <label>INICIO</label>
+                                                        <TerminoMotivoConsultaSearch 
+                                                            initialValue={data.motivo_consulta_inicio}
+                                                            onSelectTerm={(terms) => setData('motivo_consulta_inicio', terms)}
+                                                        />
+                                                        <label>SIGNOS</label>
+                                                        <TerminoMotivoConsultaSearch
+                                                            initialValue={data.motivo_consulta_signos || ''}
+                                                            onSelectTerm={(value) => setData('motivo_consulta_signos', value)}/>
+                                                        <label>ENFERMEDAD</label>
+                                                        <TerminoMotivoConsultaSearch
+                                                            initialValue={data.motivo_consulta_enfermedad || ''}
+                                                            onSelectTerm={(value) => setData('motivo_consulta_enfermedad', value)}/>
+                                                        <label>OTROS</label>
+                                                        <TerminoMotivoConsultaSearch
+                                                            initialValue={data.motivo_consulta_otros || ''}
+                                                            onSelectTerm={(value) => setData('motivo_consulta_otros', value)}/>
                                                         </div>
                                                     </div>
                                                 )}
@@ -1091,8 +1132,6 @@ export default function ConsultasCreate({ auth }) {
                                                                 marcadorActivoOI={marcadorActivoOI}
                                                                 handleMarkerClickOD={handleMarkerClick}
                                                                 handleMarkerClickOI={handleMarkerClickOI}
-                                                                handleSeleccionOpcionOD={handleSeleccionOpcion}
-                                                                handleSeleccionOpcionOI={handleSeleccionOpcionOI}
                                                                 data={data}
                                                                 setData={setData}
                                                             />
@@ -1213,6 +1252,22 @@ export default function ConsultasCreate({ auth }) {
                                                                     ))}
                                                                 </div>
                                                             </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 12. Comentario */}
+                                                {expandedSections.comentario && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Escriba un breve comentario.
+                                                            </p>
+                                                            <input
+                                                                type="text"
+                                                                value={data.comentario}
+                                                                onChange={(e) => setData('comentario', e.target.value)}
+                                                                className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                            />
                                                         </div>
                                                     </div>
                                                 )}
@@ -1334,8 +1389,6 @@ export default function ConsultasCreate({ auth }) {
                                                                 marcadorActivoOI={marcadorActivoOI}
                                                                 handleMarkerClickOD={handleMarkerClick}
                                                                 handleMarkerClickOI={handleMarkerClickOI}
-                                                                handleSeleccionOpcionOD={handleSeleccionOpcion}
-                                                                handleSeleccionOpcionOI={handleSeleccionOpcionOI}
                                                                 data={data}
                                                                 setData={setData}
                                                             />
@@ -1456,6 +1509,22 @@ export default function ConsultasCreate({ auth }) {
                                                                     ))}
                                                                 </div>
                                                             </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 12. Comentario */}
+                                                {expandedSections.comentario && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Escriba un breve comentario.
+                                                            </p>
+                                                            <input
+                                                                type="text"
+                                                                value={data.comentario}
+                                                                onChange={(e) => setData('comentario', e.target.value)}
+                                                                className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                            />
                                                         </div>
                                                     </div>
                                                 )}

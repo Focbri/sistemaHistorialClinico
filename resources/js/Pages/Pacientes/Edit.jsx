@@ -1,41 +1,108 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import PacienteImagenPerfil from '@/Components/PacienteImagenPerfil';
-import { useState, useEffect, useRef } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
+import { useState, useRef, useEffect } from 'react';
 
 export default function PacientesEdit({ auth, paciente }) {
+    const [files, setFiles] = useState({
+        foto_perfil: paciente.foto_perfil ? [{
+            path: paciente.foto_perfil,
+            name: 'foto_perfil.jpg',
+            type: 'image',
+            isNew: false,
+            file: null
+        }] : []
+    });
+    const [filesToDelete, setFilesToDelete] = useState([]);
 
-    // Formulario con los datos del paciente
     const { data, setData, put, processing, errors } = useForm({
-        nombres: paciente.nombres || '',
-        apellido_paterno: paciente.apellido_paterno || '',
-        apellido_materno: paciente.apellido_materno || '',
-        dni: paciente.dni || '',
-        fecha_nacimiento: paciente.fecha_nacimiento || '',
-        sexo: paciente.sexo || '',
-        edad: paciente.edad || '',
-        peso: paciente.peso || '',
-        estado_civil: paciente.estado_civil || '',
-        ocupacion: paciente.ocupacion || '',
-        procedencia: paciente.procedencia || '',
-        direccion: paciente.direccion || '',
-        telefono: paciente.telefono || '',
-        email: paciente.email || '',
-        acompañante: paciente.acompañante || '',
-        referido: paciente.referido || '',
+        ...paciente,
+        foto_perfil: null, // Para nueva imagen
+        foto_perfil_existente: files.foto_perfil.length > 0 ? files.foto_perfil[0].path : null,
     });
 
-     // Enviar formulario (sin la parte de imagen)
-     const handleSubmit = (e) => {
+    const handleFileChange = (e) => {
+        const newFile = e.target.files[0];
+        if (!newFile) return;
+        
+        // Validar archivo
+        if (!['image/jpeg', 'image/png', 'image/jpg'].includes(newFile.type)) {
+            alert('Solo se permiten imágenes JPG, PNG o JPEG');
+            return;
+        }
+        
+        if (newFile.size > 2 * 1024 * 1024) {
+            alert('La imagen no debe exceder los 2MB');
+            return;
+        }
+        
+        // Procesar archivo
+        const processedFile = {
+            path: URL.createObjectURL(newFile),
+            name: newFile.name,
+            type: 'image',
+            isNew: true,
+            file: newFile
+        };
+        
+        setFiles({
+            foto_perfil: [processedFile]
+        });
+    };
+
+    const handleRemoveFile = () => {
+        if (files.foto_perfil.length === 0) return;
+        
+        const fileToRemove = files.foto_perfil[0];
+        
+        if (fileToRemove.isNew) {
+            URL.revokeObjectURL(fileToRemove.path);
+        } else {
+            setFilesToDelete([fileToRemove.path]);
+        }
+        
+        setFiles({ foto_perfil: [] });
+        setData('foto_perfil_existente', null);
+    };
+
+    const handleSubmit = (e) => {
         e.preventDefault();
-        put(route('pacientes.update', paciente.id), {
+        
+        const formData = new FormData();
+        formData.append('_method', 'PUT');
+        
+        // Agregar datos del formulario
+        Object.keys(data).forEach(key => {
+            if (key !== 'foto_perfil') {
+                const value = data[key];
+                if (value !== null && typeof value !== 'object') {
+                    formData.append(key, value);
+                }
+            }
+        });
+    
+        // Agregar archivos a eliminar
+        if (filesToDelete.length > 0) {
+            formData.append('files_to_delete', JSON.stringify(filesToDelete));
+        }
+    
+        // Agregar nueva foto si existe
+        if (files.foto_perfil.length > 0 && files.foto_perfil[0].isNew) {
+            formData.append('foto_perfil', files.foto_perfil[0].file);
+        }
+        
+        router.post(route('pacientes.update', paciente.id), formData, {
             preserveScroll: true,
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+            onSuccess: () => {
+                setFilesToDelete([]);
+            },
             onError: (errors) => {
                 console.error('Error al actualizar:', errors);
             }
         });
     };
-
 
     return (
         <AuthenticatedLayout
@@ -49,11 +116,188 @@ export default function PacientesEdit({ auth, paciente }) {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <form onSubmit={handleSubmit} encType="multipart/form-data">
-                                <hr className='my-8'/>
-                                <div className='grid grid-cols-2 gap-4'>
+                            <div className="mb-8 border border-gray-200 rounded-md p-4">
+                                    <h3 className="text-lg font-medium text-gray-700 mb-4">Foto de Perfil</h3>
+                                    
+                                    <div className="flex items-center space-x-6">
+                                        {/* Vista previa de la foto */}
+                                        <div className="relative">
+                                            {files.foto_perfil.length > 0 ? (
+                                                <>
+                                                    <img
+                                                        src={files.foto_perfil[0].isNew ? 
+                                                            files.foto_perfil[0].path : 
+                                                            `/storage/${files.foto_perfil[0].path}`}
+                                                        alt="Foto de perfil"
+                                                        className="w-32 h-32 rounded-full object-cover border-2 border-gray-300"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveFile}
+                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
+                                                    <span className="text-gray-500">Sin foto</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Botón para subir foto */}
+                                        <div>
+                                            <label className="block">
+                                                <span className="sr-only">Elegir foto de perfil</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/jpg"
+                                                    onChange={handleFileChange}
+                                                    className="block w-full text-sm text-gray-500
+                                                    file:mr-4 file:py-2 file:px-4
+                                                    file:rounded-md file:border-0
+                                                    file:text-sm file:font-semibold
+                                                    file:bg-blue-50 file:text-blue-700
+                                                    hover:file:bg-blue-100"
+                                                />
+                                            </label>
+                                            <p className="mt-2 text-xs text-gray-500">
+                                                Formatos aceptados: JPG, PNG. Tamaño máximo: 2MB.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* SECCIÓN DE DATOS PERSONALES */}
+                                <div className='mb-8'>
+                                    <h3 className="text-2xl uppercase font-semibold leading-tight text-gray-800 border-b">Datos Personales</h3>
+                                </div>
+                                <div className='grid grid-cols-2 gap-12'>
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Estado Civil</label>
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Apellido Paterno</label>
+                                            <input
+                                                type="text"
+                                                value={data.apellido_paterno}
+                                                onChange={(e) => setData('apellido_paterno', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            />
+                                            {errors.apellido_paterno && <p className="text-sm text-red-500">{errors.apellido_paterno}</p>}
+                                        </div>                                           
+                                        <div className="mb-4">
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Apellido Materno</label>
+                                            <input
+                                                type="text"
+                                                value={data.apellido_materno}
+                                                onChange={(e) => setData('apellido_materno', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            />
+                                            {errors.apellido_materno && <p className="text-sm text-red-500">{errors.apellido_materno}</p>}
+                                        </div>
+                                        <div className="mb-4">
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Nombres</label>
+                                            <input required
+                                                type="text"
+                                                value={data.nombres}
+                                                onChange={(e) => setData('nombres', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            />
+                                            {errors.nombres && <p className="text-sm text-red-500">{errors.nombres}</p>}
+                                        </div>
+                                    </div>
+                                    {/*SEGUNDO BLOQUE DE DATOS PERSONALES*/ }
+                                    
+                                    <div className='flex flex-col'>
+                                        <div className="mb-4">
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Fecha Nacimiento</label>
+                                            <input required
+                                                type="date"
+                                                value={data.fecha_nacimiento}
+                                                onChange={(e) => setData('fecha_nacimiento', e.target.value)}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                            />
+                                            {errors.fecha_nacimiento && <p className="text-sm text-red-500">{errors.fecha_nacimiento}</p>}
+                                        </div>
+
+                                        <div className='grid grid-cols-2'>
+                                            <div className="mb-4 mr-4">
+                                                <label className="block text-sm uppercase font-medium text-gray-700">Edad</label>
+                                                <input required
+                                                    type="number"
+                                                    min={0}
+                                                    max={999}
+                                                    maxLength={3}
+                                                    value={data.edad}
+                                                    onChange={(e) => {
+                                                        if (e.target.value.length <= 3) {
+                                                            setData('edad', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                {errors.edad && <p className="text-sm text-red-500">{errors.edad}</p>}
+                                            </div>
+
+                                            <div className="mb-4">
+                                                <label className="block text-sm uppercase font-medium text-gray-700">Peso Kg</label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    max={999.99}
+                                                    value={data.peso}
+                                                    step={0.01}
+                                                    onChange={(e) => {
+                                                        // Limitar a 6 caracteres (incluyendo el punto decimal)
+                                                        if (e.target.value.length <= 6) {
+                                                            setData('peso', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                {errors.peso && <p className="text-sm text-red-500">{errors.peso}</p>}
+                                            </div>
+
+                                            <div className="mr-4">
+                                                <label className="block text-sm uppercase font-medium text-gray-700">Sexo</label>
+                                                    <select required
+                                                        value={data.sexo}
+                                                        onChange={(e) => setData('sexo', e.target.value)}
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                    >
+                                                        <option value="">Seleccione...</option>
+                                                        <option value="M">Masculino</option>
+                                                        <option value="F">Femenino</option>
+                                                    </select>
+                                                    {errors.sexo && <p className="text-sm text-red-500">{errors.sexo}</p>}
+                                            </div>
+
+                                            <div className="mb-4">
+                                                <label className="block text-sm uppercase font-medium text-gray-700">DNI</label>
+                                                <input required
+                                                    type="number"
+                                                    min={8}
+                                                    max={99999999}
+                                                    maxLength={8}
+                                                    onChange={(e) => {
+                                                        if (e.target.value.length <= 8) {
+                                                            setData('dni', e.target.value);
+                                                        }
+                                                    }}
+                                                    value={data.dni}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                />
+                                                {errors.dni && <p className="text-sm text-red-500">{errors.dni}</p>}
+                                            </div>
+                                        </div>                                            
+                                    </div>
+                                </div>
+
+                                <hr className='my-8'/>
+                                <div className='grid grid-cols-2 gap-12'>
+                                    <div className='flex flex-col'>
+                                        <div className="mb-4">
+                                        <label className="block text-sm uppercase font-medium text-gray-700">Estado Civil</label>
                                             <select
                                                 value={data.estado_civil}
                                                 onChange={(e) => setData('estado_civil', e.target.value)}
@@ -66,10 +310,11 @@ export default function PacientesEdit({ auth, paciente }) {
                                                 <option value="viudo">Viudo</option>
                                             </select>
                                             {errors.estado_civil && <p className="text-sm text-red-500">{errors.estado_civil}</p>}
+
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Ocupación</label>
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Ocupación</label>
                                             <input
                                                 type="text"
                                                 value={data.ocupacion}
@@ -79,9 +324,9 @@ export default function PacientesEdit({ auth, paciente }) {
                                             {errors.ocupacion && <p className="text-sm text-red-500">{errors.ocupacion}</p>}
                                         </div>
 
-                                        <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Procedencia</label>
-                                            <select required
+                                        <div className="mr-4">
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Procedencia</label>
+                                                <select required
                                                     value={data.procedencia}
                                                     onChange={(e) => setData('procedencia', e.target.value)}
                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -131,12 +376,11 @@ export default function PacientesEdit({ auth, paciente }) {
                                                     <option value="Villa El Salvador">Villa El Salvador</option>
                                                     <option value="Villa María del Triunfo">Villa María del Triunfo</option>
                                                 </select>
+                                                {errors.referido && <p className="text-sm text-red-500">{errors.referido}</p>}
                                         </div>
-                                    </div>
 
-                                    <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Domicilio</label>
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Domicilio</label>
                                             <input required
                                                 type="text"
                                                 value={data.direccion}
@@ -145,11 +389,13 @@ export default function PacientesEdit({ auth, paciente }) {
                                             />
                                             {errors.direccion && <p className="text-sm text-red-500">{errors.direccion}</p>}
                                         </div>
+                                    </div>
 
+                                    <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Teléfono</label>
                                             <input required
-                                                type="number"
+                                                type="number"                                                
                                                 value={data.telefono}
                                                 min={0}
                                                 max={999999999}
@@ -165,19 +411,20 @@ export default function PacientesEdit({ auth, paciente }) {
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Acompañante</label>
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Acompañante</label>
                                             <input required
                                                 type="text"
+                                                maxLength={9}
                                                 value={data.acompañante}
                                                 onChange={(e) => setData('acompañante', e.target.value)}
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                             />
                                             {errors.acompañante && <p className="text-sm text-red-500">{errors.acompañante}</p>}
-                                        </div>    
+                                        </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Referido</label>
-                                            <select
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Referido</label>
+                                                <select
                                                     value={data.referido}
                                                     onChange={(e) => setData('referido', e.target.value)}
                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
@@ -196,10 +443,11 @@ export default function PacientesEdit({ auth, paciente }) {
                                                     <option value="Correo electrónico">Correo electrónico</option>
                                                     <option value="Eventos o ferias">Eventos o ferias</option>
                                                 </select>
-                                        </div>    
+                                                {errors.referido && <p className="text-sm text-red-500">{errors.referido}</p>}
+                                        </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Email</label>
                                             <input required
                                                 type="email"
                                                 value={data.email}
@@ -209,19 +457,20 @@ export default function PacientesEdit({ auth, paciente }) {
                                             {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                                         </div>
                                     </div>          
-                                </div>                    
-
-                                <div className="flex items-center justify-end">
+                                </div>         
+                                
+                                {/* BOTONES DE ACCIÓN */}
+                                <div className="flex items-center justify-end mt-8 space-x-4">
                                     <Link
                                         href={route('pacientes.index')}
-                                        className="px-4 py-2 text-white bg-gray-500 rounded hover:bg-gray-600"
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                     >
                                         Cancelar
                                     </Link>
                                     <button
                                         type="submit"
-                                        className="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
                                         disabled={processing}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                     >
                                         {processing ? 'Guardando...' : 'Guardar Cambios'}
                                     </button>

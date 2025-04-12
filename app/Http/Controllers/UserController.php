@@ -38,7 +38,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-            'role' => 'required|in:admin,usuario', // Solo permite 'admin' o 'usuario'
+            'role' => 'required|in:admin,medico', // Solo permite 'admin' o 'usuario'
         ]);
 
         // Crear el usuario
@@ -99,7 +99,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-            'role' => 'required|in:admin,usuario', // Solo permite 'admin' o 'usuario'
+            'role' => 'required|in:admin,medico', // Solo permite 'admin' o 'usuario'
         ]);
 
         // Actualizar los datos del usuario

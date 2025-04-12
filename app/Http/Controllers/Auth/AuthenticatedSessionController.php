@@ -33,7 +33,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('inicio', absolute: false))
+            ->with('success', '¡Bienvenido de nuevo!');
     }
 
     /**
@@ -47,6 +48,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        // Mensaje al cerrar sesión
+        return redirect('/')->with('status', 'Has cerrado sesión correctamente.');
     }
 }

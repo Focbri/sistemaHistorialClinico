@@ -53,7 +53,7 @@ class Paciente extends Model
      *
      * @return string
      */
-    public function getNombreCompletoAttribute(): string
+    public function getNombreCompletoAttribute(): string 
     {
         return "{$this->nombres} {$this->apellido_paterno} {$this->apellido_materno}";
     }
@@ -94,6 +94,12 @@ class Paciente extends Model
             'direccion' => 'required|string|max:255',
         ];
     }
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'foto_perfil' => 'array',
+    ];
 
     /**
      * Mensajes personalizados para las reglas de validación.

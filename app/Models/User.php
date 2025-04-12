@@ -59,8 +59,8 @@ class User extends Authenticatable
     /**
      * Verifica si el usuario es un usuario normal.
      */
-    public function isUsuario(): bool
+    public function isMedico(): bool
     {
-        return $this->role === 'usuario';
+        return $this->role === 'medico';
     }
 }

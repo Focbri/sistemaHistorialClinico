@@ -1,13 +1,13 @@
 const PacienteForm = ({ data, setData, pacienteEncontrado, buscarPaciente, errors }) => {
     return(
-        <div className="mb-4 items-center flex gap-2">
+        <div className="mb-4 items-center flex">
         <input
             type="text"
             value={data.dni}
             onChange={(e) => setData('dni', e.target.value)}
             disabled={pacienteEncontrado}
             className="block w-full rounded-md border-gray-300 shadow-sm"
-            placeholder="Ingrese el DNI del paciente"
+            placeholder="Ingrese DNI"
         />
         <button
             type="button"

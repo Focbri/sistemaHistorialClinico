@@ -74,7 +74,7 @@ export default function Edit({ auth, user }) {
                                         required
                                     >
                                         <option value="admin">Administrador</option>
-                                        <option value="usuario">Usuario</option>
+                                        <option value="medico">Medico</option>
                                     </select>
                                     <InputError message={errors.role} className="mt-2" />
                                 </div>

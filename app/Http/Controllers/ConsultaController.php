@@ -53,10 +53,26 @@ class ConsultaController extends Controller
         $tipoConsulta = $request->query('tipo', 'inicio'); // Por defecto es 'inicio'
         // Obtener la edad del paciente si se selecciona uno
         $edad = null;
+        $historialDiagnosticos = [];
         if ($request->has('paciente_id')) {
             $paciente = Paciente::find($request->query('paciente_id'));
             if ($paciente) {
                 $edad = $paciente->edad;
+                
+                // Cargar historial solo si es evolución
+                if ($tipoConsulta === 'evolucion') {
+                    $historialDiagnosticos = Consulta::where('paciente_id', $paciente->id)
+                        ->whereNotNull('impresion_diagnostica')
+                        ->orderBy('created_at', 'desc')
+                        ->get(['impresion_diagnostica', 'created_at', 'tipo_consulta'])
+                        ->map(function ($consulta) {
+                            return [
+                                'fecha' => $consulta->created_at->format('d/m/Y'),
+                                'diagnostico' => $consulta->impresion_diagnostica,
+                                'tipo' => $consulta->tipo_consulta
+                            ];
+                        });
+                }
             }
         }
 
@@ -64,6 +80,7 @@ class ConsultaController extends Controller
             'pacientes' => $pacientes,
             'tipoConsulta' => $tipoConsulta, // Pasar el tipo de consulta a la vista
             'edad' => $edad, // Pasar la edad del paciente
+            'historialDiagnosticos' => $historialDiagnosticos
         ]);
     }
 
@@ -130,24 +147,6 @@ class ConsultaController extends Controller
         ]);
     }
 
-    // Nuevo método auxiliar en el controlador
-    protected function parseFondoOjoPosiciones($data)
-    {
-        if (is_array($data)) {
-            return $data; // Ya está decodificado
-        }
-        
-        if (is_string($data) && !empty($data)) {
-            try {
-                return json_decode($data, true) ?: [];
-            } catch (\Exception $e) {
-                return [];
-            }
-        }
-        
-        return []; // Valor por defecto si está vacío o es inválido
-    }
-
     // Guardar la consulta de inicio
     public function store(Request $request)
     {
@@ -159,9 +158,16 @@ class ConsultaController extends Controller
                 'antecedentes_personales_alergias' => 'nullable|string',
                 'antecedentes_personales_dm' => 'nullable|string',
                 'antecedentes_personales_otros' => 'nullable|string',
-                'antecedentes_patologicos_familiares' => 'nullable|string',
-                'cirugias_previas' => 'nullable|string',
-                'motivo_consulta' => 'nullable|string',
+                'antecedentes_patologicos_familiares' => 'nullable|array',
+                'antecedentes_patologicos_familiares.*' => 'string',
+                'cirugias_previas' => 'nullable|array',
+                'cirugias_previas.*' => 'string',
+                //
+                'motivo_consulta_inicio' => 'nullable|string',
+                'motivo_consulta_signos' => 'nullable|string',
+                'motivo_consulta_enfermedad' => 'nullable|string',
+                'motivo_consulta_otros' => 'nullable|string',
+                //
                 'impresion_diagnostica' => 'nullable|string',
                 'tratamiento' => 'nullable|string',
                 'plan' => 'nullable|string',
@@ -250,6 +256,8 @@ class ConsultaController extends Controller
                 'exam_old_cerca_eje_od' => 'nullable|string',
                 'exam_old_cerca_eje_oi' => 'nullable|string',
                 'exam_old_cerca_dip' => 'nullable|string',
+                //
+                'comentario' => 'nullable|string',
             ]);
             Log::info('Datos recibidos en request:', $request->all());            
 
@@ -262,6 +270,16 @@ class ConsultaController extends Controller
                 if ($existeConsultaInicio) {
                     return redirect()->back()->withErrors(['message' => 'Ya existe una consulta de inicio para este paciente. No se puede generar más de una.']);
                 }
+            }
+
+            // Si es una evolución, obtener el historial de diagnósticos
+            if ($request->tipo_consulta === 'evolucion') {
+                $historialDiagnosticos = Consulta::where('paciente_id', $request->paciente_id)
+                    ->whereNotNull('impresion_diagnostica')
+                    ->whereDate('created_at', '<', now())
+                    ->orderBy('created_at', 'desc')
+                    ->pluck('impresion_diagnostica', 'created_at')
+                    ->toArray();                
             }
 
             // Obtener el paciente
@@ -355,7 +373,10 @@ class ConsultaController extends Controller
                 'antecedentes_personales_otros' => $request->antecedentes_personales_otros,
                 'antecedentes_patologicos_familiares' => $request->antecedentes_patologicos_familiares,
                 'cirugias_previas' => $request->cirugias_previas,
-                'motivo_consulta' => $request->motivo_consulta,
+                'motivo_consulta_inicio' => $request->motivo_consulta_inicio,
+                'motivo_consulta_signos' => $request->motivo_consulta_signos,
+                'motivo_consulta_enfermedad' => $request->motivo_consulta_enfermedad,
+                'motivo_consulta_otros' => $request->motivo_consulta_otros,
                 'impresion_diagnostica' => $request->impresion_diagnostica,
                 'tratamiento' => $request->tratamiento,
                 'plan' => $request->plan,
@@ -388,6 +409,7 @@ class ConsultaController extends Controller
                 'fondo_ojo_vitreo_oi' => $request->fondo_ojo_vitreo_oi,
                 'fondo_ojo_disco_o_oi' => $request->fondo_ojo_disco_o_oi,
                 'fondo_ojo_vasos_oi' => $request->fondo_ojo_vasos_oi,
+                'comentario' => $request->comentario,
             ]);
 
             // Crear el examen asociado a la consulta
@@ -514,56 +536,7 @@ class ConsultaController extends Controller
                     ]);
                 }
             }
-            
-
-            // Procesar términos de motivo de consulta - Versión corregida
-            $terminos_mc = [];
-            if (!empty($request->motivo_consulta)) {
-                $terminos = array_map('trim', preg_split('/[,;.\n]+/', $request->motivo_consulta));
-                $terminos = array_filter(array_unique($terminos));
-                
-                foreach ($terminos as $termino) {
-                    try {
-                        // VERIFICACIÓN EXPLÍCITA DE LA CONSULTA
-                        if (!isset($consulta->id)) {
-                            throw new \Exception('El ID de consulta no está disponible');
-                        }
-                        
-                        // FORMA ALTERNATIVA DE CREACIÓN QUE ASEGURA EL CONSULTA_ID
-                        $terminoModel = new TerminoMotivoConsulta();
-                        $terminoModel->consulta_id = $consulta->id;
-                        $terminoModel->termino_mc = $termino;
-                        $terminoModel->save();
-                        
-                        Log::info('Término guardado EXITOSAMENTE', [
-                            'consulta_id' => $consulta->id,
-                            'termino' => $termino
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error('FALLO al guardar término', [
-                            'error' => $e->getMessage(),
-                            'consulta_id' => $consulta->id ?? 'null',
-                            'termino' => $termino
-                        ]);
-                    }
-                }
-            }
-
-            $terminosUnicosMC = array_unique($terminos_mc);
-            Log::info('Términos únicos de motivo consulta:', ['terminos' => $terminosUnicosMC]);
-
-            foreach ($terminosUnicosMC as $termino_mc) {
-                if (!empty($termino_mc)) {
-                    TerminoMotivoConsulta::create([
-                        'consulta_id' => $consulta->id, // Asegurarse que $consulta está definido
-                        'termino_mc' => $termino_mc
-                    ]);
-                    Log::info('Término de motivo de consulta guardado:', [
-                        'consulta_id' => $consulta->id,
-                        'termino_mc' => $termino_mc
-                    ]);
-                }
-            }
+            /////
 
             // Después de crear la consulta, asociar términos si es necesario
             if ($request->has('biomicroscopia_terms')) {
@@ -577,13 +550,89 @@ class ConsultaController extends Controller
                 }
             }
 
-            $this->procesarTerminosMotivoConsulta($request, $consulta);
+            //MOTIVO CONSULTA
+
+            // 1. Verificar que la consulta existe y tiene ID
+            if (!isset($consulta->id)) {
+                Log::error('No se puede guardar términos MC - Consulta no existe');
+                throw new \Exception('La consulta no existe');
+            }
+
+            // 2. Procesar términos de biomicroscopia
+            $camposMotivoConsulta = [
+                'motivo_consulta_inicio',
+                'motivo_consulta_signos',
+                'motivo_consulta_enfermedad',
+                'motivo_consulta_otros',
+            ];
+
+            try {
+                $test = TerminoMotivoConsulta::create([
+                    'termino_mc' => 'TERMINO_PRUEBA',
+                    'consulta_id' => $consulta->id
+                ]);
+                Log::info('Prueba exitosa', $test->toArray());
+            } catch (\Exception $e) {
+                Log::error('Prueba fallida', ['error' => $e->getMessage()]);
+            }
+
+            $terminosProcesados = [];
+
+            foreach ($camposMotivoConsulta as $campo) {
+                if (!empty($request->$campo)) {
+                    $terminos_mc = array_map('trim', 
+                        preg_split('/[,;]+/', $request->$campo)
+                    );
+                    $terminosProcesados = array_merge($terminosProcesados, $terminos_mc);
+                }
+            }
+
+            // 3. Filtrar y guardar términos únicos
+            $terminosUnicos = array_unique(array_filter($terminosProcesados));
+
+            foreach ($terminosUnicos as $terminos_mc) {
+                try {
+                    TerminoMotivoConsulta::create([
+                        'termino_mc' => $terminos_mc,
+                        'consulta_id' => $consulta->id // Asegurar el consulta_id
+                    ]);
+                    
+                    Log::info('Término guardado exitosamente', [
+                        'termino_mc' => $terminos_mc,
+                        'consulta_id' => $consulta->id
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Error al guardar término', [
+                        'termino_mc' => $terminos_mc,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            /////
+
+            // Después de crear la consulta, asociar términos si es necesario
+            if ($request->has('motivo_consulta_terms')) {
+                $terms = explode(',', $request->motivo_consulta_terms);
+                
+                foreach ($terms as $term) {
+                    TerminoMotivoConsulta::updateOrCreate(
+                        ['termino_mc' => trim($term), 'consulta_id' => $consulta->id],
+                        ['termino_mc' => trim($term)]
+                    );
+                }
+            }
+
+            Log::info('Datos recibidos en motivo consulta:', [
+                'motivo_consulta_inicio' => $request->motivo_consulta_inicio,
+                'motivo_consulta_signos' => $request->motivo_consulta_signos,
+                'motivo_consulta_enfermedad' => $request->motivo_consulta_enfermedad,
+                'motivo_consulta_otros' => $request->motivo_consulta_otros
+            ]);
             
             // PRUEBA DE DIAGNÓSTICO
             Log::info('DIAGNÓSTICO PRE-INSERCIÓN', [
                 'consulta_existe' => isset($consulta),
                 'consulta_id' => $consulta->id ?? 'NO EXISTE',
-                'terminos_a_insertar' => $terminosUnicosMC,
                 'request_data' => $request->all()
             ]);
 
@@ -598,7 +647,7 @@ class ConsultaController extends Controller
             return redirect()->back()->withErrors(['message' => 'Error al crear la consulta: ' . $e->getMessage()]);
         }
     }
-
+    // Método para actualizar una consulta
     public function update(Request $request, $id)
     {
         Log::info('Datos recibidos en update:', $request->all());
@@ -611,9 +660,16 @@ class ConsultaController extends Controller
                 'antecedentes_personales_alergias' => 'nullable|string',
                 'antecedentes_personales_dm' => 'nullable|string',
                 'antecedentes_personales_otros' => 'nullable|string',
-                'antecedentes_patologicos_familiares' => 'nullable|string',
-                'cirugias_previas' => 'nullable|string',
-                'motivo_consulta' => 'nullable|string',
+                'antecedentes_patologicos_familiares' => 'nullable|array',
+                'antecedentes_patologicos_familiares.*' => 'nullable',
+                'cirugias_previas' => 'nullable|array',
+                'cirugias_previas.*' => 'nullable',
+                //
+                'motivo_consulta_inicio' => 'nullable|string',
+                'motivo_consulta_signos' => 'nullable|string',
+                'motivo_consulta_enfermedad' => 'nullable|string',
+                'motivo_consulta_otros' => 'nullable|string',
+                //
                 'impresion_diagnostica' => 'nullable|string',
                 'tratamiento' => 'nullable|string',
                 'plan' => 'nullable|string',
@@ -656,6 +712,8 @@ class ConsultaController extends Controller
                 'biomicroscopia_ca_oi' => 'nullable|string',
                 'biomicroscopia_iris_oi' => 'nullable|string',
                 'biomicroscopia_cristalino_oi' => 'nullable|string',
+                //
+                'comentario' => 'nullable|string',
                 
                 // Campo para términos de biomicroscopía
                 'terminos_biomicroscopia' => 'nullable|string' // Cadena separada por coma
@@ -802,7 +860,7 @@ class ConsultaController extends Controller
                 Storage::disk('public')->makeDirectory($carpetaArchivos);
             }    
 
-            // Procesar todos los archivos (existentes y nuevos)
+            // Procesar todos los archivos (existentes y nuevos) 
             $archivos = $this->procesarArchivos($request, $consulta, $filesToDelete);
 
              // Obtener archivos existentes (filtrados)
@@ -851,7 +909,7 @@ class ConsultaController extends Controller
             $existingImages = json_decode($consulta->examenes_indicados_img, true) ?? [];
             $existingFiles = json_decode($consulta->examenes_indicados_archivos, true) ?? [];
 
-            $allImages = array_merge(
+            $allImages = array_merge(   
                 array_filter($existingImages, fn($img) => !in_array($img['ruta'], $filesToDelete ?? [])),
                 $imagenes
             );
@@ -934,54 +992,6 @@ class ConsultaController extends Controller
         }
         return $archivos;
     }
-
-    public function buscarTerminosBiomicroscopia(Request $request)
-    {
-        $query = $request->input('query');
-        
-        $terminos = TerminoBiomicroscopia::when($query, function ($q) use ($query) {
-                return $q->where('termino', 'like', "%{$query}%");
-            })
-            ->limit(10)
-            ->pluck('termino');
-        
-        return response()->json($terminos);
-    }
-
-    /**
-     * Guarda un nuevo término de biomicroscopía
-     */
-    public function guardarTerminoBiomicroscopia(Request $request)
-    {
-        $request->validate([
-            'termino' => 'required|string|max:255',
-            'consulta_id' => 'nullable|exists:consultas,id'
-        ]);
-
-        try {
-            // Para el catálogo general (consulta_id = null)
-            $terminoGeneral = TerminoBiomicroscopia::firstOrCreate(
-                ['termino' => $request->termino, 'consulta_id' => null],
-                ['termino' => $request->termino]
-            );
-
-            // Si viene consulta_id, crear también la relación específica
-            if ($request->consulta_id) {
-                TerminoBiomicroscopia::firstOrCreate(
-                    ['termino' => $request->termino, 'consulta_id' => $request->consulta_id],
-                    ['termino' => $request->termino]
-                );
-            }
-
-            return response()->json($terminoGeneral, 201);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al guardar el término: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
     protected function parseFileData($data)
     {
         if (empty($data)) return [];
@@ -1007,6 +1017,7 @@ class ConsultaController extends Controller
             return [];
         }
     }
+
     // Método unificado para procesar archivos
     protected function procesarArchivos(Request $request, Consulta $consulta, $filesToDelete = [])
     {
@@ -1066,7 +1077,6 @@ class ConsultaController extends Controller
             'archivos' => array_merge($filteredFiles, $newFiles)
         ];
     }
-
     protected function procesarNuevosArchivos(Request $request, Consulta $consulta, &$imagenes, &$archivos)
     {
         $carpetaPaciente = 'pacientes/' . $consulta->paciente->dni;
@@ -1084,66 +1094,8 @@ class ConsultaController extends Controller
                 $archivos[] = $path;
             }
         }
-    }
-
-    protected function procesarTerminosBiomicroscopia($request, $consulta)
-    {
-        if (!$request->filled('terminos_biomicroscopia')) {
-            return;
-        }
-
-        // Eliminar términos existentes para esta consulta
-        TerminoBiomicroscopia::where('consulta_id', $consulta->id)->delete();
-
-        $terminos = array_filter(
-            array_map('trim', explode(',', $request->terminos_biomicroscopia)),
-            fn($t) => !empty($t)
-        );
-
-        foreach ($terminos as $termino) {
-            // Guardar término asociado a la consulta
-            TerminoBiomicroscopia::create([
-                'termino' => $termino,
-                'consulta_id' => $consulta->id
-            ]);
-            
-            // También agregar al catálogo general si no existe
-            TerminoBiomicroscopia::firstOrCreate(
-                ['termino' => $termino, 'consulta_id' => null],
-                ['termino' => $termino]
-            );
-        }
-    }
+    }    
     
-    protected function procesarTerminosMotivoConsulta(Request $request, Consulta $consulta)
-    {
-        if (empty($request->motivo_consulta)) {
-            return;
-        }
-
-        // Eliminar términos existentes para esta consulta
-        TerminoMotivoConsulta::where('consulta_id', $consulta->id)->delete();
-
-        // Procesar términos del motivo de consulta
-        $terminos = array_map('trim', preg_split('/[,;.\n]+/', $request->motivo_consulta));
-        $terminosUnicos = array_unique(array_filter($terminos));
-
-        foreach ($terminosUnicos as $termino) {
-            try {
-                TerminoMotivoConsulta::create([
-                    'consulta_id' => $consulta->id,
-                    'termino_mc' => $termino
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Error al guardar término de motivo de consulta:', [
-                    'error' => $e->getMessage(),
-                    'termino' => $termino,
-                    'consulta_id' => $consulta->id
-                ]);
-            }
-        }
-    }
-
     // En tu controlador (ConsultasController.php)
     public function buscarPaciente(Request $request)
     {
@@ -1152,7 +1104,7 @@ class ConsultaController extends Controller
         ]);
 
         $paciente = Paciente::where('dni', $request->dni)
-            ->select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno', 'edad', 'sexo', 'telefono', 'direccion', 'email', 'fecha_nacimiento', 'estado_civil', 'ocupacion','procedencia', 'acompañante', 'referido', 'peso')
+            ->select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno', 'edad', 'sexo', 'telefono', 'direccion', 'email', 'fecha_nacimiento', 'estado_civil', 'ocupacion','procedencia', 'acompañante', 'referido', 'peso','foto_perfil')
             ->first();
 
         if (!$paciente) {
@@ -1162,12 +1114,65 @@ class ConsultaController extends Controller
             ], 404);
         }
 
+        // Verificar si ya tiene consulta inicial
+        $tieneConsultaInicial = Consulta::where('paciente_id', $paciente->id)
+        ->where('tipo_consulta', 'inicio')
+        ->exists();
+
         return response()->json([
             'success' => true,
-            'paciente' => $paciente
+            'paciente' => $paciente,
+            'tieneConsultaInicial' => $tieneConsultaInicial
         ]);
     }
 
+    //Metodo para generar historial de diagnosticos
+    public function historialDiagnosticos($pacienteId)
+    {
+        try {
+            $diagnosticos = Consulta::where('paciente_id', $pacienteId)
+                ->whereNotNull('impresion_diagnostica')
+                ->orderBy('created_at', 'desc')
+                ->get(['impresion_diagnostica', 'created_at', 'tipo_consulta'])
+                ->map(function ($consulta) {
+                    return [
+                        'fecha' => $consulta->created_at->format('d/m/Y H:i'), // Agregué hora para diferenciar
+                        'diagnostico' => $consulta->impresion_diagnostica,
+                        'tipo' => $consulta->tipo_consulta
+                    ];
+                });
+    
+            return response()->json([
+                'success' => true,
+                'diagnosticos' => $diagnosticos
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener historial de diagnósticos'
+            ], 500);
+        }
+    }
+
+    // Función para parsear fondo_ojo_posiciones
+    protected function parseFondoOjoPosiciones($data)
+    {
+        if (is_array($data)) {
+            return $data; // Ya está decodificado
+        }
+        
+        if (is_string($data) && !empty($data)) {
+            try {
+                return json_decode($data, true) ?: [];
+            } catch (\Exception $e) {
+                return [];
+            }
+        }
+        
+        return []; // Valor por defecto si está vacío o es inválido
+    }
+
+    // Método para generar el PDF
     public function generarPDF($id)
     {
         try {
@@ -1232,8 +1237,7 @@ class ConsultaController extends Controller
             ], 500);
         }
     }
-
-    // Método auxiliar para convertir imágenes a base64
+    // Método auxiliar para convertir imágenes a base64 para PDF
     private function imageToBase64($path)
     {
         if (!file_exists($path)) {
@@ -1243,7 +1247,6 @@ class ConsultaController extends Controller
         $data = file_get_contents($path);
         return 'data:image/' . $type . ';base64,' . base64_encode($data);
     }
-
     // Método auxiliar para guardar el PDF
     private function guardarPDF($consulta, $pdf)
     {
@@ -1258,38 +1261,175 @@ class ConsultaController extends Controller
         
         return $directory . '/' . $filename;
     }
+
     // Verificar si existe una consulta de inicio para el paciente
     public function verificarConsultaInicio($pacienteId)
     {
         try {
-            // Verificar si existe una consulta de inicio para el paciente
             $existe = Consulta::where('paciente_id', $pacienteId)
                 ->where('tipo_consulta', 'inicio')
                 ->exists();
 
-            return response()->json(['existe' => $existe]);
+            // Obtener también el historial de diagnósticos si es necesario
+            $historial = [];
+            if ($existe) {
+                $historial = Consulta::where('paciente_id', $pacienteId)
+                    ->whereNotNull('impresion_diagnostica')
+                    ->orderBy('created_at', 'desc')
+                    ->get(['impresion_diagnostica', 'created_at']);
+            }
+
+            return response()->json([
+                'existe' => $existe,
+                'historial' => $historial
+            ]);
         } catch (\Exception $e) {
-            // Registrar el error en los logs
             Log::error('Error al verificar consulta de inicio:', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al verificar consulta de inicio'], 500);
         }
     }
 
-    public function buscarTerminosMotivoConsulta(Request $request)
+    // Método para buscar términos de biomicroscopía
+    public function buscarTerminosBiomicroscopia(Request $request)
     {
-        $query = trim($request->input('query', ''));
+        $query = $request->input('query');
         
-        if (empty($query)) {
-            return response()->json([]);
+        $terminos = TerminoBiomicroscopia::when($query, function ($q) use ($query) {
+                return $q->where('termino', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->pluck('termino');
+        
+        return response()->json($terminos);
+    }
+    public function guardarTerminoBiomicroscopia(Request $request)
+    {
+        $request->validate([
+            'termino' => 'required|string|max:255',
+            'consulta_id' => 'nullable|exists:consultas,id'
+        ]);
+
+        try {
+            // Para el catálogo general (consulta_id = null)
+            $terminoGeneral = TerminoBiomicroscopia::firstOrCreate(
+                ['termino' => $request->termino, 'consulta_id' => null],
+                ['termino' => $request->termino]
+            );
+
+            // Si viene consulta_id, crear también la relación específica
+            if ($request->consulta_id) {
+                TerminoBiomicroscopia::firstOrCreate(
+                    ['termino' => $request->termino, 'consulta_id' => $request->consulta_id],
+                    ['termino' => $request->termino]
+                );
+            }
+
+            return response()->json($terminoGeneral, 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al guardar el término: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    protected function procesarTerminosBiomicroscopia($request, $consulta)
+    {
+        if (!$request->filled('terminos_biomicroscopia')) {
+            return;
         }
 
-        $terminos = TerminoMotivoConsulta::select('termino_mc')
-            ->where('termino_mc', 'LIKE', "%{$query}%")
-            ->groupBy('termino_mc')
-            ->orderBy('termino_mc')
+        // Eliminar términos existentes para esta consulta
+        TerminoBiomicroscopia::where('consulta_id', $consulta->id)->delete();
+
+        $terminos = array_filter(
+            array_map('trim', explode(',', $request->terminos_biomicroscopia)),
+            fn($t) => !empty($t)
+        );
+
+        foreach ($terminos as $termino) {
+            // Guardar término asociado a la consulta
+            TerminoBiomicroscopia::create([
+                'termino' => $termino,
+                'consulta_id' => $consulta->id
+            ]);
+            
+            // También agregar al catálogo general si no existe
+            TerminoBiomicroscopia::firstOrCreate(
+                ['termino' => $termino, 'consulta_id' => null],
+                ['termino' => $termino]
+            );
+        }
+    }
+
+    // Método para buscar términos de motivo de consulta
+    public function buscarTerminosMotivoConsulta(Request $request)
+    {
+        $query = $request->input('query');
+        
+        $terminos_mc = TerminoMotivoConsulta::when($query, function ($q) use ($query) {
+                return $q->where('termino_mc', 'like', "%{$query}%");
+            })
             ->limit(10)
             ->pluck('termino_mc');
+        
+        return response()->json($terminos_mc);
+    }
+    public function guardarTerminoMotivoConsulta(Request $request)
+    {
+        $request->validate([
+            'termino_mc' => 'required|string|max:255',
+            'consulta_id' => 'nullable|exists:consultas,id'
+        ]);
+
+        try {
+            // Para el catálogo general (consulta_id = null)
+            $terminoGeneral = TerminoMotivoConsulta::firstOrCreate(
+                ['termino_mc' => $request->termino_mc, 'consulta_id' => null],
+                ['termino_mc' => $request->termino_mc]
+            );
+
+            // Si viene consulta_id, crear también la relación específica
+            if ($request->consulta_id) {
+                TerminoMotivoConsulta::firstOrCreate(
+                    ['termino_mc' => $request->termino_mc, 'consulta_id' => $request->consulta_id],
+                    ['termino_mc' => $request->termino_mc]
+                );
+            }
+
+            return response()->json($terminoGeneral, 201);
             
-        return response()->json($terminos);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al guardar el término: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    protected function procesarTerminosMotivoConsulta($request, $consulta)
+    {
+        if (!$request->filled('terminos_motivo_consulta')) {
+            return;
+        }
+
+        // Eliminar términos existentes para esta consulta
+        TerminoMotivoConsulta::where('consulta_id', $consulta->id)->delete();
+
+        $terminos_mc = array_filter(
+            array_map('trim', explode(',', $request->terminos_motivo_consulta)),
+            fn($t) => !empty($t)
+        );
+
+        foreach ($terminos_mc as $termino_mc) {
+            // Guardar término asociado a la consulta
+            TerminoMotivoConsulta::create([
+                'termino_mc' => $termino_mc,
+                'consulta_id' => $consulta->id
+            ]);
+            
+            // También agregar al catálogo general si no existe
+            TerminoMotivoConsulta::firstOrCreate(
+                ['termino_mc' => $termino_mc, 'consulta_id' => null],
+                ['termino_mc' => $termino_mc]
+            );
+        }
     }
 }

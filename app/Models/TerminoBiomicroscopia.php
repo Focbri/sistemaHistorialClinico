@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class TerminoBiomicroscopia extends Model
+class TerminoBiomicroscopia extends Model 
 {
     use HasFactory;
 

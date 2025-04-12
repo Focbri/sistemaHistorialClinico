@@ -11,16 +11,15 @@ const FondoOjo = ({
     marcadorActivoOI,
     handleMarkerClickOD,
     handleMarkerClickOI,
-    handleSeleccionOpcionOD,
-    handleSeleccionOpcionOI,
     data = {},
     setData = () => {},
-    modoVisualizacion = false // Nueva prop para modo de visualización
-    }) => {
+    modoVisualizacion = false
+}) => {
     const contenedorODRef = useRef(null);
     const contenedorOIRef = useRef(null);
     const [marcadorArrastrado, setMarcadorArrastrado] = useState(null);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const inputRef = useRef(null);
 
     // Mapeo de colores CSS a clases de Tailwind
     const COLORES_TAILWIND = {
@@ -57,43 +56,37 @@ const FondoOjo = ({
         }
     };
 
-    // Función para obtener posición inicial (modificada para ordenar en fila)
+    // Función para obtener posición inicial
     const getInitialPosition = (marcador, tipoOjo) => {
         const posKey = `${tipoOjo}_${marcador.id}`;
         
-        // Si hay posición guardada, usarla
         if (posicionesGuardadas[posKey]) {
             return posicionesGuardadas[posKey];
         }
         
-        // En modo visualización, no mostrar marcadores sin posición
         if (modoVisualizacion) return { x: -100, y: -100 };
         
-        // Posiciones iniciales ordenadas en fila
         const index = tipoOjo === 'OD' 
             ? marcadoresOD.findIndex(m => m.id === marcador.id)
             : marcadoresOI.findIndex(m => m.id === marcador.id);
         
-        const spacing = 30; // Espacio entre marcadores
-        const startY = 30;  // Posición Y inicial
+        const spacing = 30;
+        const startY = 30;
         
-        // Para OD: alineados a la izquierda
         if (tipoOjo === 'OD') {
             return {
                 x: 0,
                 y: startY + (index * spacing)
             };
-        }
-        // Para OI: alineados a la derecha
-        else {
+        } else {
             return {
-                x: 0, // Esto será invertido en el renderizado
+                x: 0,
                 y: startY + (index * spacing)
             };
         }
     };
 
-    // Iniciar arrastre (versión mejorada)
+    // Iniciar arrastre
     const iniciarArrastre = (marcador, e, tipoOjo) => {
         if (modoVisualizacion) return;
         
@@ -109,21 +102,20 @@ const FondoOjo = ({
     
         const posicionActual = getInitialPosition(marcador, tipoOjo);
     
-        // Ajuste especial para el ojo izquierdo
         let posX = posicionActual.x;
         if (tipoOjo === 'OI') {
-            posX = rect.width - posX; // Invertir la coordenada X
+            posX = rect.width - posX;
         }
     
         setOffset({
-            x: mouseX - posX, // Usar la posición ajustada
+            x: mouseX - posX,
             y: mouseY - posicionActual.y
         });
     
         setMarcadorArrastrado({ ...marcador, tipoOjo });
     };
 
-    // Mover marcador (versión corregida para OI)
+    // Mover marcador
     const moverMarcador = (e) => {
         if (!marcadorArrastrado || modoVisualizacion) return;
         
@@ -138,16 +130,13 @@ const FondoOjo = ({
         let nuevaX = mouseX - offset.x;
         let nuevaY = mouseY - offset.y;
     
-        // Ajuste para el ojo izquierdo
         if (tipoOjo === 'OI') {
-            nuevaX = rect.width - nuevaX; // Invertir la coordenada X
+            nuevaX = rect.width - nuevaX;
         }
     
-        // Limitar al área del contenedor
         nuevaX = Math.max(10, Math.min(rect.width - 10, nuevaX));
         nuevaY = Math.max(10, Math.min(rect.height - 10, nuevaY));
     
-        // Actualizar posiciones
         const nuevasPosiciones = {
             ...posicionesGuardadas,
             [`${tipoOjo}_${marcadorArrastrado.id}`]: { 
@@ -162,6 +151,11 @@ const FondoOjo = ({
     // Finalizar arrastre
     const finalizarArrastre = () => {
         setMarcadorArrastrado(null);
+    };
+
+    // Manejar cambio de texto y guardar automáticamente
+    const handleTextoChange = (e, campo) => {
+        safeSetData(campo, e.target.value);
     };
 
     // Configurar event listeners
@@ -180,7 +174,14 @@ const FondoOjo = ({
         };
     }, [marcadorArrastrado, offset, modoVisualizacion]);
 
-    // Obtener estilo del marcador (versión corregida)
+    // Enfocar el input cuando se activa un marcador
+    useEffect(() => {
+        if (inputRef.current && (marcadorActivoOD || marcadorActivoOI)) {
+            inputRef.current.focus();
+        }
+    }, [marcadorActivoOD, marcadorActivoOI]);
+
+    // Obtener estilo del marcador
     const obtenerEstiloMarcador = (marcador, tipoOjo) => {
         const posicion = getInitialPosition(marcador, tipoOjo);
         
@@ -195,7 +196,6 @@ const FondoOjo = ({
         if (tipoOjo === 'OD') {
             estiloBase.left = `${posicion.x}px`;
         } else {
-            // Para OI, usamos right y la posición ya está invertida
             estiloBase.right = `${posicion.x}px`;
         }
     
@@ -210,7 +210,6 @@ const FondoOjo = ({
     // Renderizar marcadores
     const renderMarcadores = (marcadores, tipoOjo) => {
         return marcadores.map((marcador) => {
-            // En modo visualización, solo mostrar marcadores con opción seleccionada
             if (modoVisualizacion && !data[marcador.campo]) {
                 return null;
             }
@@ -239,32 +238,28 @@ const FondoOjo = ({
         });
     };
 
-    // Renderizar contenedores de opciones en modo visualización
+    // Renderizar contenedores de texto en modo visualización
     const renderContenedoresVisualizacion = (marcadores, tipoOjo) => {
         return marcadores.map((marcador, index) => {
-            // Solo mostrar si hay una opción seleccionada
             if (!data[marcador.campo]) return null;
             
-            // Posiciones fijas basadas en el índice
             const posicionesFijas = {
                 OD: [
-                    { top: '10%', left: '-340px' },  // Posición para el primer marcador OD
+                    { top: '10%', left: '-340px' },
                     { top: '10%', left: '-170px' },
-                    { top: '45%', left: '-340px' },  // Posición para el primer marcador OD
+                    { top: '45%', left: '-340px' },
                     { top: '45%', left: '-170px' },
-                    { top: '80%', left: '-260px' },  // Posición para el segundo marcador OD
-                    // Añade más posiciones según necesites
+                    { top: '80%', left: '-260px' },
                 ],
                 OI: [
-                    { top: '10%', right: '-340px' },  // Posición para el primer marcador OD
+                    { top: '10%', right: '-340px' },
                     { top: '10%', right: '-170px' },
-                    { top: '45%', right: '-340px' },  // Posición para el primer marcador OD
+                    { top: '45%', right: '-340px' },
                     { top: '45%', right: '-170px' },
                     { top: '80%', right: '-260px' },
                 ]
             };
     
-            // Obtener posición fija según el índice
             const posicion = posicionesFijas[tipoOjo][index] || { 
                 top: '50%', 
                 [tipoOjo === 'OD' ? 'left' : 'right']: '-180px' 
@@ -284,10 +279,8 @@ const FondoOjo = ({
                     >
                         {marcador.subtitulo}
                     </span>
-                    <div className=' p-0'>
-                        <div className="p-2">
-                            {data[marcador.campo]}
-                        </div>
+                    <div className='p-2'>
+                        {data[marcador.campo]}
                     </div>
                 </div>
             );
@@ -298,7 +291,6 @@ const FondoOjo = ({
         <div className='flex flex-col justify-center items-center w-full gap-4'>
             <label className="block text-xl font-medium text-gray-700">Fondo de Ojo</label>
             
-            {/* Leyenda de colores */}
             {!modoVisualizacion && (
                 <div className="flex justify-center gap-6 mb-4 border p-3">
                     {LEYENDA_MARCADORES.map((item, index) => (
@@ -326,7 +318,6 @@ const FondoOjo = ({
                     />
                     {renderMarcadores(marcadoresOD, 'OD')}
                     
-                    {/* Mostrar contenedores en modo visualización */}
                     {modoVisualizacion && renderContenedoresVisualizacion(marcadoresOD, 'OD')}
 
                     {!modoVisualizacion && marcadorActivoOD && (
@@ -341,20 +332,15 @@ const FondoOjo = ({
                             >
                                 {marcadoresOD.find(m => m.id === marcadorActivoOD).subtitulo}
                             </span>
-                            <div className='space-y-2 p-2'>
-                                {marcadoresOD.find(m => m.id === marcadorActivoOD).opciones.map((opcion) => (
-                                    <div
-                                        key={opcion.id}
-                                        className={`cursor-pointer hover:bg-green-200 p-2 rounded-md ${
-                                            data[marcadoresOD.find(m => m.id === marcadorActivoOD).campo] === opcion.nombre
-                                                ? 'bg-green-400'
-                                                : 'bg-white'
-                                        }`}
-                                        onClick={() => handleSeleccionOpcionOD(opcion)}
-                                    >
-                                        {opcion.nombre}
-                                    </div>
-                                ))}
+                            <div className='p-3'>
+                                <textarea
+                                    ref={inputRef}
+                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                    placeholder="Escribe tus observaciones..."
+                                    value={data[marcadoresOD.find(m => m.id === marcadorActivoOD).campo] || ''}
+                                    onChange={(e) => handleTextoChange(e, marcadoresOD.find(m => m.id === marcadorActivoOD).campo)}
+                                    rows={4}
+                                />
                             </div>
                         </div>
                     )}
@@ -375,7 +361,6 @@ const FondoOjo = ({
                     />
                     {renderMarcadores(marcadoresOI, 'OI')}
                     
-                    {/* Mostrar contenedores en modo visualización */}
                     {modoVisualizacion && renderContenedoresVisualizacion(marcadoresOI, 'OI')}
 
                     {!modoVisualizacion && marcadorActivoOI && (
@@ -390,20 +375,15 @@ const FondoOjo = ({
                             >
                                 {marcadoresOI.find(m => m.id === marcadorActivoOI).subtitulo}
                             </span>
-                            <div className='space-y-2 p-2'>
-                                {marcadoresOI.find(m => m.id === marcadorActivoOI).opciones.map((opcion) => (
-                                    <div
-                                        key={opcion.id}
-                                        className={`cursor-pointer hover:bg-green-200 p-2 rounded-md ${
-                                            data[marcadoresOI.find(m => m.id === marcadorActivoOI).campo] === opcion.nombre
-                                                ? 'bg-green-400'
-                                                : 'bg-white'
-                                        }`}
-                                        onClick={() => handleSeleccionOpcionOI(opcion)}
-                                    >
-                                        {opcion.nombre}
-                                    </div>
-                                ))}
+                            <div className='p-3'>
+                                <textarea
+                                    ref={inputRef}
+                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                    placeholder="Escribe tus observaciones..."
+                                    value={data[marcadoresOI.find(m => m.id === marcadorActivoOI).campo] || ''}
+                                    onChange={(e) => handleTextoChange(e, marcadoresOI.find(m => m.id === marcadorActivoOI).campo)}
+                                    rows={4}
+                                />
                             </div>
                         </div>
                     )}
