@@ -3,18 +3,18 @@ import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import fondoOjo from '../../../assets/fondo_ojo.png';
-import { useEffect, useState, useCallback } from 'react'; 
+import React,{ useEffect, useState, useCallback, useRef } from 'react'; 
 
 import Cie10Search from '@/Components/Cie10Search'; // Importa el componente de búsqueda
 import FondoOjo from '@/Components/FondoOjo';
 import PlanSelector from '@/Components/PlanSelector';
+import PacienteForm from '@/Components/PacienteForm';
 import TerminoBiomicroscopiaSearch from '@/Components/TerminoBiomicroscopiaSearch';
 import TerminoMotivoConsultaSearch from '@/Components/TerminoMotivoConsultaSearch';
 import ExamenOcular from '@/Components/ExamenOcular';
 import AntecedentesPersonales from '@/Components/AntecedentesPersonales';
 
 export default function ConsultasEdit({ auth }) {
-    console.log('SEPARACION DESDE AQUI')
     // Obtener la consulta actual desde las props
     const { consulta } = usePage().props;
 
@@ -205,6 +205,31 @@ export default function ConsultasEdit({ auth }) {
         { id: 2, nombre: 'Plan B', seleccionado: data.plan === 'Plan B' },
         { id: 3, nombre: 'Plan C', seleccionado: data.plan === 'Plan C' },
     ]);
+
+    const [historialDiagnosticos, setHistorialDiagnosticos] = useState([]);
+    const [pacienteEncontrado, setPacienteEncontrado] = useState(false);
+
+    useEffect(() => {
+            if (data.paciente_id) {
+                cargarHistorialDiagnosticos();
+            }
+        }, [data.paciente_id]);
+
+    const cargarHistorialDiagnosticos = async () => {
+        if (!data.paciente_id) return;
+        
+        try {
+            const response = await fetch(`/consultas/historial-diagnosticos/${data.paciente_id}`);
+            if (!response.ok) throw new Error('Error al cargar historial');
+            
+            const result = await response.json();
+            setHistorialDiagnosticos(result.diagnosticos || []);
+            
+        } catch (error) {
+            console.error('Error cargando historial:', error);
+            setHistorialDiagnosticos([]);
+        }
+    };
 
     // Definir los marcadores
     const marcadores = [
@@ -423,6 +448,83 @@ export default function ConsultasEdit({ auth }) {
 
     // Reemplaza todo el código relacionado con archivos con esto:
   
+    const MultiInputField = React.memo(({ label, values: propValues, fieldName, setData, className = "" }) => {
+            const [localValues, setLocalValues] = useState(propValues || ['']);
+            const inputRefs = useRef([]);
+        
+            // Sincronizar con los valores del padre cuando cambian externamente
+            useEffect(() => {
+                setLocalValues(propValues || ['']);
+            }, [propValues]);
+        
+            const addInput = () => {
+                setLocalValues(prev => [...prev, '']);
+                // Enfocar el nuevo input después de que se renderice
+                setTimeout(() => {
+                    if (inputRefs.current[localValues.length]) {
+                        inputRefs.current[localValues.length].focus();
+                    }
+                }, 0);
+            };
+        
+            const updateValue = (index, value) => {
+                setLocalValues(prev => {
+                    const newValues = [...prev];
+                    newValues[index] = value;
+                    return newValues;
+                });
+            };
+        
+            const removeInput = (index) => {
+                if (localValues.length > 1) {
+                    setLocalValues(prev => prev.filter((_, i) => i !== index));
+                }
+            };
+        
+            // Actualizar el estado padre solo cuando sea necesario (al perder foco o al eliminar)
+            const handleBlur = () => {
+                setData(fieldName, localValues);
+            };
+        
+            return (
+                <div className={`mb-4 ${className}`}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                    {localValues.map((value, index) => (
+                        <div key={index} className="flex items-center mb-2">
+                            <input
+                                type="text"
+                                value={value}
+                                onChange={(e) => updateValue(index, e.target.value)}
+                                onBlur={handleBlur}
+                                className={`flex-1 rounded-md border-[#8FDBF1] shadow-sm ${className}`}
+                                ref={(el) => (inputRefs.current[index] = el)}
+                            />
+                            {index === localValues.length - 1 ? (
+                                <button
+                                    type="button"
+                                    onClick={addInput}
+                                    className="ml-2 p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                >
+                                    +
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        removeInput(index);
+                                        // Actualizar el estado padre inmediatamente al eliminar
+                                        setData(fieldName, localValues.filter((_, i) => i !== index));
+                                    }}
+                                    className="ml-2 p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                >
+                                    -
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            );
+    });
   
     const handleFileChange = (e, type) => {
         const newFiles = Array.from(e.target.files);
@@ -467,6 +569,68 @@ export default function ConsultasEdit({ auth }) {
             [type]: [...prev[type], ...processedFiles]
         }));
     };    
+
+    const buscarPaciente = async () => {
+        if (!data.dni) return;
+        
+        try {
+            const response = await fetch('/consultas/buscar-paciente', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ dni: data.dni.trim() }),
+            });
+    
+            if (!response.ok) throw new Error('Paciente no encontrado');
+    
+            const result = await response.json();
+            
+            if (result.success && result.paciente) {
+                setData(prev => ({
+                    ...prev,
+                    paciente_id: result.paciente.id,
+                    nombres: result.paciente.nombres || '',
+                    apellido_paterno: result.paciente.apellido_paterno || '',
+                    apellido_materno: result.paciente.apellido_materno || '',
+                    telefono: result.paciente.telefono || '',
+                    email: result.paciente.email || '',
+                    fecha_nacimiento: result.paciente.fecha_nacimiento || '',
+                    edad: result.paciente.edad || '',
+                    sexo: result.paciente.sexo || '',
+                    peso: result.paciente.peso || '',
+                    estado_civil: result.paciente.estado_civil || '',
+                    ocupacion: result.paciente.ocupacion || '',
+                    direccion: result.paciente.direccion || '',
+                    procedencia: result.paciente.procedencia || '',
+                    acompañante: result.paciente.acompañante || '',
+                    referido: result.paciente.referido || '',
+                    foto_perfil: result.paciente.foto_perfil || '',
+                }));
+                
+                setPacienteEncontrado(true);
+                
+                // Determinar tipo de consulta basado en si tiene consulta inicial
+                setData('tipo_consulta', result.tieneConsultaInicial ? 'evolucion' : 'inicio');
+                
+                // Si tiene consulta inicial, cargar historial
+                if (result.tieneConsultaInicial) {
+                    const histResponse = await fetch(`/consultas/historial-diagnosticos/${result.paciente.id}`);
+                    if (histResponse.ok) {
+                        const histData = await histResponse.json();
+                        setHistorialDiagnosticos(histData.diagnosticos || []);
+                    }
+                }
+            } else {
+                throw new Error(result.message || 'Datos del paciente incompletos');
+            }
+        } catch (error) {
+            console.error('Error al buscar paciente:', error);
+            alert(error.message);
+            setPacienteEncontrado(false);
+        }
+    };
     
     // Función para eliminar archivos
     const handleRemoveFile = (index, type) => {
@@ -609,925 +773,901 @@ export default function ConsultasEdit({ auth }) {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <form onSubmit={handleSubmit} encType="multipart/form-data">
-                                {/* Información del paciente */}
-                                <div className="mb-8 py-4 px-8 border border-gray-200 rounded-md">
-                                    <div className='mb-4'>
-                                        <label className="inline-block text-xl font-medium text-black border-b-2 border-black uppercase">Datos Personales</label>
-                                    </div>                                       
-                                    <div className='grid grid-cols-2 gap-4'>
-                                        <div className='flex flex-col'>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Apellido Paterno:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.apellido_paterno}</p>
-                                            </div>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Apellido Materno:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.apellido_materno}</p>
-                                            </div>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Nombres:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.nombres}</p>
-                                            </div>
+                                {/* SECCION PARA Mostrar datos del paciente (siempre visible, pero vacío inicialmente) */}
+                                <div className="py-4 px-4 bg-[#FFFFFF]">                                                                        
+                                    <div className='grid grid-cols-4 gap-4'>
+                                    {/* Columna 1: Imagen del paciente - ocupa 1 parte */}
+                                    <div className='flex flex-col items-center justify-center col-span-1'>
+                                        <div className='w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-2 overflow-hidden'>
+                                            {data.foto_perfil ? (
+                                                <img 
+                                                    src={`/storage/${data.foto_perfil}`}  // Asegúrate de que la ruta sea correcta
+                                                    alt="Foto del paciente" 
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null; 
+                                                        e.target.src = 'https://via.placeholder.com/150'; // Imagen de respaldo si falla
+                                                    }}
+                                                />
+                                            ) : (
+                                                <span className="text-gray-500">Sin foto</span>
+                                            )}
                                         </div>
-
-                                        <div className='flex flex-col'>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Fecha de Nacimiento:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.fecha_nacimiento}</p>
+                                        {/* Elimina el botón de cambiar foto o mantenlo como visualización estática si lo prefieres */}
+                                        <span className="text-sm text-gray-500">Foto del paciente</span>
+                                    </div>
+                                    {/* Columna 2: Datos concatenados del paciente - ocupa 2 partes */}
+                                    <div className='flex flex-col col-span-2'>
+                                        <div className="mb-2">
+                                            <p className="text-lg text-[#333333]">
+                                                {`${data.nombres || ''} ${data.apellido_paterno || ''} ${data.apellido_materno || ''}`.trim() || '-'}
+                                            </p>
+                                        </div>
+                                        <div className='grid grid-cols-2'>
+                                            <div className="mb-2">
+                                            <p className="text-sm text-[#333333]">
+                                                {`${data.fecha_nacimiento || ''} (${data.edad || ''} años)`.trim() || '-'}
+                                            </p>
                                             </div>
-                                            <div className='grid grid-cols-2 '>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Edad:</strong></label>
-                                                    <p className="text-sm text-gray-700">{consulta.paciente.edad}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Peso:</strong></label>
-                                                    <p className="text-sm text-gray-700">{consulta.paciente.peso}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>Sexo:</strong></label>
-                                                    <p className="text-sm text-gray-700">{consulta.paciente.sexo}</p>
-                                                </div>
-                                                <div className="mb-1 flex gap-2">
-                                                    <label className="text-sm text-gray-700"><strong>DNI:</strong></label>
-                                                    <p className="text-sm text-gray-700">{consulta.paciente.dni}</p>
-                                                </div>
+                                            
+                                            <div className="mb-2 flex gap-4">
+                                                <p className="text-sm text-[#333333]">{`DNI: ${data.dni || ''}`.trim() || '-'}</p>
+                                                <p className="text-sm text-[#333333]">{`Sexo: ${data.sexo || ''}`.trim() || '-'}</p>
+                                            </div>
+                                            
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`TELF: ${data.telefono || ''} / ${data.peso || ''} kg`.trim() || '-'}</p>
+                                            </div>
+                                            
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`EMAIL: ${data.email || ''}`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`Peso: ${data.peso || ''} kg`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`ESTADO CIVIL: ${data.estado_civil || ''}`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`OCUPACION: ${data.ocupacion || ''}`.trim() || '-'}</p>
+                                            </div>
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`PROCEDENCIA: ${data.procedencia || ''}`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`DOMICILIO: ${data.direccion || ''}`.trim() || '-'}</p>
+                                            </div>
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`ACOMPAÑANTE: ${data.acompañante || ''}`.trim() || '-'}</p>
+                                            </div>
+
+                                            <div className="mb-2">
+                                                <p className="text-sm text-[#333333]">{`REFERIDO: ${data.referido || ''}`.trim() || '-'}</p>
+                                            </div>                                    
+                                        </div>
+                                    </div>
+
+                                    {/* Columna 3: Historial de diagnósticos - ocupa 1 parte */}
+                                    <div className='flex flex-col col-span-1 p-2'>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="text-sm font-semibold text-[#333333]">Historial de Diagnósticos:</label>                                            
+                                        </div>
+                                        {historialDiagnosticos.length > 0 ? (
+                                            <div className="bg-gray-50 p-4 rounded max-h-40 overflow-y-auto">
+                                                <ul className="space-y-2">
+                                                    {historialDiagnosticos.map((item, index) => (
+                                                        <li key={index} className="border-b pb-2 last:border-b-0">
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="font-medium">{item.fecha}</span>
+                                                                <span className="text-blue-600">{item.tipo === 'inicio' ? 'Inicial' : 'Evolución'}</span>
+                                                            </div>
+                                                            <div className="mt-1 text-gray-700 whitespace-pre-wrap text-xs">{item.diagnostico}</div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-500">No hay historial de diagnósticos</p>
+                                        )}
+                                    </div>
+                                </div>
+                                </div>
+
+{/*--------------------------- Campos Consulta INICIO ------------------------------------------------------*/}
+
+                                {/* Contenedor principal con sidebar y contenido */}
+                                <div className="flex flex-col md:flex-row">
+                                    {/* Sidebar */}
+                                    <div className="w-full md:w-64 bg-[#005b96] p-4 flex-shrink-0">
+                                        <div className='flex items-center justify-end'>                                        
+                                            <PacienteForm
+                                                data={data}
+                                                setData={setData}
+                                                pacienteEncontrado={pacienteEncontrado}
+                                                buscarPaciente={buscarPaciente}
+                                                errors={errors}
+                                            />
+                                        </div>
+                                        <div className="sticky top-4 space-y-2">
+                                            <h3 className="text-2xl text-center mb-2">
+                                                {data.tipo_consulta === 'inicio' 
+                                                    ? 'Consulta Inicial' 
+                                                    : 'Consulta Evolución'}
+                                            </h3>
+                                            
+                                            {data.tipo_consulta === 'inicio' ? (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('antecedentesPersonales')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.antecedentesPersonales ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Antecedentes Personales
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('antecedentesFamiliares')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.antecedentesFamiliares ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Antecedentes Familiares
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('cirugiasPrevias')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.cirugiasPrevias ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Cirugías Previas
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('motivoConsulta')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.motivoConsulta ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Motivo de Consulta
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('examenOcular')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenOcular ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Examen Ocular
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('biomicroscopia')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.biomicroscopia ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Biomicroscopia
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('fondoOjo')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.fondoOjo ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Fondo de Ojo
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('diagnostico')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.diagnostico ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Diagnóstico
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('tratamiento')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.tratamiento ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Tratamiento
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('plan')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.plan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Plan
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('examenesIndicados')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenesIndicados ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Exámenes Indicados
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('comentario')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.comentario ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Comentario
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('evoluciones')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.evoluciones ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Evoluciones
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('examenOcular')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenOcular ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Examen Ocular
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('biomicroscopia')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.biomicroscopia ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Biomicroscopia
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('fondoOjo')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.fondoOjo ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Fondo de Ojo
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('diagnostico')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.diagnostico ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Diagnóstico
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('tratamiento')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.tratamiento ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Tratamiento
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('plan')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.plan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Plan
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('examenesIndicados')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenesIndicados ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Exámenes Indicados
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('comentario')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.comentario ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Comentario
+                                                    </button>
+                                                </>
+                                            )}
+                                            <div className="flex items-center justify-center">
+                                                <Link
+                                                    href={route('consultas.index')}
+                                                    className="px-4 py-2 text-white bg-gray-500 rounded hover:bg-gray-600"
+                                                >
+                                                    Cancelar
+                                                </Link>
+                                                <button
+                                                    type="submit"
+                                                    className="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                                    disabled={processing}
+                                                >
+                                                    Guardar
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <hr className='my-6'/>
-                                    <div className='grid grid-cols-2 gap-4'>
-                                        <div className='flex flex-col'>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Estado Civil:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.estado_civil}</p>
-                                            </div>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Ocupación:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.ocupacion}</p>
-                                            </div>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Procedencia:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.procedencia}</p>
-                                            </div>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Domicilio:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.direccion}</p>
-                                            </div>
-                                        </div>
-                                        <div className='flex flex-col'>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Acompañante:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.acompañante}</p>
-                                            </div>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Referido:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.referido}</p>
-                                            </div>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Teléfono:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.telefono}</p>
-                                            </div>
-                                            <div className="mb-1 flex gap-2">
-                                                <label className="text-sm text-gray-700"><strong>Email:</strong></label>
-                                                <p className="text-sm text-gray-700">{consulta.paciente.email}</p>
-                                            </div>
-                                        </div>
-                                    </div>                                        
-                                </div>
-
-                                {/* Campos según tipo de consulta */}
-                                {data.tipo_consulta === 'inicio' && (
-                                    <>
-                                        <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
-                                            <h2>Consulta de Inicio</h2>
-                                        </div>
-                                        {/* 1. Antecedentes Personales */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('antecedentesPersonales')}
-                                            >
-                                                <span>1. Antecedentes Personales</span>
-                                                <span>{expandedSections.antecedentesPersonales ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.antecedentesPersonales && tipoConsulta === 'inicio' && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Registre los antecedentes médicos personales del paciente, incluyendo HTA, DM, alergias y otros.
-                                                    </p>
-                                                    <AntecedentesPersonales
-                                                        data={data}
-                                                        setData={setData}
-                                                        showHTAText={showHTAText}
-                                                        setShowHTAText={setShowHTAText}
-                                                        showDMText={showDMText}
-                                                        setShowDMText={setShowDMText}
-                                                        showAlergiasText={showAlergiasText}
-                                                        setShowAlergiasText={setShowAlergiasText}
-                                                        showOtrosText={showOtrosText}
-                                                        setShowOtrosText={setShowOtrosText}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                        
-                                        {/* 2. Antecedentes Patológicos Familiares */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('antecedentesFamiliares')}
-                                            >
-                                                <span>2. Antecedentes Patológicos Familiares</span>
-                                                <span>{expandedSections.antecedentesFamiliares ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.antecedentesFamiliares && tipoConsulta === 'inicio' && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Registre los antecedentes médicos relevantes en la familia del paciente.
-                                                    </p>
-                                                    <div className="mb-4">
-                                                        <input
-                                                            type="text"
-                                                            value={data.antecedentes_patologicos_familiares}
-                                                            onChange={(e) => setData('antecedentes_patologicos_familiares', e.target.value)}
-                                                            className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                        />
+                                    {/* Contenido principal */}
+                                    <div className="flex-1 border-t-2 border-gray-200 p-4">
+                                        {data.tipo_consulta === 'inicio' && (
+                                            <>
+                                                {/* 1. Antecedentes Personales */}
+                                                {expandedSections.antecedentesPersonales && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Registre los antecedentes médicos personales del paciente, incluyendo HTA, DM, alergias y otros.
+                                                            </p>
+                                                            <AntecedentesPersonales
+                                                                data={data}
+                                                                setData={setData}
+                                                                showHTAText={showHTAText}
+                                                                setShowHTAText={setShowHTAText}
+                                                                showDMText={showDMText}
+                                                                setShowDMText={setShowDMText}
+                                                                showAlergiasText={showAlergiasText}
+                                                                setShowAlergiasText={setShowAlergiasText}
+                                                                showOtrosText={showOtrosText}
+                                                                setShowOtrosText={setShowOtrosText}
+                                                            />
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 3. Cirugías Previas */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('cirugiasPrevias')}
-                                            >
-                                                <span>3. Cirugías Previas</span>
-                                                <span>{expandedSections.cirugiasPrevias ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.cirugiasPrevias && tipoConsulta === 'inicio' && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Registre cualquier procedimiento quirúrgico previo que haya tenido el paciente.
-                                                    </p>
-                                                    <div className="mb-4">
-                                                        <input
-                                                            type="text"
-                                                            value={data.cirugias_previas}
-                                                            onChange={(e) => setData('cirugias_previas', e.target.value)}
-                                                            className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                        />
+                                                )}
+                                                {/* 2. Antecedentes Patológicos Familiares */}
+                                                {expandedSections.antecedentesFamiliares && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Registre los antecedentes médicos relevantes en la familia del paciente.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <MultiInputField
+                                                                label="Antecedentes Patológicos Familiares"
+                                                                values={data.antecedentes_patologicos_familiares}
+                                                                fieldName="antecedentes_patologicos_familiares"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 4. Motivo de Consulta */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('motivoConsulta')}
-                                            >
-                                                <span>4. {tipoConsulta === 'inicio' ? 'Motivo de Consulta' : 'Evoluciones'}</span>
-                                                <span>{expandedSections.motivoConsulta ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.motivoConsulta && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        {tipoConsulta === 'inicio' 
-                                                            ? 'Registre el motivo principal por el cual el paciente acude a consulta.'
-                                                            : 'Describa la evolución del paciente desde la última consulta.'}
-                                                    </p>
-                                                    {tipoConsulta === 'inicio' ? (
+                                                )}
+                                                {/* 3. Cirugías Previas */}
+                                                {expandedSections.cirugiasPrevias && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Registre cualquier procedimiento quirúrgico previo que haya tenido el paciente.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                            <MultiInputField
+                                                                label="Cirugías Previas"
+                                                                values={data.cirugias_previas}
+                                                                fieldName="cirugias_previas"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 4. Motivo de Consulta */}
+                                                {expandedSections.motivoConsulta && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                        <label>INICIO</label>
                                                         <TerminoMotivoConsultaSearch 
-                                                            initialValue={data.motivo_consulta || ''}
-                                                            onSelectTerm={(termsArray) => {
-                                                                setData('motivo_consulta', termsArray.join(', '));
-                                                            }}
+                                                            initialValue={data.motivo_consulta_inicio}
+                                                            onSelectTerm={(terms) => setData('motivo_consulta_inicio', terms)}
                                                         />
-                                                    ) : (
-                                                        <input
-                                                            type="text"
-                                                            value={data.evoluciones}
-                                                            onChange={(e) => setData('evoluciones', e.target.value)}
-                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                        />
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                        
-                                        {/* 5. Examen Ocular */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('examenOcular')}
-                                            >
-                                                <span>5. Examen Ocular</span>
-                                                <span>{expandedSections.examenOcular ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.examenOcular && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
-                                                    </p>
-                                                    <ExamenOcular 
-                                                    data={data} 
-                                                    setData={setData} 
-                                                    edadPaciente={consulta.paciente.edad} />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 6. Biomicroscopia */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('biomicroscopia')}
-                                            >
-                                                <span>6. Biomicroscopia</span>
-                                                <span>{expandedSections.biomicroscopia ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.biomicroscopia && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Registre los hallazgos de la biomicroscopia para cada ojo.
-                                                    </p>
-                                                    <div className='mb-4'>
-                                                        <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
-                                                        <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
-                                                            <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
-                                                            <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
-                                                            <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_movoculares_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_movoculares_od', value)}/>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_movoculares_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_movoculares_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_parpados_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_parpados_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_parpados_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_parpados_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_cornea_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_cornea_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_cornea_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_cornea_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Conjuntiva</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_corneaconj_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_corneaconj_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_corneaconj_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_corneaconj_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_ca_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_ca_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_ca_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_ca_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_iris_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_iris_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_iris_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_iris_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_cristalino_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_cristalino_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_cristalino_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_cristalino_oi', value)}
+                                                        <label>SIGNOS</label>
+                                                        <TerminoMotivoConsultaSearch
+                                                            initialValue={data.motivo_consulta_signos || ''}
+                                                            onSelectTerm={(value) => setData('motivo_consulta_signos', value)}/>
+                                                        <label>ENFERMEDAD</label>
+                                                        <TerminoMotivoConsultaSearch
+                                                            initialValue={data.motivo_consulta_enfermedad || ''}
+                                                            onSelectTerm={(value) => setData('motivo_consulta_enfermedad', value)}/>
+                                                        <label>OTROS</label>
+                                                        <TerminoMotivoConsultaSearch
+                                                            initialValue={data.motivo_consulta_otros || ''}
+                                                            onSelectTerm={(value) => setData('motivo_consulta_otros', value)}/>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 5. Examen Ocular */}
+                                                {expandedSections.examenOcular && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
+                                                            </p>
+                                                            <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 6. Biomicroscopia */}
+                                                {expandedSections.biomicroscopia && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className='mb-4'>
+                                                            <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
+                                                            <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_od', value)}/>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Conjuntiva</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_oi', value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 7. Fondo de Ojo */}
+                                                {expandedSections.fondoOjo && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Documente los hallazgos del examen de fondo de ojo para ambos ojos.
+                                                            </p>
+                                                            <FondoOjo
+                                                                marcadoresOD={marcadores}
+                                                                marcadoresOI={marcadoresOI}
+                                                                marcadorActivoOD={marcadorActivo}
+                                                                marcadorActivoOI={marcadorActivoOI}
+                                                                handleMarkerClickOD={handleMarkerClick}
+                                                                handleMarkerClickOI={handleMarkerClickOI}
+                                                                data={data}
+                                                                setData={setData}
                                                             />
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 7. Fondo de Ojo */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('fondoOjo')}
-                                            >
-                                                <span>7. Fondo de Ojo</span>
-                                                <span>{expandedSections.fondoOjo ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.fondoOjo && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Documente los hallazgos del examen de fondo de ojo para ambos ojos.
-                                                    </p>
-                                                    <FondoOjo
-                                                        marcadoresOD={marcadores}
-                                                        marcadoresOI={marcadoresOI}
-                                                        marcadorActivoOD={marcadorActivo}
-                                                        marcadorActivoOI={marcadorActivoOI}
-                                                        handleMarkerClickOD={handleMarkerClick}
-                                                        handleMarkerClickOI={handleMarkerClickOI}
-                                                        handleSeleccionOpcionOD={handleSeleccionOpcion}
-                                                        handleSeleccionOpcionOI={handleSeleccionOpcionOI}
-                                                        data={data}
-                                                        setData={setData}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 8. Impresión Diagnóstica */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('diagnostico')}
-                                            >
-                                                <span>8. Impresión Diagnóstica</span>
-                                                <span>{expandedSections.diagnostico ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.diagnostico && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
-                                                    </p>
-                                                    <div className="mb-4">
-                                                        <Cie10Search onSelectResult={handleSelectResult} />
-                                                    </div>
-                                                    <div className="mb-4">
-                                                        <div className="mt-2 p-2 border border-gray-200 rounded-md">
-                                                            {selectedResults.map((result, index) => (
-                                                                <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
-                                                                    <span>{result}</span>
+                                                )}
+                                                {/* 8. Impresión Diagnóstica */}
+                                                {expandedSections.diagnostico && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <Cie10Search onSelectResult={handleSelectResult} />
+                                                            </div>
+                                                            <div className="mb-4">
+                                                                <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                                                    {selectedResults.map((result, index) => (
+                                                                        <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                                            <span>{result}</span>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-                                                            ))}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 9. Tratamiento */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('tratamiento')}
-                                            >
-                                                <span>9. Tratamiento</span>
-                                                <span>{expandedSections.tratamiento ? '−' : '+'}</span>
-                                            </button>
-                                            {expandedSections.tratamiento && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Especifique el tratamiento indicado para el paciente.
-                                                    </p>
-                                                    <input
-                                                        type="text"
-                                                        value={data.tratamiento}
-                                                        onChange={(e) => setData('tratamiento', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 10. Plan */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('plan')}
-                                            >
-                                                <span>10. Plan</span>
-                                                <span>{expandedSections.plan ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.plan && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Seleccione el plan de manejo para el paciente.
-                                                    </p>
-                                                    <PlanSelector
-                                                        opcionesPlan={opcionesPlan}
-                                                        handleSeleccionPlan={handleSeleccionPlan}
-                                                        showPlanText={showPlanText}
-                                                        setShowPlanText={setShowPlanText}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 11. Exámenes Indicados */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('examenesIndicados')}
-                                            >
-                                                <span>11. Exámenes Indicados (Archivos e Imágenes)</span>
-                                                <span>{expandedSections.examenesIndicados ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.examenesIndicados && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Adjunte imágenes o documentos de exámenes complementarios (máximo 4 archivos por tipo).
-                                                    </p>
-
-                                                    <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Imágenes</label>
-                                            <div className="mt-2 flex flex-wrap gap-4">
-                                                {files.images.map((img, index) => (
-                                                <div key={`img-${index}`} className="relative group w-32">
-                                                    <img
-                                                    src={img.isNew ? img.path : `/storage/${img.path}`}
-                                                    alt={img.name}
-                                                    className="w-full h-24 object-cover rounded-md border border-gray-300"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveFile(index, 'images')}
-                                                        className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                    </div>
-                                                    <div className="text-xs truncate mt-1" title={img.name}>
-                                                    {img.name}
-                                                    </div>
-                                                </div>
-                                                ))}
-                                            </div>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept="image/jpeg,image/png,image/jpg"
-                                                onChange={(e) => handleFileChange(e, 'images')}
-                                                className="mt-2 block w-full text-sm text-gray-500
-                                                file:mr-4 file:py-2 file:px-4
-                                                file:rounded-md file:border-0
-                                                file:text-sm file:font-semibold
-                                                file:bg-blue-50 file:text-blue-700
-                                                hover:file:bg-blue-100"
-                                            />
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                Formatos aceptados: JPG, PNG. Tamaño máximo: 2MB por imagen.
-                                            </p>
-                                            </div>
-
-                                            {/* Sección para documentos */}
-                                            <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Documentos</label>
-                                            <div className="mt-2 flex flex-wrap gap-4">
-                                                {files.documents.map((doc, index) => (
-                                                <div key={`doc-${index}`} className="relative border p-2 rounded-lg w-48">
-                                                    <div className="flex items-center">
-                                                    <svg className="w-6 h-6 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                                    </svg>
-                                                    <span className="text-sm truncate" title={doc.name}>
-                                                        {doc.name}
-                                                    </span>
-                                                    </div>
-                                                    <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveFile(index, 'documents')}
-                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
-                                                    >
-                                                    ×
-                                                    </button>
-                                                </div>
-                                                ))}
-                                            </div>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept=".pdf,.doc,.docx,.xls,.xlsx"
-                                                onChange={(e) => handleFileChange(e, 'documents')}
-                                                className="mt-2 block w-full text-sm text-gray-500
-                                                file:mr-4 file:py-2 file:px-4
-                                                file:rounded-md file:border-0
-                                                file:text-sm file:font-semibold
-                                                file:bg-blue-50 file:text-blue-700
-                                                hover:file:bg-blue-100"
-                                            />
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                Formatos aceptados: PDF, DOC, DOCX, XLS, XLSX. Tamaño máximo: 5MB por archivo.
-                                            </p>
-                                            </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-
-                                {data.tipo_consulta === 'evolucion' && (
-                                    <>
-                                        <div className='flex flex-col justify-center items-center w-full gap-4 border-b border-gray-200 pb-2 mb-4 text-4xl'>
-                                            <h2>Consulta de Evolución</h2>
-                                        </div>
-                                        {/* 12 Evoluciones */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('evoluciones')}
-                                            >
-                                                <span>1. Evoluciones</span>
-                                                <span>{expandedSections.evoluciones ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.evoluciones && (
-                                                <div className="p-4">
-                                                    <input
-                                                        type="text"
-                                                        value={data.evoluciones}
-                                                        onChange={(e) => setData('evoluciones', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                        {/* 5. Examen Ocular */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('examenOcular')}
-                                            >
-                                                <span>5. Examen Ocular</span>
-                                                <span>{expandedSections.examenOcular ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.examenOcular && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
-                                                    </p>
-                                                    <ExamenOcular data={data} setData={setData} edadPaciente={consulta.paciente.edad} readOnly={false} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        {/* 6. Biomicroscopia */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('biomicroscopia')}
-                                            >
-                                                <span>6. Biomicroscopia</span>
-                                                <span>{expandedSections.biomicroscopia ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.biomicroscopia && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Registre los hallazgos de la biomicroscopia para cada ojo.
-                                                    </p>
-                                                    <div className='mb-4'>
-                                                        <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
-                                                        <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
-                                                            <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
-                                                            <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
-                                                            <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_movoculares_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_movoculares_od', value)}/>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_movoculares_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_movoculares_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_parpados_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_parpados_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_parpados_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_parpados_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_cornea_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_cornea_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_cornea_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_cornea_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Conjuntiva</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_corneaconj_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_corneaconj_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_corneaconj_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_corneaconj_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_ca_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_ca_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_ca_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_ca_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_iris_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_iris_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_iris_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_iris_oi', value)}
-                                                            />
-                                                            <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_cristalino_od || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_cristalino_od', value)}
-                                                            />
-                                                            <TerminoBiomicroscopiaSearch
-                                                                initialValue={data.biomicroscopia_cristalino_oi || ''}
-                                                                onSelectTerm={(value) => setData('biomicroscopia_cristalino_oi', value)}
+                                                )}
+                                                {/* 9. Tratamiento */}
+                                                {expandedSections.tratamiento && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Especifique el tratamiento indicado para el paciente.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="tratamiento"
+                                                                values={data.tratamiento}
+                                                                fieldName="tratamiento"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
                                                             />
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {/* 7. Fondo de Ojo */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('fondoOjo')}
-                                            >
-                                                <span>7. Fondo de Ojo</span>
-                                                <span>{expandedSections.fondoOjo ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.fondoOjo && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Documente los hallazgos del examen de fondo de ojo para ambos ojos.
-                                                    </p>
-                                                    <FondoOjo
-                                                        marcadoresOD={marcadores}
-                                                        marcadoresOI={marcadoresOI}
-                                                        marcadorActivoOD={marcadorActivo}
-                                                        marcadorActivoOI={marcadorActivoOI}
-                                                        handleMarkerClickOD={handleMarkerClick}
-                                                        handleMarkerClickOI={handleMarkerClickOI}
-                                                        handleSeleccionOpcionOD={handleSeleccionOpcion}
-                                                        handleSeleccionOpcionOI={handleSeleccionOpcionOI}
-                                                        data={data}
-                                                        setData={setData}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                        {/* 8. Impresión Diagnóstica */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('diagnostico')}
-                                            >
-                                                <span>8. Impresión Diagnóstica</span>
-                                                <span>{expandedSections.diagnostico ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.diagnostico && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
-                                                    </p>
-                                                    <div className="mb-4">
-                                                        <Cie10Search onSelectResult={handleSelectResult} />
+                                                )}
+                                                {/* 10. Plan */}
+                                                {expandedSections.plan && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione el plan de manejo para el paciente.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="plan"
+                                                                values={data.plan}
+                                                                fieldName="plan"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <div className="mb-4">
-                                                        <div className="mt-2 p-2 border border-gray-200 rounded-md">
-                                                            {selectedResults.map((result, index) => (
-                                                                <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
-                                                                    <span>{result}</span>
+                                                )}
+                                                {/* 11. Exámenes Indicados */}
+                                                {expandedSections.examenesIndicados && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Adjunte imágenes o documentos de exámenes complementarios (máximo 4 archivos por tipo).
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Imágenes)</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeImages}
+                                                                    multiple
+                                                                    accept="image/*"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewImages.map((image, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <img
+                                                                                src={image.preview}
+                                                                                alt={`Previsualización ${index + 1}`}
+                                                                                className="w-24 h-24 object-cover rounded-md"
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveImage(index, 'img')}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-                                                            ))}
+                                                            </div>
+
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Documentos)</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeArchivos}
+                                                                    multiple
+                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewArchivos.map((archivo, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveArchivo(index, 'archivos')}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {/* 9. Tratamiento */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('tratamiento')}
-                                            >
-                                                <span>9. Tratamiento</span>
-                                                <span>{expandedSections.tratamiento ? '−' : '+'}</span>
-                                            </button>
-                                            {expandedSections.tratamiento && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Especifique el tratamiento indicado para el paciente.
-                                                    </p>
-                                                    <input
-                                                        type="text"
-                                                        value={data.tratamiento}
-                                                        onChange={(e) => setData('tratamiento', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                        {/* 10. Plan */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('plan')}
-                                            >
-                                                <span>10. Plan</span>
-                                                <span>{expandedSections.plan ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.plan && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Seleccione el plan de manejo para el paciente.
-                                                    </p>
-                                                    <PlanSelector
-                                                        opcionesPlan={opcionesPlan}
-                                                        handleSeleccionPlan={handleSeleccionPlan}
-                                                        showPlanText={showPlanText}
-                                                        setShowPlanText={setShowPlanText}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                        {/* 11. Exámenes Indicados */}
-                                        <div className="mb-4 border border-gray-200 rounded-md">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex justify-between items-center"
-                                                onClick={() => toggleSection('examenesIndicados')}
-                                            >
-                                                <span>11. Exámenes Indicados (Archivos e Imágenes)</span>
-                                                <span>{expandedSections.examenesIndicados ? '−' : '+'}</span>
-                                            </button>
-                                            
-                                            {expandedSections.examenesIndicados && (
-                                                <div className="p-4">
-                                                    <p className="text-sm text-gray-500 mb-4">
-                                                        Adjunte imágenes o documentos de exámenes complementarios (máximo 4 archivos por tipo).
-                                                    </p>
-
-                                                    <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Imágenes</label>
-                                            <div className="mt-2 flex flex-wrap gap-4">
-                                                {files.images.map((img, index) => (
-                                                <div key={`img-${index}`} className="relative group w-32">
-                                                    <img
-                                                    src={img.isNew ? img.path : `/storage/${img.path}`}
-                                                    alt={img.name}
-                                                    className="w-full h-24 object-cover rounded-md border border-gray-300"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveFile(index, 'images')}
-                                                        className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
-                                                    >
-                                                        ×
-                                                    </button>
+                                                )}
+                                                {/* 12. Comentario */}
+                                                {expandedSections.comentario && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Escriba un breve comentario.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="comentario"
+                                                                values={data.comentario}
+                                                                fieldName="comentario"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <div className="text-xs truncate mt-1" title={img.name}>
-                                                    {img.name}
-                                                    </div>
-                                                </div>
-                                                ))}
-                                            </div>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept="image/jpeg,image/png,image/jpg"
-                                                onChange={(e) => handleFileChange(e, 'images')}
-                                                className="mt-2 block w-full text-sm text-gray-500
-                                                file:mr-4 file:py-2 file:px-4
-                                                file:rounded-md file:border-0
-                                                file:text-sm file:font-semibold
-                                                file:bg-blue-50 file:text-blue-700
-                                                hover:file:bg-blue-100"
-                                            />
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                Formatos aceptados: JPG, PNG. Tamaño máximo: 2MB por imagen.
-                                            </p>
-                                            </div>
+                                                )}
+                                            </>
+                                        )}
 
-                                            {/* Sección para documentos */}
-                                            <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Documentos</label>
-                                            <div className="mt-2 flex flex-wrap gap-4">
-                                                {files.documents.map((doc, index) => (
-                                                <div key={`doc-${index}`} className="relative border p-2 rounded-lg w-48">
-                                                    <div className="flex items-center">
-                                                    <svg className="w-6 h-6 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                                    </svg>
-                                                    <span className="text-sm truncate" title={doc.name}>
-                                                        {doc.name}
-                                                    </span>
+                                        {data.tipo_consulta === 'evolucion' && (
+                                            <>
+                                                {/* 1. Evoluciones */}
+                                                {expandedSections.evoluciones && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Registre las evoluciones del paciente, incluyendo cambios en síntomas y tratamientos.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="evoluciones"
+                                                                values={data.evoluciones}
+                                                                fieldName="evoluciones"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveFile(index, 'documents')}
-                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
-                                                    >
-                                                    ×
-                                                    </button>
-                                                </div>
-                                                ))}
-                                            </div>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept=".pdf,.doc,.docx,.xls,.xlsx"
-                                                onChange={(e) => handleFileChange(e, 'documents')}
-                                                className="mt-2 block w-full text-sm text-gray-500
-                                                file:mr-4 file:py-2 file:px-4
-                                                file:rounded-md file:border-0
-                                                file:text-sm file:font-semibold
-                                                file:bg-blue-50 file:text-blue-700
-                                                hover:file:bg-blue-100"
-                                            />
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                Formatos aceptados: PDF, DOC, DOCX, XLS, XLSX. Tamaño máximo: 5MB por archivo.
-                                            </p>
-                                            </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                )}                                
+                                                )}
+                                                {/* 5. Examen Ocular */}
+                                                {expandedSections.examenOcular && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
+                                                            </p>
+                                                            <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 6. Biomicroscopia */}
+                                                {expandedSections.biomicroscopia && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className='mb-4'>
+                                                            <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
+                                                            <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_od', value)}/>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Conjuntiva</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_oi', value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 7. Fondo de Ojo */}
+                                                {expandedSections.fondoOjo && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Documente los hallazgos del examen de fondo de ojo para ambos ojos.
+                                                            </p>
+                                                            <FondoOjo
+                                                                marcadoresOD={marcadores}
+                                                                marcadoresOI={marcadoresOI}
+                                                                marcadorActivoOD={marcadorActivo}
+                                                                marcadorActivoOI={marcadorActivoOI}
+                                                                handleMarkerClickOD={handleMarkerClick}
+                                                                handleMarkerClickOI={handleMarkerClickOI}
+                                                                data={data}
+                                                                setData={setData}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 8. Impresión Diagnóstica */}
+                                                {expandedSections.diagnostico && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <Cie10Search onSelectResult={handleSelectResult} />
+                                                            </div>
+                                                            <div className="mb-4">
+                                                                <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                                                    {selectedResults.map((result, index) => (
+                                                                        <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                                            <span>{result}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 9. Tratamiento */}
+                                                {expandedSections.tratamiento && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Especifique el tratamiento indicado para el paciente.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="tratamiento"
+                                                                values={data.tratamiento}
+                                                                fieldName="tratamiento"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 10. Plan */}
+                                                {expandedSections.plan && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione el plan de manejo para el paciente.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="plan"
+                                                                values={data.plan}
+                                                                fieldName="plan"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 11. Exámenes Indicados */}
+                                                {expandedSections.examenesIndicados && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Adjunte imágenes o documentos de exámenes complementarios (máximo 4 archivos por tipo).
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Imágenes)</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeImages}
+                                                                    multiple
+                                                                    accept="image/*"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewImages.map((image, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <img
+                                                                                src={image.preview}
+                                                                                alt={`Previsualización ${index + 1}`}
+                                                                                className="w-24 h-24 object-cover rounded-md"
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveImage(index, 'img')}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
 
-                                <div className="flex items-center justify-end mt-6">
-                                    <Link
-                                        href={route('consultas.index')}
-                                        className="px-4 py-2 text-white bg-gray-500 rounded hover:bg-gray-600"
-                                    >
-                                        Cancelar
-                                    </Link>
-                                    <button
-                                        type="submit"
-                                        className="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
-                                        disabled={processing}
-                                    >
-                                        {processing ? 'Guardando...' : 'Guardar Cambios'}
-                                    </button>
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Exámenes Indicados (Documentos)</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeArchivos}
+                                                                    multiple
+                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewArchivos.map((archivo, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveArchivo(index, 'archivos')}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 12. Comentario */}
+                                                {expandedSections.comentario && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Escriba un breve comentario.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="comentario"
+                                                                values={data.comentario}
+                                                                fieldName="comentario"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </form>
                         </div>

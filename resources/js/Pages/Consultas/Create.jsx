@@ -343,11 +343,14 @@ export default function ConsultasCreate({ auth }) {
         if (!data.dni) return;
         
         try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (!csrfToken) throw new Error('CSRF token no disponible');
+
             const response = await fetch('/consultas/buscar-paciente', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 body: JSON.stringify({ dni: data.dni.trim() }),
             });
@@ -515,7 +518,7 @@ export default function ConsultasCreate({ auth }) {
     // Manejar subida de imágenes
     const handleFileChangeImages = (e) => {
         const files = Array.from(e.target.files); // Convertir FileList a Array
-        if (files.length + (data.examenes_indicados_img ? data.examenes_indicados_img.length : 0) > 4) {
+        if (files.length + (data.examenes_indicados_img ? data.examenes_indicados_img.length : 0) > 64) {
             alert('Solo puedes subir un máximo de 4 imágenes.');
             return;
         }
@@ -533,15 +536,15 @@ export default function ConsultasCreate({ auth }) {
     // Manejar subida de archivos
     const handleFileChangeArchivos = (e) => {
         const files = Array.from(e.target.files); // Convertir FileList a Array
-        if (files.length + data.examenes_indicados_archivos.length > 4) {
-            alert('Solo puedes subir un máximo de 4 archivos.');
-            return;
-        }
 
         // Guardar los archivos en el estado
         setData('examenes_indicados_archivos', [...data.examenes_indicados_archivos, ...files]);
         setPreviewArchivos([...previewArchivos, ...files]);
     };
+
+    axios.defaults.timeout = 300000; // 5 minutos
+    axios.defaults.maxContentLength = Infinity;
+    axios.defaults.maxBodyLength = Infinity;
 
     // Eliminar imagen o archivo
     const handleRemoveImage = (index, type) => {
@@ -730,7 +733,7 @@ export default function ConsultasCreate({ auth }) {
                                             <label className="text-sm font-semibold text-[#333333]">Historial de Diagnósticos:</label>                                            
                                         </div>
                                         {historialDiagnosticos.length > 0 ? (
-                                            <div className="bg-gray-50 p-4 rounded max-h-64 overflow-y-auto">
+                                            <div className="bg-gray-50 p-4 rounded max-h-40 overflow-y-auto">
                                                 <ul className="space-y-2">
                                                     {historialDiagnosticos.map((item, index) => (
                                                         <li key={index} className="border-b pb-2 last:border-b-0">
@@ -1167,11 +1170,12 @@ export default function ConsultasCreate({ auth }) {
                                                             <p className="text-sm text-gray-500 mb-4">
                                                                 Especifique el tratamiento indicado para el paciente.
                                                             </p>
-                                                            <input
-                                                                type="text"
-                                                                value={data.tratamiento}
-                                                                onChange={(e) => setData('tratamiento', e.target.value)}
-                                                                className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                            <MultiInputField
+                                                                label="tratamiento"
+                                                                values={data.tratamiento}
+                                                                fieldName="tratamiento"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
                                                             />
                                                         </div>
                                                     </div>
@@ -1183,11 +1187,12 @@ export default function ConsultasCreate({ auth }) {
                                                             <p className="text-sm text-gray-500 mb-4">
                                                                 Seleccione el plan de manejo para el paciente.
                                                             </p>
-                                                            <PlanSelector
-                                                                opcionesPlan={opcionesPlan}
-                                                                handleSeleccionPlan={handleSeleccionPlan}
-                                                                showPlanText={showPlanText}
-                                                                setShowPlanText={setShowPlanText}
+                                                            <MultiInputField
+                                                                label="plan"
+                                                                values={data.plan}
+                                                                fieldName="plan"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
                                                             />
                                                         </div>
                                                     </div>
@@ -1262,11 +1267,12 @@ export default function ConsultasCreate({ auth }) {
                                                             <p className="text-sm text-gray-500 mb-4">
                                                                 Escriba un breve comentario.
                                                             </p>
-                                                            <input
-                                                                type="text"
-                                                                value={data.comentario}
-                                                                onChange={(e) => setData('comentario', e.target.value)}
-                                                                className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                            <MultiInputField
+                                                                label="comentario"
+                                                                values={data.comentario}
+                                                                fieldName="comentario"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
                                                             />
                                                         </div>
                                                     </div>
@@ -1280,11 +1286,15 @@ export default function ConsultasCreate({ auth }) {
                                                 {expandedSections.evoluciones && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
                                                         <div className="p-4">
-                                                            <input
-                                                                type="text"
-                                                                value={data.evoluciones}
-                                                                onChange={(e) => setData('evoluciones', e.target.value)}
-                                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Registre las evoluciones del paciente, incluyendo cambios en síntomas y tratamientos.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="evoluciones"
+                                                                values={data.evoluciones}
+                                                                fieldName="evoluciones"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
                                                             />
                                                         </div>
                                                     </div>
@@ -1424,11 +1434,12 @@ export default function ConsultasCreate({ auth }) {
                                                             <p className="text-sm text-gray-500 mb-4">
                                                                 Especifique el tratamiento indicado para el paciente.
                                                             </p>
-                                                            <input
-                                                                type="text"
-                                                                value={data.tratamiento}
-                                                                onChange={(e) => setData('tratamiento', e.target.value)}
-                                                                className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                            <MultiInputField
+                                                                label="tratamiento"
+                                                                values={data.tratamiento}
+                                                                fieldName="tratamiento"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
                                                             />
                                                         </div>
                                                     </div>
@@ -1440,11 +1451,12 @@ export default function ConsultasCreate({ auth }) {
                                                             <p className="text-sm text-gray-500 mb-4">
                                                                 Seleccione el plan de manejo para el paciente.
                                                             </p>
-                                                            <PlanSelector
-                                                                opcionesPlan={opcionesPlan}
-                                                                handleSeleccionPlan={handleSeleccionPlan}
-                                                                showPlanText={showPlanText}
-                                                                setShowPlanText={setShowPlanText}
+                                                            <MultiInputField
+                                                                label="plan"
+                                                                values={data.plan}
+                                                                fieldName="plan"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
                                                             />
                                                         </div>
                                                     </div>
@@ -1519,11 +1531,12 @@ export default function ConsultasCreate({ auth }) {
                                                             <p className="text-sm text-gray-500 mb-4">
                                                                 Escriba un breve comentario.
                                                             </p>
-                                                            <input
-                                                                type="text"
-                                                                value={data.comentario}
-                                                                onChange={(e) => setData('comentario', e.target.value)}
-                                                                className="mt-1 block w-full rounded-md border-[#8FDBF1] shadow-sm"
+                                                            <MultiInputField
+                                                                label="comentario"
+                                                                values={data.comentario}
+                                                                fieldName="comentario"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
                                                             />
                                                         </div>
                                                     </div>

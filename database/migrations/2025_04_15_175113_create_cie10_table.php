@@ -13,11 +13,15 @@ return new class extends Migration
     {
         Schema::create('cie10', function (Blueprint $table) {
             $table->id();
-            $table->string('colera')->nullable(); // Columna para "colera"
-            $table->string('fiebres_tifoidea_paratifoidea')->nullable(); // Columna para "fiebres_tifoidea_paratifoidea"
-            $table->string('otras_infecciones_debidas_salmonella')->nullable(); // Columna para "otras_infecciones_debidas_salmonella"
-            $table->string('shigelosis')->nullable(); // Columna para "shigelosis"
-            $table->timestamps();
+             // Campos principales según tu modelo
+             $table->string('list_01')->nullable();
+             $table->text('list_otros')->nullable();
+             
+             // Campos estándar de Laravel
+             $table->timestamps();
+             
+             // Índices para mejorar búsquedas
+             $table->index('list_01');
         });
     }
 

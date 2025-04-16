@@ -107,7 +107,15 @@ class PacienteController extends Controller
     public function show(Paciente $paciente)
     {
         $pacienteData = $this->preparePacienteData($paciente);
-        return Inertia::render('Pacientes/Show', ['paciente' => $pacienteData]);
+        
+        // Añade la URL de la foto de perfil
+        $pacienteData['foto_perfil_url'] = $paciente->foto_perfil 
+        ? Storage::url($paciente->foto_perfil)
+        : null;
+
+        return Inertia::render('Pacientes/Show', [
+            'paciente' => $pacienteData
+        ]);
     }
 
     /**

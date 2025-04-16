@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { utils, writeFile } from 'xlsx';
@@ -12,8 +12,12 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
         sex: '',
         minAge: '',
         maxAge: '',
-        filterType: 'general'
+        filterType: 'general',
+        searchTerm: '',
+        selectedTerms: []
     });
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchLoading, setSearchLoading] = useState(false);
 
     const fetchTopCie10 = async () => {
         try {
@@ -29,6 +33,13 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
             if (filters.filterType === 'age') {
                 if (filters.minAge) queryParams.append('min_age', filters.minAge);
                 if (filters.maxAge) queryParams.append('max_age', filters.maxAge);
+            }
+            
+            // Agregar términos seleccionados al filtro
+            if (filters.selectedTerms.length > 0) {
+                filters.selectedTerms.forEach(term => {
+                    queryParams.append('terms[]', term);
+                });
             }
             
             queryParams.append('filter_type', filters.filterType);
@@ -58,6 +69,72 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
         }
     };
 
+    const handleSearchTermChange = (e) => {
+        setFilters(prev => ({
+            ...prev,
+            searchTerm: e.target.value
+        }));
+    };
+
+    const handleSearch = useCallback(async () => {
+        if (!filters.searchTerm) {
+            setSearchResults([]);
+            return;
+        }
+
+        try {
+            setSearchLoading(true);
+            const response = await fetch(`/cie10/search?query=${encodeURIComponent(filters.searchTerm)}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setSearchResults(data);
+        } catch (error) {
+            console.error('Error searching CIE10:', error);
+            setError('Error al buscar términos CIE10');
+        } finally {
+            setSearchLoading(false);
+        }
+    }, [filters.searchTerm]);
+
+    const handleSelectTerm = (term) => {
+        if (!filters.selectedTerms.includes(term)) {
+            setFilters(prev => ({
+                ...prev,
+                selectedTerms: [...prev.selectedTerms, term],
+                searchTerm: '',
+                searchResults: []
+            }));
+        }
+    };
+
+    const handleRemoveTerm = (termToRemove) => {
+        setFilters(prev => ({
+            ...prev,
+            selectedTerms: prev.selectedTerms.filter(term => term !== termToRemove)
+        }));
+    };
+
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (filters.searchTerm) {
+                handleSearch();
+            } else {
+                setSearchResults([]);
+            }
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [filters.searchTerm, handleSearch]);
+
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({
@@ -71,7 +148,9 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
             sex: '',
             minAge: '',
             maxAge: '',
-            filterType: 'general'
+            filterType: 'general',
+            searchTerm: '',
+            selectedTerms: []
         });
         setTimeout(fetchTopCie10, 100);
     };
@@ -87,6 +166,8 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
             const min = filters.minAge || '0';
             const max = filters.maxAge || '∞';
             title = `CIE10_mas_usados_Edad_${min}_a_${max}`;
+        } else if (filters.selectedTerms.length > 0) {
+            title = `CIE10_mas_usados_Seleccionados`;
         }
         
         title = `${title}_${fechaActual}`;
@@ -161,6 +242,7 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
                                         <option value="general">General (todos)</option>
                                         <option value="sex">Por sexo</option>
                                         <option value="age">Por edad</option>
+                                        <option value="terms">Por términos específicos</option>
                                     </select>
                                 </div>
                                 
@@ -209,6 +291,72 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
                                             />
                                         </div>
                                     </>
+                                )}
+
+                                {/* Filtro por términos CIE10 */}
+                                {filters.filterType === 'terms' && (
+                                    <div className="col-span-2 space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700">Buscar términos CIE10</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                name="searchTerm"
+                                                value={filters.searchTerm}
+                                                onChange={handleSearchTermChange}
+                                                placeholder="Buscar código o descripción CIE10..."
+                                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                            />
+                                            {searchLoading && (
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                                    <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Resultados de búsqueda */}
+                                        {searchResults.length > 0 && (
+                                            <div className="mt-1 border border-gray-200 rounded-md max-h-40 overflow-y-auto">
+                                                <ul className="divide-y divide-gray-200">
+                                                    {searchResults.map((result, index) => (
+                                                        <li 
+                                                            key={index} 
+                                                            className="px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                                                            onClick={() => handleSelectTerm(result)}
+                                                        >
+                                                            <div className="text-sm text-gray-800">{result}</div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Términos seleccionados */}
+                                        {filters.selectedTerms.length > 0 && (
+                                            <div className="mt-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Términos seleccionados</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {filters.selectedTerms.map((term, index) => (
+                                                        <span 
+                                                            key={index}
+                                                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                                                        >
+                                                            {term}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveTerm(term)}
+                                                                className="ml-1.5 inline-flex text-indigo-600 hover:text-indigo-900 focus:outline-none"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             

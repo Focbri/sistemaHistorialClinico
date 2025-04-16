@@ -65,12 +65,21 @@ export default function Inicio() {
                                 
                                 {/* Calendario de Citas (opcional) */}
                                 <Link 
-                                    href={route('consultas.index')} 
+                                    href={route('citas.index')} 
                                     className="bg-teal-100 hover:bg-teal-200 p-6 rounded-lg shadow-md transition-all flex flex-col items-center"
                                 >
                                     <div className="text-5xl mb-4">📅</div>
                                     <h2 className="text-xl font-semibold text-center">Calendario de Citas</h2>
-                                    <p className="text-gray-600 mt-2 text-center">Programación de consultas</p>
+                                    <p className="text-gray-600 mt-2 text-center">Agendar Citas</p>
+                                </Link>
+                                {/* Fármacos */}
+                                <Link 
+                                    href={route('farmacos.index')} 
+                                    className="bg-teal-100 hover:bg-teal-200 p-6 rounded-lg shadow-md transition-all flex flex-col items-center"
+                                >
+                                    <div className="text-5xl mb-4">💊</div>
+                                    <h2 className="text-xl font-semibold text-center">Farmacia</h2>
+                                    <p className="text-gray-600 mt-2 text-center">Gestiona los fármacos en stock</p>
                                 </Link>
                             </div>
                         </div>

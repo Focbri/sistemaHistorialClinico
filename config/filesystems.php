@@ -43,7 +43,8 @@ return [
             'root' => storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
-            'throw' => true,
+            'throw' => false,
+            'disable_asserts' => true,
             'permissions' => [
                 'file' => [
                     'public' => 0664,

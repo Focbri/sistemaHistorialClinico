@@ -127,6 +127,11 @@ class Consulta extends Model
         'examenes_indicados_archivos' => 'array',
         'cirugias_previas' => 'array',
         'antecedentes_patologicos_familiares'=> 'array',
+        'tratamiento'=> 'array',
+        'antecedentes_patologicos_familiares'=> 'array',
+        'plan'=> 'array',
+        'evoluciones'=> 'array',
+        'comentario'=> 'array',
     ];
 
     public static function rules(): array

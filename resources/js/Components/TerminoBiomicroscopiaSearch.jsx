@@ -14,7 +14,7 @@ const TerminoBiomicroscopiaSearch = ({
     // Sincronizar con el valor inicial del padre
     useEffect(() => {
         const termsArray = initialValue ? 
-            initialValue.split(',').map(t => t.trim()).filter(t => t) : [];
+            initialValue.split('.').map(t => t.trim()).filter(t => t) : [];
         setSelectedTerms(termsArray);
     }, [initialValue]);
 
@@ -61,7 +61,7 @@ const TerminoBiomicroscopiaSearch = ({
         try {
             const newTerms = [...selectedTerms, trimmedTerm];
             setSelectedTerms(newTerms);
-            onSelectTerm(newTerms.join(', '));
+            onSelectTerm(newTerms.join('; '));
             setQuery('');
             setIsDropdownOpen(false);
     
@@ -85,7 +85,7 @@ const TerminoBiomicroscopiaSearch = ({
         if (readOnly) return;
         const newTerms = selectedTerms.filter(t => t !== term);
         setSelectedTerms(newTerms);
-        onSelectTerm(newTerms.join(', '));
+        onSelectTerm(newTerms.join('. '));
     }, [selectedTerms, onSelectTerm, readOnly]);
 
     const handleAddManually = useCallback(() => {

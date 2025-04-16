@@ -15,6 +15,27 @@ export default function PacientesShow({ auth, paciente }) {
                         <div className="p-6 bg-white border-b border-gray-200">
                             <div className='grid grid-cols-2 gap-4'>
                                 <div className='flex flex-col'>
+                                    {/* Sección de Foto de Perfil */}
+                                    <div className="mb-8 border border-gray-200 rounded-md p-4">
+                                        <h3 className="text-lg font-medium text-gray-700 mb-4">Foto de Perfil</h3>
+                                        
+                                        <div className="flex items-center space-x-6">
+                                            <div className="relative">
+                                                {paciente.foto_perfil_url ? (
+                                                    <img
+                                                        src={paciente.foto_perfil_url}
+                                                        alt="Foto de perfil"
+                                                        className="w-32 h-32 rounded-full object-cover border-2 border-gray-300"
+                                                    />
+                                                ) : (
+                                                    <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
+                                                        <span className="text-gray-500">Sin foto</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700">Apellido Paterno</label>
                                         <p className="mt-1">{paciente.apellido_paterno}</p>
@@ -45,15 +66,15 @@ export default function PacientesShow({ auth, paciente }) {
                                             </div>
 
                                             <div className="mb-4">
-                                                <label className="block text-sm font-medium text-gray-700">Peso Kg</label>
-                                                <p className="mt-1">{paciente.peso}</p>
+                                                <label className="block text-sm font-medium text-gray-700">Sexo</label>
+                                                <p className="mt-1">{paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
                                             </div>
                                         </div>
 
                                         <div className='flex flex-col'>
                                             <div className="mb-4">
-                                                <label className="block text-sm font-medium text-gray-700">Sexo</label>
-                                                <p className="mt-1">{paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
+                                                <label className="block text-sm font-medium text-gray-700">Peso Kg</label>
+                                                <p className="mt-1">{paciente.peso}</p>
                                             </div>
 
                                             <div className="mb-4">
@@ -81,14 +102,13 @@ export default function PacientesShow({ auth, paciente }) {
                                         <label className="block text-sm font-medium text-gray-700">Procedencia</label>
                                         <p className="mt-1">{paciente.procedencia}</p>
                                     </div>
-                                </div>
-
-                                <div className='flex flex-col'>
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700">Domicilio</label>
                                         <p className="mt-1">{paciente.direccion}</p>
                                     </div>
+                                </div>
 
+                                <div className='flex flex-col'>
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700">Teléfono</label>
                                         <p className="mt-1">{paciente.telefono}</p>

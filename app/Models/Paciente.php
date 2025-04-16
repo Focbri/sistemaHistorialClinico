@@ -92,6 +92,7 @@ class Paciente extends Model
             'telefono' => 'nullable|string|max:20',
             'email' => 'required|email|unique:pacientes,email|max:255',
             'direccion' => 'required|string|max:255',
+            'edad' => 'nullable|integer|min:0',
         ];
     }
 

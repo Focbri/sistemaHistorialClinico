@@ -17,10 +17,26 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            
+            // Campo de rol mejorado (enum con valores específicos)
+            $table->enum('role', ['admin', 'medico', 'asistente', 'recepcionista'])
+                  ->default('medico');
+            
+            // Campos adicionales para información del profesional
+            $table->string('especialidad')->nullable();
+            $table->string('matricula_profesional')->nullable();
+            $table->string('telefono')->nullable();
+            $table->boolean('activo')->default(true);
+            
             $table->rememberToken();
             $table->timestamps();
+            
+            // Índices para mejor performance
+            $table->index('role');
+            $table->index('email');
         });
 
+        // Mantén estas tablas que son necesarias para Laravel
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');

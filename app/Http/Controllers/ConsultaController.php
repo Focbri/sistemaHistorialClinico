@@ -152,7 +152,7 @@ class ConsultaController extends Controller
     {
         try {
             // Validar los datos del formulario
-            $request->validate([
+            $request->validate([ 
                 'paciente_id' => 'required|exists:pacientes,id',
                 'antecedentes_personales_hta' => 'nullable|string',
                 'antecedentes_personales_alergias' => 'nullable|string',
@@ -169,15 +169,22 @@ class ConsultaController extends Controller
                 'motivo_consulta_otros' => 'nullable|string',
                 //
                 'impresion_diagnostica' => 'nullable|string',
-                'tratamiento' => 'nullable|string',
-                'plan' => 'nullable|string',
+                'tratamiento' => 'nullable|array',
+                'tratamiento.*' => 'string',
+                'plan' => 'nullable|array',
+                'plan.*' => 'string',
                 //
-                'examenes_indicados_img' => 'nullable|array|max:4', // Máximo 4 imágenes
-                'examenes_indicados_img.*' => 'file|mimes:jpg,jpeg,png|max:2048', // Cada imagen debe ser un archivo válido
-                'examenes_indicados_archivos' => 'nullable|array|max:4', // Máximo 4 archivos
-                'examenes_indicados_archivos.*' => 'file|mimes:pdf,doc,docx,xls,xlsx|max:5120', // Cada archivo debe ser válido
+                'examenes_indicados_img' => 'nullable|array', // Máximo 4 imágenes
+                'examenes_indicados_img.*' => 'file|mimes:jpg,jpeg,png|max:10240', // Cada imagen debe ser un archivo válido
+                'examenes_indicados_archivos' => 'nullable|array', // Máximo 4 archivos
+                'examenes_indicados_archivos.*' => [
+                    'file',
+                    'mimes:pdf,doc,docx,xls,xlsx',
+                    'max:51200' // 50MB en KB
+                ],
                 //
-                'evoluciones' => 'nullable|string',
+                'evoluciones' => 'nullable|array',
+                'evoluciones.*' => 'string',
                 'tipo_consulta' => 'nullable|in:inicio,evolucion', // Asegurar que el tipo de consulta sea 
                 'examen_av_sc_od' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
                 'examen_av_cae_od' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
@@ -257,7 +264,8 @@ class ConsultaController extends Controller
                 'exam_old_cerca_eje_oi' => 'nullable|string',
                 'exam_old_cerca_dip' => 'nullable|string',
                 //
-                'comentario' => 'nullable|string',
+                'comentario' => 'nullable|array',
+                'comentario.*' => 'string',
             ]);
             Log::info('Datos recibidos en request:', $request->all());            
 
@@ -671,10 +679,13 @@ class ConsultaController extends Controller
                 'motivo_consulta_otros' => 'nullable|string',
                 //
                 'impresion_diagnostica' => 'nullable|string',
-                'tratamiento' => 'nullable|string',
-                'plan' => 'nullable|string',
+                'tratamiento' => 'nullable|array',
+                'tratamiento.*' => 'nullable',
+                'plan' => 'nullable|array',
+                'plan.*' => 'string',
                 //
-                'evoluciones' => 'nullable|string',
+                'evoluciones' => 'nullable|array',
+                'evoluciones.*' => 'string',
                 'tipo_consulta' => 'nullable|in:inicio,evolucion', // Asegurar que el tipo de consulta sea 
                 'fondo_ojo_posiciones' => 'nullable|json',
                 'fondo_ojo_retina_p_od' => 'nullable|string',
@@ -692,10 +703,10 @@ class ConsultaController extends Controller
                 'archivos_a_eliminar' => 'nullable|json',
                 
                 // Validación para nuevos archivos
-                'nuevas_imagenes' => 'nullable|array|max:4',
-                'nuevas_imagenes.*' => 'image|mimes:jpeg,png,jpg|max:2048',
-                'nuevos_archivos' => 'nullable|array|max:4',
-                'nuevos_archivos.*' => 'mimes:pdf,doc,docx,xls,xlsx|max:5120',
+                'nuevas_imagenes' => 'nullable|array',
+                'nuevas_imagenes.*' => 'image|mimes:jpeg,png,jpg|max:10240',
+                'nuevos_archivos' => 'nullable|array',
+                'nuevos_archivos.*' => 'mimes:pdf,doc,docx,xls,xlsx|max:51200',
                 'files_to_delete' => 'nullable|json',
                 // Campos de biomicroscopía explícitos
                 'biomicroscopia_movoculares_od' => 'nullable|string',
@@ -713,7 +724,8 @@ class ConsultaController extends Controller
                 'biomicroscopia_iris_oi' => 'nullable|string',
                 'biomicroscopia_cristalino_oi' => 'nullable|string',
                 //
-                'comentario' => 'nullable|string',
+                'comentario' => 'nullable|array',
+                'comentario.*' => 'string',
                 
                 // Campo para términos de biomicroscopía
                 'terminos_biomicroscopia' => 'nullable|string' // Cadena separada por coma
@@ -1342,7 +1354,7 @@ class ConsultaController extends Controller
         TerminoBiomicroscopia::where('consulta_id', $consulta->id)->delete();
 
         $terminos = array_filter(
-            array_map('trim', explode(',', $request->terminos_biomicroscopia)),
+            array_map('trim', explode('.', $request->terminos_biomicroscopia)),
             fn($t) => !empty($t)
         );
 

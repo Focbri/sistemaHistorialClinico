@@ -200,7 +200,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                                 onChange={(e) => {
                                     const value = e.target.value;
                                     // Validar que solo se ingresen números
-                                    if (/^\d*$/.test(value)) {
+                                    if (/^-?\d*$/.test(value)) {
                                         handleChange('examen_pi_od', value ? `${value} mmHg` : '');
                                     }
                                 }}
@@ -226,7 +226,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                                 onChange={(e) => {
                                     const value = e.target.value;
                                     // Validar que solo se ingresen números
-                                    if (/^\d*$/.test(value)) {
+                                    if (/^-?\d*$/.test(value)) {
                                         handleChange('examen_pi_oi', value ? `${value} mmHg` : '');
                                     }
                                 }}
