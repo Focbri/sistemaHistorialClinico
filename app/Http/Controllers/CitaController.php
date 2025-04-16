@@ -6,6 +6,9 @@ use App\Models\Cita;
 use App\Models\User;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class CitaController extends Controller
 {
@@ -20,28 +23,29 @@ class CitaController extends Controller
 
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
-            $citasCount = Cita::whereDate('fecha_hora', $date)->count();
-
-            $status = 'green'; // Sin citas
-            if ($citasCount > 0 && $citasCount < 16) {
-                $status = 'orange'; // Citas pero no lleno
-            } elseif ($citasCount >= 16) {
-                $status = 'red'; // Día lleno
-            }
+            $citasCount = Cita::whereDate('fecha_hora', $date)
+                            ->where('estado', 'programada')
+                            ->count();
 
             $calendarData[] = [
                 'day' => $day,
                 'date' => $date,
-                'status' => $status,
+                'status' => $this->getStatusColor($citasCount),
                 'citas_count' => $citasCount,
             ];
         }
+
+        // Obtener todas las citas con relaciones
+        $citas = Cita::with(['paciente', 'medico'])
+                    ->orderBy('fecha_hora', 'desc')
+                    ->get();
 
         return Inertia::render('Citas/Index', [
             'calendarData' => $calendarData,
             'currentMonth' => $month,
             'currentYear' => $year,
             'medicos' => User::where('role', 'medico')->get(),
+            'citas' => $citas,
         ]);
     }
 
@@ -56,14 +60,132 @@ class CitaController extends Controller
 
         // Verificar límite de 16 citas por día
         $fecha = date('Y-m-d', strtotime($request->fecha_hora));
-        $citasCount = Cita::whereDate('fecha_hora', $fecha)->count();
+        $citasCount = Cita::whereDate('fecha_hora', $fecha)
+                        ->where('estado', 'programada')
+                        ->count();
 
         if ($citasCount >= 16) {
             return back()->withErrors(['limite' => 'Se ha alcanzado el límite de 16 citas para este día']);
         }
 
-        Cita::create($request->all());
+        // Verificar diferencia de 1 hora
+        $nuevaFechaHora = new Carbon($request->fecha_hora);
+        $horaInicio = $nuevaFechaHora->copy()->subHour();
+        $horaFin = $nuevaFechaHora->copy()->addHour();
+
+        $citaExistente = Cita::whereBetween('fecha_hora', [$horaInicio, $horaFin])
+                        ->where('id', '!=', $request->id ?? null) // Excluir la cita actual si es edición
+                        ->first();
+
+        if ($citaExistente) {
+            return back()->withErrors(['fecha_hora' => 'Debe haber al menos 1 hora de diferencia entre citas']);
+        }
+
+        Cita::create([
+            'paciente_id' => $request->paciente_id,
+            'medico_id' => $request->medico_id,
+            'fecha_hora' => $request->fecha_hora,
+            'motivo' => $request->motivo,
+            'estado' => 'programada'
+        ]);
 
         return redirect()->route('citas.index')->with('success', 'Cita creada correctamente');
+    }
+
+    public function update(Request $request, Cita $cita)
+{
+    $request->validate([
+        'medico_id' => 'required|exists:users,id',
+        'fecha_hora' => 'required|date',
+        'motivo' => 'required|string|max:255',
+        'estado' => 'required|in:programada,completada,cancelada',
+    ]);
+
+    // Verificación de diferencia de 1 hora
+    $nuevaFechaHora = new Carbon($request->fecha_hora);
+    $horaInicio = $nuevaFechaHora->copy()->subMinutes(59);
+    $horaFin = $nuevaFechaHora->copy()->addMinutes(59);
+
+    $citaExistente = Cita::whereBetween('fecha_hora', [$horaInicio, $horaFin])
+                    ->where('id', '!=', $cita->id)
+                    ->first();
+
+    if ($citaExistente) {
+        return back()->withErrors(['fecha_hora' => 'Debe haber al menos 1 hora de diferencia entre citas']);
+    }
+
+    $cita->update($request->all());
+
+    // Respuesta optimizada para Inertia
+    return back()->with([
+        'success' => 'Cita actualizada correctamente',
+        'citas' => Cita::with(['paciente', 'medico'])->get()
+    ]);
+}
+
+    // Nuevo método para reprogramar citas
+    public function reprogramar(Request $request, Cita $cita)
+    {
+        $request->validate([
+            'fecha_hora' => 'required|date',
+            'motivo' => 'sometimes|string|max:255'
+        ]);
+
+        // Verificar límite de 16 citas para la nueva fecha
+        $nuevaFecha = date('Y-m-d', strtotime($request->fecha_hora));
+        $citasCount = Cita::whereDate('fecha_hora', $nuevaFecha)
+                        ->where('estado', 'programada')
+                        ->where('id', '!=', $cita->id) // Excluir la cita actual del conteo
+                        ->count();
+
+        if ($citasCount >= 16) {
+            return back()->withErrors(['limite' => 'Se ha alcanzado el límite de 16 citas para el nuevo día seleccionado']);
+        }
+
+        // Actualizar la cita
+        $cita->update([
+            'fecha_hora' => $request->fecha_hora,
+            'motivo' => $request->motivo ?? $cita->motivo,
+            // Mantener el estado actual (no cambia al reprogramar)
+        ]);
+
+        return redirect()->back()->with('success', 'Cita reprogramada correctamente');
+    }
+
+    protected function generateCalendarData($month, $year)
+    {
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $calendarData = [];
+
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $date = Carbon::create($year, $month, $day)->format('Y-m-d');
+            $citasCount = Cita::whereDate('fecha_hora', $date)
+                            ->where('estado', 'programada')
+                            ->count();
+
+            $calendarData[] = [
+                'day' => $day,
+                'date' => $date,
+                'citas_count' => $citasCount,
+                'status' => $this->getStatusColor($citasCount)
+            ];
+        }
+
+        return $calendarData;
+    }
+
+    protected function getStatusColor($count)
+    {
+        if ($count === 0) return 'gray';
+        if ($count >= 16) return 'red';
+        if ($count >= 12) return 'orange';
+        return 'green';
+    }
+
+    // En CitaController.php
+    public function destroy(Cita $cita)
+    {
+        $cita->delete();
+        return redirect()->back()->with('success', 'Cita eliminada correctamente');
     }
 }

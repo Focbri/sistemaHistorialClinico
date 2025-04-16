@@ -74,6 +74,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/farmacos/{farmaco}/stock', [StockController::class, 'update'])->name('stocks.update');
 
     //Farmacos
+    Route::resource('citas', CitaController::class);
     Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
     Route::post('/citas', [CitaController::class, 'store'])->name('citas.store');
     Route::post('/consultas/buscar-paciente', [ConsultaController::class, 'buscarPaciente']);
