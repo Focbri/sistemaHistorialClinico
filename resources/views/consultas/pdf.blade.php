@@ -355,7 +355,7 @@
             </table>
 
             <!-- Examen Antiguo - Distancia -->
-            <div class="section-title" style="margin-top: 15pt;">5.5.1 EXAMEN ANTIGUO - Distancia</div>
+            <div class="section-title" style="margin-top: 15pt;">5.5.1 EXAMEN PREVIO - Distancia</div>
             <table class="exam-table">
                 <tr>
                     <th>Ojo</th>
@@ -380,7 +380,7 @@
             </table>
 
             <!-- Examen Antiguo - Cerca -->
-            <div class="section-title" style="margin-top: 15pt;">5.5.2 EXAMEN ANTIGUO - Cerca</div>
+            <div class="section-title" style="margin-top: 15pt;">5.5.2 EXAMEN PREVIO - Cerca</div>
             <table class="exam-table">
                 <tr>
                     <th>Ojo</th>
@@ -405,7 +405,7 @@
             </table>
 
             <!-- Examen Nuevo - Distancia -->
-            <div class="section-title" style="margin-top: 15pt;">5.6.1 EXAMEN NUEVO - Distancia</div>
+            <div class="section-title" style="margin-top: 15pt;">5.6.1 EXAMEN ACTUAL - Distancia</div>
             <table class="exam-table">
                 <tr>
                     <th>Ojo</th>
@@ -430,7 +430,7 @@
             </table>
 
             <!-- Examen Nuevo - Cerca -->
-            <div class="section-title" style="margin-top: 15pt;">5.6.2 EXAMEN NUEVO - Cerca</div>
+            <div class="section-title" style="margin-top: 15pt;">5.6.2 EXAMEN ACTUAL - Cerca</div>
             <table class="exam-table">
                 <tr>
                     <th>Ojo</th>
@@ -531,21 +531,23 @@
                             @if(!empty($posiciones["OD_$i"]) && is_array($posiciones["OD_$i"]))
                                 @php
                                     // Ajustar coordenadas al tamaño de la imagen (250x250)
+                                    // Asumiendo que la imagen original tiene un tamaño de referencia de 500x500
                                     $x = $posiciones["OD_$i"]['x'] ?? 0;
                                     $y = $posiciones["OD_$i"]['y'] ?? 0;
-                                    $left = min(max(($x / 250) * 100, 100), 0);
-                                    $top = min(max(($y / 250) * 100, 100), 0);
+                                    $scaleFactor = 250 / 500; // Factor de escala basado en el tamaño original
+                                    $left = $x * $scaleFactor;
+                                    $top = $y * $scaleFactor;
                                 @endphp
                                 <div style="
                                     position: absolute;
-                                    width: 12px;
-                                    height: 12px;
+                                    width: 10px;
+                                    height: 10px;
                                     border-radius: 50%;
                                     background-color: {{ $colores[$i-1] ?? '#000000' }};
-                                    left: {{ $left }}%;
-                                    top: {{ $top }}%;
-                                    margin-left: -6px;
-                                    margin-top: -6px;
+                                    left: {{ $left }}px;
+                                    top: {{ $top }}px;
+                                    margin-left: -5px;
+                                    margin-top: -5px;
                                     border: 1px solid white;
                                     box-shadow: 0 0 3px rgba(0,0,0,0.5);
                                 "></div>
@@ -568,21 +570,23 @@
                             @if(!empty($posiciones["OI_$i"]) && is_array($posiciones["OI_$i"]))
                                 @php
                                     // Ajustar coordenadas al tamaño de la imagen (250x250)
+                                    // Asumiendo que la imagen original tiene un tamaño de referencia de 500x500
                                     $x = $posiciones["OI_$i"]['x'] ?? 0;
                                     $y = $posiciones["OI_$i"]['y'] ?? 0;
-                                    $left = min(max(($x / 250) * 100, 100), 0);
-                                    $top = min(max(($y / 250) * 100, 100), 0);
+                                    $scaleFactor = 250 / 500; // Factor de escala basado en el tamaño original
+                                    $left = $x * $scaleFactor;
+                                    $top = $y * $scaleFactor;
                                 @endphp
                                 <div style="
                                     position: absolute;
-                                    width: 12px;
-                                    height: 12px;
+                                    width: 10px;
+                                    height: 10px;
                                     border-radius: 50%;
                                     background-color: {{ $colores[$i-1] ?? '#000000' }};
-                                    left: {{ $left }}%;
-                                    top: {{ $top }}%;
-                                    margin-left: -6px;
-                                    margin-top: -6px;
+                                    left: {{ $left }}px;
+                                    top: {{ $top }}px;
+                                    margin-left: -5px;
+                                    margin-top: -5px;
                                     border: 1px solid white;
                                     box-shadow: 0 0 3px rgba(0,0,0,0.5);
                                 "></div>

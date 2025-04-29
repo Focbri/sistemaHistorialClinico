@@ -96,21 +96,27 @@ export default function CitasIndex({ calendarData, currentMonth, currentYear, me
     const verificarDisponibilidad = () => {
         if (!data.fecha_hora) return true;
         
+        // Verificar que sea en intervalos de 20 minutos
         const fechaHora = new Date(data.fecha_hora);
-        const horaInicio = new Date(fechaHora.getTime() - 60 * 60 * 1000); // Restar 1 hora
-        const horaFin = new Date(fechaHora.getTime() + 60 * 60 * 1000); // Sumar 1 hora
-    
+        const minutes = fechaHora.getMinutes();
+        if (minutes % 20 !== 0) {
+            setErrorMessage('Las citas deben programarse en intervalos de 20 minutos (ej: 08:00, 08:20, 08:40)');
+            return false;
+        }
+        
+        // Verificar disponibilidad en ±20 minutos
+        const horaInicio = new Date(fechaHora.getTime() - 20 * 60 * 1000);
+        const horaFin = new Date(fechaHora.getTime() + 20 * 60 * 1000);
+        
         const citasEnRango = citas.filter(cita => {
             const citaFechaHora = new Date(cita.fecha_hora);
-            // Permitir exactamente 1 hora de diferencia (11:30 si hay una a 10:30)
-            return citaFechaHora.getTime() !== fechaHora.getTime() && // No misma hora exacta
-                   citaFechaHora > horaInicio && 
+            return citaFechaHora > horaInicio && 
                    citaFechaHora < horaFin && 
                    cita.id !== (selectedCita?.id || data.id);
         });
-    
+        
         if (citasEnRango.length > 0) {
-            setErrorMessage('Debe haber al menos 1 hora de diferencia entre citas (excepto para horas exactas)');
+            setErrorMessage('Debe haber al menos 20 minutos de diferencia entre citas');
             return false;
         }
         
@@ -241,8 +247,8 @@ export default function CitasIndex({ calendarData, currentMonth, currentYear, me
 
     const getDayColor = (citasCount) => {
         if (citasCount === 0) return 'gray';
-        if (citasCount >= 16) return 'red';
-        if (citasCount >= 12) return 'orange';
+        if (citasCount >= 16) return 'red';       // Máximo de citas por día
+        if (citasCount >= 12) return 'orange';    // 75% de capacidad
         return 'green';
     };
 
@@ -467,6 +473,7 @@ export default function CitasIndex({ calendarData, currentMonth, currentYear, me
                                         }}
                                         className="w-full p-2 border rounded"
                                         required
+                                        step="1200" // 1200 segundos = 20 minutos
                                     />
                                 </div>
                                 

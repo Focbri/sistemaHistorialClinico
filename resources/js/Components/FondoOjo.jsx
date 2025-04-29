@@ -19,7 +19,10 @@ const FondoOjo = ({
     const contenedorOIRef = useRef(null);
     const [marcadorArrastrado, setMarcadorArrastrado] = useState(null);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [estaArrastrando, setEstaArrastrando] = useState(false);
     const inputRef = useRef(null);
+    const [dimensiones, setDimensiones] = useState({ width: 300, height: 300 });
+    const [textAreaAbierto, setTextAreaAbierto] = useState(null);
 
     // Mapeo de colores CSS a clases de Tailwind
     const COLORES_TAILWIND = {
@@ -61,7 +64,10 @@ const FondoOjo = ({
         const posKey = `${tipoOjo}_${marcador.id}`;
         
         if (posicionesGuardadas[posKey]) {
-            return posicionesGuardadas[posKey];
+            return {
+                x: posicionesGuardadas[posKey].x,
+                y: posicionesGuardadas[posKey].y
+            };
         }
         
         if (modoVisualizacion) return { x: -100, y: -100 };
@@ -73,17 +79,10 @@ const FondoOjo = ({
         const spacing = 30;
         const startY = 30;
         
-        if (tipoOjo === 'OD') {
-            return {
-                x: 0,
-                y: startY + (index * spacing)
-            };
-        } else {
-            return {
-                x: 0,
-                y: startY + (index * spacing)
-            };
-        }
+        return {
+            x: 10,
+            y: startY + (index * spacing)
+        };
     };
 
     // Iniciar arrastre
@@ -93,25 +92,23 @@ const FondoOjo = ({
         e.stopPropagation();
         e.preventDefault();
         
+        setEstaArrastrando(true);
+        setTextAreaAbierto(null); // Cerrar textarea si estaba abierto
+        
         const contenedor = tipoOjo === 'OD' ? contenedorODRef.current : contenedorOIRef.current;
         if (!contenedor) return;
-    
+
         const rect = contenedor.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
-    
+
         const posicionActual = getInitialPosition(marcador, tipoOjo);
-    
-        let posX = posicionActual.x;
-        if (tipoOjo === 'OI') {
-            posX = rect.width - posX;
-        }
-    
+
         setOffset({
-            x: mouseX - posX,
+            x: mouseX - posicionActual.x,
             y: mouseY - posicionActual.y
         });
-    
+
         setMarcadorArrastrado({ ...marcador, tipoOjo });
     };
 
@@ -122,21 +119,18 @@ const FondoOjo = ({
         const tipoOjo = marcadorArrastrado.tipoOjo;
         const contenedor = tipoOjo === 'OD' ? contenedorODRef.current : contenedorOIRef.current;
         if (!contenedor) return;
-    
+
         const rect = contenedor.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
-    
+
         let nuevaX = mouseX - offset.x;
         let nuevaY = mouseY - offset.y;
-    
-        if (tipoOjo === 'OI') {
-            nuevaX = rect.width - nuevaX;
-        }
-    
+
+        // Asegurar que los marcadores no salgan de los límites
         nuevaX = Math.max(10, Math.min(rect.width - 10, nuevaX));
         nuevaY = Math.max(10, Math.min(rect.height - 10, nuevaY));
-    
+
         const nuevasPosiciones = {
             ...posicionesGuardadas,
             [`${tipoOjo}_${marcadorArrastrado.id}`]: { 
@@ -144,18 +138,32 @@ const FondoOjo = ({
                 y: nuevaY 
             }
         };
-    
+
         safeSetData('fondo_ojo_posiciones', JSON.stringify(nuevasPosiciones));
     };
     
     // Finalizar arrastre
     const finalizarArrastre = () => {
+        setEstaArrastrando(false);
         setMarcadorArrastrado(null);
     };
 
-    // Manejar cambio de texto y guardar automáticamente
-    const handleTextoChange = (e, campo) => {
-        safeSetData(campo, e.target.value);
+    // Manejar clic en marcador (sin arrastre)
+    const handleClicMarcador = (marcador, tipoOjo) => {
+        if (estaArrastrando) {
+            setEstaArrastrando(false);
+            return;
+        }
+        
+        setTextAreaAbierto({
+            tipoOjo,
+            marcadorId: marcador.id
+        });
+    };
+
+    // Cerrar textarea
+    const cerrarTextarea = () => {
+        setTextAreaAbierto(null);
     };
 
     // Configurar event listeners
@@ -176,30 +184,24 @@ const FondoOjo = ({
 
     // Enfocar el input cuando se activa un marcador
     useEffect(() => {
-        if (inputRef.current && (marcadorActivoOD || marcadorActivoOI)) {
+        if (inputRef.current && textAreaAbierto && !estaArrastrando) {
             inputRef.current.focus();
         }
-    }, [marcadorActivoOD, marcadorActivoOI]);
+    }, [textAreaAbierto, estaArrastrando]);
 
     // Obtener estilo del marcador
     const obtenerEstiloMarcador = (marcador, tipoOjo) => {
         const posicion = getInitialPosition(marcador, tipoOjo);
         
-        const estiloBase = {
+        return {
             position: 'absolute',
+            left: `${posicion.x}px`,
             top: `${posicion.y}px`,
             transform: 'translate(-50%, -50%)',
-            cursor: modoVisualizacion ? 'default' : 'pointer',
-            zIndex: marcadorArrastrado?.id === marcador.id ? 10 : 1
+            cursor: modoVisualizacion ? 'default' : 'move',
+            zIndex: marcadorArrastrado?.id === marcador.id ? 10 : 1,
+            pointerEvents: modoVisualizacion ? 'none' : 'auto'
         };
-    
-        if (tipoOjo === 'OD') {
-            estiloBase.left = `${posicion.x}px`;
-        } else {
-            estiloBase.right = `${posicion.x}px`;
-        }
-    
-        return estiloBase;
     };
 
     // Obtener clase de color para el subtítulo
@@ -218,10 +220,10 @@ const FondoOjo = ({
                 <div
                     key={`${tipoOjo}_${marcador.id}`}
                     style={obtenerEstiloMarcador(marcador, tipoOjo)}
-                    onMouseDown={modoVisualizacion ? undefined : (e) => iniciarArrastre(marcador, e, tipoOjo)}
-                    onClick={modoVisualizacion ? undefined : (e) => {
+                    onMouseDown={(e) => iniciarArrastre(marcador, e, tipoOjo)}
+                    onClick={(e) => {
                         e.stopPropagation();
-                        tipoOjo === 'OD' ? handleMarkerClickOD(marcador) : handleMarkerClickOI(marcador);
+                        handleClicMarcador(marcador, tipoOjo);
                     }}
                 >
                     <FontAwesomeIcon
@@ -245,24 +247,24 @@ const FondoOjo = ({
             
             const posicionesFijas = {
                 OD: [
-                    { top: '10%', left: '-340px' },
-                    { top: '10%', left: '-170px' },
-                    { top: '45%', left: '-340px' },
-                    { top: '45%', left: '-170px' },
-                    { top: '80%', left: '-260px' },
+                    { top: '10%', left: '-200px' },
+                    { top: '10%', left: '-100px' },
+                    { top: '45%', left: '-200px' },
+                    { top: '45%', left: '-100px' },
+                    { top: '80%', left: '-150px' },
                 ],
                 OI: [
-                    { top: '10%', right: '-340px' },
-                    { top: '10%', right: '-170px' },
-                    { top: '45%', right: '-340px' },
-                    { top: '45%', right: '-170px' },
-                    { top: '80%', right: '-260px' },
+                    { top: '10%', right: '-200px' },
+                    { top: '10%', right: '-100px' },
+                    { top: '45%', right: '-200px' },
+                    { top: '45%', right: '-100px' },
+                    { top: '80%', right: '-150px' },
                 ]
             };
     
             const posicion = posicionesFijas[tipoOjo][index] || { 
                 top: '50%', 
-                [tipoOjo === 'OD' ? 'left' : 'right']: '-180px' 
+                [tipoOjo === 'OD' ? 'left' : 'right']: '-150px' 
             };
     
             return (
@@ -287,8 +289,70 @@ const FondoOjo = ({
         });
     };
 
+    // Controlador para cambiar el tamaño de la imagen
+    const cambiarTamaño = (operacion) => {
+        setDimensiones(prev => {
+            const nuevoAncho = operacion === '+' ? 
+                Math.min(600, prev.width + 50) : 
+                Math.max(200, prev.width - 50);
+            return {
+                width: nuevoAncho,
+                height: nuevoAncho // Mantener relación cuadrada
+            };
+        });
+    };
+
+    // Renderizar textarea
+    const renderTextarea = () => {
+        if (!textAreaAbierto || modoVisualizacion) return null;
+
+        const marcadores = textAreaAbierto.tipoOjo === 'OD' ? marcadoresOD : marcadoresOI;
+        const marcador = marcadores.find(m => m.id === textAreaAbierto.marcadorId);
+        
+        if (!marcador) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                onClick={cerrarTextarea}>
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4"
+                    onClick={(e) => e.stopPropagation()}>
+                    <div className={`p-4 rounded-t-lg ${obtenerColorSubtitulo(marcador)}`}>
+                        <h3 className="text-lg font-bold text-white">{marcador.subtitulo}</h3>
+                    </div>
+                    <div className="p-4">
+                        <textarea
+                            ref={inputRef}
+                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Escribe tus observaciones..."
+                            value={data[marcador.campo] || ''}
+                            onChange={(e) => safeSetData(marcador.campo, e.target.value)}
+                            rows={6}
+                            autoFocus
+                        />
+                        <div className="mt-4 flex justify-end space-x-2">
+                            <button
+                                type="button"
+                                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                                onClick={cerrarTextarea}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                                onClick={cerrarTextarea}
+                            >
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div className='flex flex-col justify-center items-center w-full gap-4'>
+        <div className='flex flex-col justify-center items-center w-full gap-4 relative'>
             <label className="block text-xl font-medium text-gray-700">Fondo de Ojo</label>
             
             {!modoVisualizacion && (
@@ -302,93 +366,68 @@ const FondoOjo = ({
                 </div>
             )}
             
-            <div className='flex'>
+            <div className='flex flex-col md:flex-row justify-center gap-8 w-full'>
                 {/* Ojo Derecho (OD) */}
-                <div
-                    ref={contenedorODRef}
-                    className='relative inline-block'
-                    style={{ userSelect: 'none', touchAction: 'none' }}
-                >
-                    <img
-                        src={fondoOjoD}
-                        alt="Fondo de Ojo Derecho"
-                        className="min-w-64 h-auto"
-                        style={{ pointerEvents: 'none' }}
-                        draggable="false"
-                    />
-                    {renderMarcadores(marcadoresOD, 'OD')}
-                    
-                    {modoVisualizacion && renderContenedoresVisualizacion(marcadoresOD, 'OD')}
-
-                    {!modoVisualizacion && marcadorActivoOD && (
-                        <div className='absolute bg-white border border-gray-300 rounded-lg shadow-lg opciones-container min-w-40 z-20'
-                            style={{
-                                top: '50%',
-                                left: '-90%',
-                                transform: 'translate(10px, -50%)'
-                            }}>
-                            <span 
-                                className={`block text-lg font-bold rounded-t-lg text-white mb-1 p-3 ${obtenerColorSubtitulo(marcadoresOD.find(m => m.id === marcadorActivoOD))}`}
-                            >
-                                {marcadoresOD.find(m => m.id === marcadorActivoOD).subtitulo}
-                            </span>
-                            <div className='p-3'>
-                                <textarea
-                                    ref={inputRef}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    placeholder="Escribe tus observaciones..."
-                                    value={data[marcadoresOD.find(m => m.id === marcadorActivoOD).campo] || ''}
-                                    onChange={(e) => handleTextoChange(e, marcadoresOD.find(m => m.id === marcadorActivoOD).campo)}
-                                    rows={4}
-                                />
-                            </div>
-                        </div>
-                    )}
+                <div className="flex flex-col items-center">
+                    <div
+                        ref={contenedorODRef}
+                        className='relative'
+                        style={{ 
+                            userSelect: 'none', 
+                            touchAction: 'none',
+                            width: `${dimensiones.width}px`,
+                            height: `${dimensiones.height}px`
+                        }}
+                    >
+                        <img
+                            src={fondoOjoD}
+                            alt="Fondo de Ojo Derecho"
+                            style={{ 
+                                width: '100%', 
+                                height: '100%',
+                                pointerEvents: 'none',
+                                objectFit: 'contain'
+                            }}
+                            draggable="false"
+                        />
+                        {renderMarcadores(marcadoresOD, 'OD')}
+                        {modoVisualizacion && renderContenedoresVisualizacion(marcadoresOD, 'OD')}
+                    </div>
+                    <span className="mt-2 font-medium">Ojo Derecho (OD)</span>
                 </div>
 
                 {/* Ojo Izquierdo (OI) */}
-                <div
-                    ref={contenedorOIRef}
-                    className='relative inline-block'
-                    style={{ userSelect: 'none', touchAction: 'none' }}
-                >
-                    <img
-                        src={fondoOjoI}
-                        alt="Fondo de Ojo Izquierdo"
-                        className="min-w-64 h-auto"
-                        style={{ pointerEvents: 'none' }}
-                        draggable="false"
-                    />
-                    {renderMarcadores(marcadoresOI, 'OI')}
-                    
-                    {modoVisualizacion && renderContenedoresVisualizacion(marcadoresOI, 'OI')}
-
-                    {!modoVisualizacion && marcadorActivoOI && (
-                        <div className='absolute bg-white border border-gray-300 rounded-lg shadow-lg opciones-container min-w-40 z-20'
-                            style={{
-                                top: '50%',
-                                right: '-90%',
-                                transform: 'translate(-10px, -50%)'
-                            }}>
-                            <span 
-                                className={`block text-lg font-bold rounded-t-lg text-white mb-1 p-3 ${obtenerColorSubtitulo(marcadoresOI.find(m => m.id === marcadorActivoOI))}`}
-                            >
-                                {marcadoresOI.find(m => m.id === marcadorActivoOI).subtitulo}
-                            </span>
-                            <div className='p-3'>
-                                <textarea
-                                    ref={inputRef}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    placeholder="Escribe tus observaciones..."
-                                    value={data[marcadoresOI.find(m => m.id === marcadorActivoOI).campo] || ''}
-                                    onChange={(e) => handleTextoChange(e, marcadoresOI.find(m => m.id === marcadorActivoOI).campo)}
-                                    rows={4}
-                                />
-                            </div>
-                        </div>
-                    )}
+                <div className="flex flex-col items-center">
+                    <div
+                        ref={contenedorOIRef}
+                        className='relative'
+                        style={{ 
+                            userSelect: 'none', 
+                            touchAction: 'none',
+                            width: `${dimensiones.width}px`,
+                            height: `${dimensiones.height}px`
+                        }}
+                    >
+                        <img
+                            src={fondoOjoI}
+                            alt="Fondo de Ojo Izquierdo"
+                            style={{ 
+                                width: '100%', 
+                                height: '100%',
+                                pointerEvents: 'none',
+                                objectFit: 'contain'
+                            }}
+                            draggable="false"
+                        />
+                        {renderMarcadores(marcadoresOI, 'OI')}
+                        {modoVisualizacion && renderContenedoresVisualizacion(marcadoresOI, 'OI')}
+                    </div>
+                    <span className="mt-2 font-medium">Ojo Izquierdo (OI)</span>
                 </div>
             </div>
+
+            {/* Modal de textarea */}
+            {renderTextarea()}
         </div>
     );
 };

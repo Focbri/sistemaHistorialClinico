@@ -7,6 +7,7 @@ use \App\Models\Consulta;
 use \App\Models\Paciente;
 use \App\Models\TerminoBiomicroscopia;
 use \App\Models\Examen;
+use \App\Models\Receta;
 use App\Models\TerminoMotivoConsulta;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
@@ -21,11 +22,14 @@ class ConsultaController extends Controller
 {
     public function index(Request $request) 
     {
-        $query = Consulta::with('paciente');
-    
-        if ($request->has('dni') && $request->dni) {
-            $query->whereHas('paciente', function ($q) use ($request) {
-                $q->where('dni', $request->dni);
+        // Consulta base con relaciones necesarias
+            $query = Consulta::with(['paciente', 'receta', 'user'])
+            ->latest(); // Ordenar por más reciente primero
+
+        // Filtro por DNI
+        if ($request->filled('dni')) {
+            $query->whereHas('paciente', function($q) use ($request) {
+                $q->where('dni', 'like', '%'.$request->dni.'%');
             });
         }
     
@@ -84,16 +88,23 @@ class ConsultaController extends Controller
         ]);
     }
 
-    public function show(Consulta $consulta)
-    {
-        // Cargar las relaciones necesarias
-        $consulta->load(['paciente', 'examen']);
-        
-        return Inertia::render('Consultas/Show', [
-            'consulta' => $consulta->toArray(), // Asegúrate de convertir a array
+    public function show($id)
+{
+    $consulta = Consulta::with(['paciente', 'receta', 'user'])->findOrFail($id);
+    
+    // Para peticiones AJAX/API
+    if (request()->expectsJson()) {
+        return response()->json([
+            'consulta' => $consulta,
+            'receta' => $consulta->receta // Incluir la receta relacionada
         ]);
     }
-
+    
+    // Para navegación normal
+    return Inertia::render('Consultas/Show', [
+        'consulta' => $consulta
+    ]);
+}
     public function destroy($id)
     {
         // Buscar y eliminar la consulta
@@ -179,7 +190,7 @@ class ConsultaController extends Controller
                 'examenes_indicados_archivos' => 'nullable|array', // Máximo 4 archivos
                 'examenes_indicados_archivos.*' => [
                     'file',
-                    'mimes:pdf,doc,docx,xls,xlsx',
+                    'mimes:pdf,doc,docx,xls,xlsx,zip,rar',
                     'max:51200' // 50MB en KB
                 ],
                 //
@@ -266,8 +277,7 @@ class ConsultaController extends Controller
                 //
                 'comentario' => 'nullable|array',
                 'comentario.*' => 'string',
-            ]);
-            Log::info('Datos recibidos en request:', $request->all());            
+            ]);        
 
             // Verificar si ya existe una consulta de inicio para este paciente
             if ($request->tipo_consulta === 'inicio') {
@@ -367,12 +377,15 @@ class ConsultaController extends Controller
             // Contar las consultas previas del paciente
             $numeroConsultas = Consulta::where('paciente_id', $paciente->id)->count();
 
-            $numeroConsultasFormateado = str_pad($numeroConsultas + 1, 3, '0', STR_PAD_LEFT);
-            $codigoConsulta = 'HCL-' . $paciente->dni . '-' . $numeroConsultasFormateado;
+            // Generar código de historial si es la primera consulta
+            if (!$paciente->codigo_historial) {
+                $paciente->codigo_historial = 'HCL-' . $paciente->dni;
+                $paciente->save();
+            }
             
             // Crear la consulta
             $consulta = Consulta::create([
-                'codigo_consulta' => $codigoConsulta,
+                'codigo_historial' => $paciente->codigo_historial,
                 'paciente_id' => $request->paciente_id,
                 'tipo_consulta' => $request->tipo_consulta,
                 'antecedentes_personales_hta' => $request->antecedentes_personales_hta,
@@ -474,7 +487,35 @@ class ConsultaController extends Controller
                 'exam_old_cerca_dip' => $request->exam_old_cerca_dip,
             ]);
 
-            Log::info('Examen creado:', $examen->toArray());
+             // ===== NUEVO CÓDIGO PARA GUARDAR LA RECETA =====
+            if ($request->has('receta')) {
+                $recetaData = $request->receta;
+                
+                // Validar los datos de la receta
+                $validatedReceta = validator($recetaData, [
+                    'paciente_id' => 'required|exists:pacientes,id',
+                    'medico_id' => 'required|exists:users,id',
+                    'cie10_codes' => 'required|array',
+                    'medicamentos' => 'required|array',
+                    'medicamentos.*.nombre' => 'required|string',
+                    'medicamentos.*.dosis' => 'required|string',
+                    'medicamentos.*.frecuencia' => 'required|string',
+                    'medicamentos.*.duracion' => 'required|string',
+                    'indicaciones_generales' => 'nullable|string',
+                    'fecha' => 'required|date',
+                ])->validate();
+                
+                // Crear la receta asociada a la consulta 
+                $receta = \App\Models\Receta::create([
+                    'consulta_id' => $consulta->id,
+                    'paciente_id' => $validatedReceta['paciente_id'],
+                    'medico_id' => $validatedReceta['medico_id'],
+                    'cie10_codes' => $validatedReceta['cie10_codes'],
+                    'medicamentos' => json_encode($validatedReceta['medicamentos']),
+                    'indicaciones_generales' => $validatedReceta['indicaciones_generales'],
+                    'fecha' => $validatedReceta['fecha'],
+                ]);
+            }
 
             //BIOMICROSCOPIA
 
@@ -533,10 +574,6 @@ class ConsultaController extends Controller
                         'consulta_id' => $consulta->id // Asegurar el consulta_id
                     ]);
                     
-                    Log::info('Término guardado exitosamente', [
-                        'termino' => $termino,
-                        'consulta_id' => $consulta->id
-                    ]);
                 } catch (\Exception $e) {
                     Log::error('Error al guardar término', [
                         'termino' => $termino,
@@ -579,7 +616,6 @@ class ConsultaController extends Controller
                     'termino_mc' => 'TERMINO_PRUEBA',
                     'consulta_id' => $consulta->id
                 ]);
-                Log::info('Prueba exitosa', $test->toArray());
             } catch (\Exception $e) {
                 Log::error('Prueba fallida', ['error' => $e->getMessage()]);
             }
@@ -605,10 +641,6 @@ class ConsultaController extends Controller
                         'consulta_id' => $consulta->id // Asegurar el consulta_id
                     ]);
                     
-                    Log::info('Término guardado exitosamente', [
-                        'termino_mc' => $terminos_mc,
-                        'consulta_id' => $consulta->id
-                    ]);
                 } catch (\Exception $e) {
                     Log::error('Error al guardar término', [
                         'termino_mc' => $terminos_mc,
@@ -629,30 +661,32 @@ class ConsultaController extends Controller
                     );
                 }
             }
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'redirect' => route('consultas.index')
+                ]);
+            }
+            Log::info('Consulta creada', ['consulta_id' => $consulta->id]);
 
-            Log::info('Datos recibidos en motivo consulta:', [
-                'motivo_consulta_inicio' => $request->motivo_consulta_inicio,
-                'motivo_consulta_signos' => $request->motivo_consulta_signos,
-                'motivo_consulta_enfermedad' => $request->motivo_consulta_enfermedad,
-                'motivo_consulta_otros' => $request->motivo_consulta_otros
+            return redirect()->route('consultas.index')
+            ->with('success', 'Consulta creada correctamente.');
+            
+        } catch (\Exception $e) {
+            Log::error('Error en store method', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             
-            // PRUEBA DE DIAGNÓSTICO
-            Log::info('DIAGNÓSTICO PRE-INSERCIÓN', [
-                'consulta_existe' => isset($consulta),
-                'consulta_id' => $consulta->id ?? 'NO EXISTE',
-                'request_data' => $request->all()
-            ]);
-
-            Log::info('Archivos recibidos:', [
-                'imagenes' => $request->file('examenes_indicados_img'),
-                'archivos' => $request->file('examenes_indicados_archivos'),
-            ]);
-
-            return redirect()->route('consultas.index')->with('success', 'Consulta creada correctamente.');
-        } catch (\Exception $e) {
-            Log::error('Error en redirección:', ['error' => $e->getMessage()]);
-            return redirect()->back()->withErrors(['message' => 'Error al crear la consulta: ' . $e->getMessage()]);
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al crear la consulta'
+                ], 500);
+            }
+            
+            return redirect()->back()
+                    ->withErrors(['message' => 'Error al crear la consulta: ' . $e->getMessage()]);
         }
     }
     // Método para actualizar una consulta
@@ -1089,6 +1123,28 @@ class ConsultaController extends Controller
             'archivos' => array_merge($filteredFiles, $newFiles)
         ];
     }
+
+    protected function procesarArchivoComprimido($file, $pacienteId)
+    {
+        $extension = $file->getClientOriginalExtension();
+        $nombreOriginal = $file->getClientOriginalName();
+        $carpetaDestino = 'pacientes/'.$pacienteId.'/archivos_comprimidos';
+        
+        // Guardar el archivo comprimido
+        $path = $file->storeAs(
+            $carpetaDestino,
+            $nombreOriginal,
+            'public'
+        );
+        
+        return [
+            'ruta' => $path,
+            'nombre_original' => $nombreOriginal,
+            'tipo' => 'compressed',
+            'extension' => $extension
+        ];
+    }
+    
     protected function procesarNuevosArchivos(Request $request, Consulta $consulta, &$imagenes, &$archivos)
     {
         $carpetaPaciente = 'pacientes/' . $consulta->paciente->dni;
@@ -1110,13 +1166,17 @@ class ConsultaController extends Controller
     
     // En tu controlador (ConsultasController.php)
     public function buscarPaciente(Request $request)
-    {
+{
+    try {
         $request->validate([
-            'dni' => 'required|string|max:8'
+            'dni' => 'required|string|max:12' // Usamos 'dni' que es el nombre real de la columna
         ]);
 
         $paciente = Paciente::where('dni', $request->dni)
-            ->select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno', 'edad', 'sexo', 'telefono', 'direccion', 'email', 'fecha_nacimiento', 'estado_civil', 'ocupacion','procedencia', 'acompañante', 'referido', 'peso','foto_perfil')
+            ->select('id', 'dni', 'tipo_documento', 'nombres', 'apellido_paterno', 'apellido_materno', 
+                    'edad', 'sexo', 'telefono', 'direccion', 'email', 
+                    'fecha_nacimiento', 'estado_civil', 'ocupacion',
+                    'procedencia', 'acompañante', 'referido', 'peso', 'foto_perfil')
             ->first();
 
         if (!$paciente) {
@@ -1126,17 +1186,24 @@ class ConsultaController extends Controller
             ], 404);
         }
 
-        // Verificar si ya tiene consulta inicial
         $tieneConsultaInicial = Consulta::where('paciente_id', $paciente->id)
-        ->where('tipo_consulta', 'inicio')
-        ->exists();
+            ->where('tipo_consulta', 'inicio')
+            ->exists();
 
         return response()->json([
             'success' => true,
             'paciente' => $paciente,
             'tieneConsultaInicial' => $tieneConsultaInicial
         ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error en buscarPaciente: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error en el servidor al buscar paciente'
+        ], 500);
     }
+}
 
     //Metodo para generar historial de diagnosticos
     public function historialDiagnosticos($pacienteId)

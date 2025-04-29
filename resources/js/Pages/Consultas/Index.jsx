@@ -62,6 +62,71 @@ export default function ConsultasIndex({ auth, consultas, links }) {
         }
     };
 
+    const descargarPDFReceta = async (consultaId) => {
+        try {
+            setPdfNotificationMessage('Preparando receta médica...');
+            setShowPdfNotification(true);
+            
+            // 1. Verificar si existe receta para esta consulta
+            const response = await fetch(route('recetas.get-by-consulta', { consultaId }));
+            
+            if (!response.ok) {
+                throw new Error('Error al verificar receta');
+            }
+    
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'No existe receta para esta consulta');
+            }
+    
+            // 2. Generar el PDF - usar el nombre correcto de la ruta
+            window.open(route('recetas.generate-pdf', { id: data.id }), '_blank');
+            
+            setPdfNotificationMessage('Receta generada correctamente');
+        } catch (error) {
+            console.error('Error al generar receta:', error);
+            setPdfNotificationMessage(error.message);
+            
+            // Redirigir a edición para crear receta si no existe
+            if (error.message.includes('No existe receta')) {
+                router.visit(route('consultas.edit', consultaId), {
+                    data: { activeTab: 'recetas' }
+                });
+            }
+        } finally {
+            setTimeout(() => setShowPdfNotification(false), 5000);
+        }
+    };
+
+    const descargarPDFRefraccion = async (consultaId) => {
+        try {
+            setPdfNotificationMessage('Generando examen de refracción...');
+            setShowPdfNotification(true);
+            
+            const response = await fetch(route('refracciones.por-consulta', { consultaId }));
+            
+            if (!response.ok) {
+                throw new Error('Error al verificar examen de refracción');
+            }
+    
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'No existe examen de refracción para esta consulta');
+            }
+    
+            window.open(route('refracciones.pdf', { id: data.data.id }), '_blank');
+            
+            setPdfNotificationMessage('Examen de refracción generado');
+        } catch (error) {
+            console.error('Error al generar refracción:', error);
+            setPdfNotificationMessage(error.message);
+        } finally {
+            setTimeout(() => setShowPdfNotification(false), 5000);
+        }
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -158,10 +223,10 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código Consulta</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creada</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creada</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>                                            
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                         </tr>
                                     </thead>
@@ -169,15 +234,15 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                         {consultas.data.length > 0 ? (
                                             consultas.data.map((consulta) => (
                                                 <tr key={consulta.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.codigo_consulta}</td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.paciente.dni}</td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                                        {consulta.paciente.nombres} {consulta.paciente.apellido_paterno} {consulta.paciente.apellido_materno}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.paciente.email}</td>
+                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.codigo_historial}</td>
                                                     <td className="px-4 py-4 text-sm text-gray-900">
                                                         {new Date(consulta.created_at).toLocaleDateString()}
                                                     </td>
+                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.paciente.email}</td>                                                    
+                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.paciente.dni}</td>
+                                                    <td className="px-4 py-4 text-sm text-gray-900">
+                                                        {consulta.paciente.nombres} {consulta.paciente.apellido_paterno} {consulta.paciente.apellido_materno}
+                                                    </td>                                                    
                                                     <td className="px-4 py-4 text-sm text-gray-900">
                                                         <div className="flex items-center space-x-2">
                                                             <Link
@@ -204,8 +269,28 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                                                 onClick={() => descargarPDF(consulta.id)}
                                                                 className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                                                             >
-                                                                PDF
+                                                                PDF Consulta
                                                             </button>
+                                                            {/* Botón para PDF de receta (solo si existe) */}
+                                                            {consulta.receta && (
+                                                                <button
+                                                                    onClick={() => descargarPDFReceta(consulta.id)}
+                                                                    className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
+                                                                >
+                                                                    PDF Receta
+                                                                </button>
+                                                            )}
+                                                            
+                                                            {/* Botón para crear receta (si no existe) */}
+                                                            {!consulta.receta && (
+                                                                <Link
+                                                                    href={route('consultas.edit', consulta.id)}
+                                                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                                    data={{ activeTab: 'recetas' }}
+                                                                >
+                                                                    Crear Receta
+                                                                </Link>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>

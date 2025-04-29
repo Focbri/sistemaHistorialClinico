@@ -54,7 +54,18 @@ class CitaController extends Controller
         $request->validate([
             'paciente_id' => 'required|exists:pacientes,id',
             'medico_id' => 'required|exists:users,id',
-            'fecha_hora' => 'required|date',
+            'fecha_hora' => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) {
+                    // Validar que sea en intervalos de 20 minutos
+                    $date = new \DateTime($value);
+                    $minutes = $date->format('i');
+                    if ($minutes % 20 !== 0) {
+                        $fail('Las citas deben programarse en intervalos de 20 minutos (ej: 08:00, 08:20, 08:40)');
+                    }
+                }
+            ],
             'motivo' => 'required|string|max:255',
         ]);
 
@@ -68,17 +79,17 @@ class CitaController extends Controller
             return back()->withErrors(['limite' => 'Se ha alcanzado el límite de 16 citas para este día']);
         }
 
-        // Verificar diferencia de 1 hora
+        // Verificar diferencia de 20 minutos
         $nuevaFechaHora = new Carbon($request->fecha_hora);
-        $horaInicio = $nuevaFechaHora->copy()->subHour();
-        $horaFin = $nuevaFechaHora->copy()->addHour();
+        $horaInicio = $nuevaFechaHora->copy()->subMinutes(19); // 19 para evitar solapamiento
+        $horaFin = $nuevaFechaHora->copy()->addMinutes(19);
 
         $citaExistente = Cita::whereBetween('fecha_hora', [$horaInicio, $horaFin])
-                        ->where('id', '!=', $request->id ?? null) // Excluir la cita actual si es edición
+                        ->where('id', '!=', $request->id ?? null)
                         ->first();
 
         if ($citaExistente) {
-            return back()->withErrors(['fecha_hora' => 'Debe haber al menos 1 hora de diferencia entre citas']);
+            return back()->withErrors(['fecha_hora' => 'Debe haber al menos 20 minutos de diferencia entre citas']);
         }
 
         Cita::create([
@@ -93,41 +104,62 @@ class CitaController extends Controller
     }
 
     public function update(Request $request, Cita $cita)
-{
-    $request->validate([
-        'medico_id' => 'required|exists:users,id',
-        'fecha_hora' => 'required|date',
-        'motivo' => 'required|string|max:255',
-        'estado' => 'required|in:programada,completada,cancelada',
-    ]);
+    {
+        $request->validate([
+            'medico_id' => 'required|exists:users,id',
+            'fecha_hora' => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) {
+                    // Validar que sea en intervalos de 20 minutos
+                    $date = new \DateTime($value);
+                    $minutes = $date->format('i');
+                    if ($minutes % 20 !== 0) {
+                        $fail('Las citas deben programarse en intervalos de 20 minutos (ej: 08:00, 08:20, 08:40)');
+                    }
+                }
+            ],
+            'motivo' => 'required|string|max:255',
+            'estado' => 'required|in:programada,completada,cancelada',
+        ]);
 
-    // Verificación de diferencia de 1 hora
-    $nuevaFechaHora = new Carbon($request->fecha_hora);
-    $horaInicio = $nuevaFechaHora->copy()->subMinutes(59);
-    $horaFin = $nuevaFechaHora->copy()->addMinutes(59);
+        // Verificación de diferencia de 20 minutos
+        $nuevaFechaHora = new Carbon($request->fecha_hora);
+        $horaInicio = $nuevaFechaHora->copy()->subMinutes(19);
+        $horaFin = $nuevaFechaHora->copy()->addMinutes(19);
 
-    $citaExistente = Cita::whereBetween('fecha_hora', [$horaInicio, $horaFin])
-                    ->where('id', '!=', $cita->id)
-                    ->first();
+        $citaExistente = Cita::whereBetween('fecha_hora', [$horaInicio, $horaFin])
+                        ->where('id', '!=', $cita->id)
+                        ->first();
 
-    if ($citaExistente) {
-        return back()->withErrors(['fecha_hora' => 'Debe haber al menos 1 hora de diferencia entre citas']);
+        if ($citaExistente) {
+            return back()->withErrors(['fecha_hora' => 'Debe haber al menos 20 minutos de diferencia entre citas']);
+        }
+
+        $cita->update($request->all());
+
+        return back()->with([
+            'success' => 'Cita actualizada correctamente',
+            'citas' => Cita::with(['paciente', 'medico'])->get()
+        ]);
     }
-
-    $cita->update($request->all());
-
-    // Respuesta optimizada para Inertia
-    return back()->with([
-        'success' => 'Cita actualizada correctamente',
-        'citas' => Cita::with(['paciente', 'medico'])->get()
-    ]);
-}
 
     // Nuevo método para reprogramar citas
     public function reprogramar(Request $request, Cita $cita)
     {
         $request->validate([
-            'fecha_hora' => 'required|date',
+            'fecha_hora' => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) {
+                    // Validar que sea en intervalos de 20 minutos
+                    $date = new \DateTime($value);
+                    $minutes = $date->format('i');
+                    if ($minutes % 20 !== 0) {
+                        $fail('Las citas deben programarse en intervalos de 20 minutos (ej: 08:00, 08:20, 08:40)');
+                    }
+                }
+            ],
             'motivo' => 'sometimes|string|max:255'
         ]);
 
@@ -135,18 +167,29 @@ class CitaController extends Controller
         $nuevaFecha = date('Y-m-d', strtotime($request->fecha_hora));
         $citasCount = Cita::whereDate('fecha_hora', $nuevaFecha)
                         ->where('estado', 'programada')
-                        ->where('id', '!=', $cita->id) // Excluir la cita actual del conteo
+                        ->where('id', '!=', $cita->id)
                         ->count();
 
         if ($citasCount >= 16) {
             return back()->withErrors(['limite' => 'Se ha alcanzado el límite de 16 citas para el nuevo día seleccionado']);
         }
 
-        // Actualizar la cita
+        // Verificar diferencia de 20 minutos
+        $nuevaFechaHora = new Carbon($request->fecha_hora);
+        $horaInicio = $nuevaFechaHora->copy()->subMinutes(19);
+        $horaFin = $nuevaFechaHora->copy()->addMinutes(19);
+
+        $citaExistente = Cita::whereBetween('fecha_hora', [$horaInicio, $horaFin])
+                        ->where('id', '!=', $cita->id)
+                        ->first();
+
+        if ($citaExistente) {
+            return back()->withErrors(['fecha_hora' => 'Debe haber al menos 20 minutos de diferencia entre citas']);
+        }
+
         $cita->update([
             'fecha_hora' => $request->fecha_hora,
             'motivo' => $request->motivo ?? $cita->motivo,
-            // Mantener el estado actual (no cambia al reprogramar)
         ]);
 
         return redirect()->back()->with('success', 'Cita reprogramada correctamente');
@@ -177,8 +220,8 @@ class CitaController extends Controller
     protected function getStatusColor($count)
     {
         if ($count === 0) return 'gray';
-        if ($count >= 16) return 'red';
-        if ($count >= 12) return 'orange';
+        if ($count >= 16) return 'red';       // Máximo de citas por día
+        if ($count >= 12) return 'orange';    // 75% de capacidad
         return 'green';
     }
 

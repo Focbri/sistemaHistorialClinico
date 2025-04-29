@@ -8,13 +8,16 @@ export default function PacientesCreate({ auth }) {
     const [documentos, setDocumentos] = useState([]);
     const [documentosPreview, setDocumentosPreview] = useState([]);
 
+    const [tipoDocumento, setTipoDocumento] = useState('dni'); // Estado para el tipo de documento
+
     const { data, setData, post, errors, processing } = useForm({
         apellido_paterno: '',
         apellido_materno: '',
         nombres: '',
-        fecha_nacimiento: '',
+        fecha_nacimiento: null,
         edad: '',
         peso: '',
+        tipo_documento: 'dni', // Nuevo campo para tipo de documento
         dni: '',
         sexo: '',
         estado_civil: '',
@@ -102,6 +105,29 @@ export default function PacientesCreate({ auth }) {
         setDocumentosPreview(updatedPreviews);
     };
 
+
+    // Función para manejar el cambio de tipo de documento
+    const handleTipoDocumentoChange = (e) => {
+        const tipo = e.target.value;
+        setTipoDocumento(tipo);
+        setData('tipo_documento', tipo);
+        setData('dni', ''); // Limpiar el campo al cambiar el tipo
+    };
+
+    // Función para validar y formatear el número de documento
+    const handleDocumentoChange = (e) => {
+        const value = e.target.value.replace(/\D/g, ''); // Solo números
+        let maxLength = 8; // Por defecto para DNI
+        
+        if (tipoDocumento === 'ce') {
+            maxLength = 12; // Carnet de extranjería puede tener hasta 12 dígitos
+        }
+        
+        if (value.length <= maxLength) {
+            setData('dni', value);
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         
@@ -136,6 +162,9 @@ export default function PacientesCreate({ auth }) {
                 setPreviewImage(null);
                 setDocumentos([]);
                 setDocumentosPreview([]);
+            },
+            onError: (errors) => {
+                console.log('Errores del servidor:', errors);
             }
         });
     };
@@ -244,7 +273,7 @@ export default function PacientesCreate({ auth }) {
                                         </div>
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Nombres</label>
-                                            <input required
+                                            <input
                                                 type="text"
                                                 value={data.nombres}
                                                 onChange={(e) => setData('nombres', e.target.value)}
@@ -258,7 +287,7 @@ export default function PacientesCreate({ auth }) {
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Fecha Nacimiento</label>
-                                            <input required
+                                            <input 
                                                 type="date"
                                                 value={data.fecha_nacimiento}
                                                 onChange={(e) => setData('fecha_nacimiento', e.target.value)}
@@ -270,7 +299,7 @@ export default function PacientesCreate({ auth }) {
                                         <div className='grid grid-cols-2'>
                                             <div className="mb-4 mr-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">Edad</label>
-                                                <input required
+                                                <input 
                                                     type="number"
                                                     min={0}
                                                     max={999}
@@ -307,7 +336,7 @@ export default function PacientesCreate({ auth }) {
 
                                             <div className="mr-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">Sexo</label>
-                                                    <select required
+                                                    <select 
                                                         value={data.sexo}
                                                         onChange={(e) => setData('sexo', e.target.value)}
                                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -320,18 +349,26 @@ export default function PacientesCreate({ auth }) {
                                             </div>
 
                                             <div className="mb-4">
-                                                <label className="block text-sm uppercase font-medium text-gray-700">DNI</label>
-                                                <input required
-                                                    type="number"
-                                                    min={8}
-                                                    max={99999999}
-                                                    maxLength={8}
-                                                    onChange={(e) => {
-                                                        if (e.target.value.length <= 8) {
-                                                            setData('dni', e.target.value);
-                                                        }
-                                                    }}
+                                                <label className="block text-sm uppercase font-medium text-gray-700">Tipo de Documento</label>
+                                                <select 
+                                                    value={tipoDocumento}
+                                                    onChange={handleTipoDocumentoChange}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                >
+                                                    <option value="dni">DNI</option>
+                                                    <option value="ce">Carnet de Extranjería</option>
+                                                </select>
+                                            </div>
+                                            <div className="mb-4">
+                                                <label className="block text-sm uppercase font-medium text-gray-700">
+                                                    {tipoDocumento === 'dni' ? 'DNI' : 'Carnet de Extranjería'}
+                                                </label>
+                                                <input 
+                                                    type="text"
                                                     value={data.dni}
+                                                    onChange={handleDocumentoChange}
+                                                    maxLength={tipoDocumento === 'dni' ? 8 : 12}
+                                                    placeholder={tipoDocumento === 'dni' ? 'Ingrese 8 dígitos' : 'Ingrese hasta 12 dígitos'}
                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                                 />
                                                 {errors.dni && <p className="text-sm text-red-500">{errors.dni}</p>}
@@ -373,7 +410,7 @@ export default function PacientesCreate({ auth }) {
 
                                         <div className="mr-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Procedencia</label>
-                                                <select required
+                                                <select 
                                                     value={data.procedencia}
                                                     onChange={(e) => setData('procedencia', e.target.value)}
                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -428,7 +465,7 @@ export default function PacientesCreate({ auth }) {
 
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Domicilio</label>
-                                            <input required
+                                            <input 
                                                 type="text"
                                                 value={data.direccion}
                                                 onChange={(e) => setData('direccion', e.target.value)}
@@ -440,15 +477,14 @@ export default function PacientesCreate({ auth }) {
 
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Teléfono</label>
-                                            <input required
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Teléfono/Celular</label>
+                                            <input 
                                                 type="number"                                                
                                                 value={data.telefono}
-                                                min={0}
-                                                max={999999999}
+                                                max={9999999999}
                                                 maxLength={9}
                                                 onChange={(e) => {
-                                                    if (e.target.value.length <= 9) {
+                                                    if (e.target.value.length <= 10) {
                                                         setData('telefono', e.target.value);
                                                     }
                                                 }}
@@ -459,9 +495,8 @@ export default function PacientesCreate({ auth }) {
 
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Acompañante</label>
-                                            <input required
+                                            <input 
                                                 type="text"
-                                                maxLength={9}
                                                 value={data.acompañante}
                                                 onChange={(e) => setData('acompañante', e.target.value)}
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -495,7 +530,7 @@ export default function PacientesCreate({ auth }) {
 
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Email</label>
-                                            <input required
+                                            <input 
                                                 type="email"
                                                 value={data.email}
                                                 onChange={(e) => setData('email', e.target.value)}

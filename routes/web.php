@@ -10,6 +10,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InicioController;
 use App\Http\Controllers\FarmacoController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\RefraccionController;
 use App\Models\User;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -54,7 +56,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('consultas', ConsultaController::class);
     Route::put('consultas/{consulta}', [ConsultaController::class, 'update'])
          ->name('consultas.update');
-    Route::get('/cie10/search', [Cie10Controller::class, 'search']);
+
+    Route::prefix('cie10')->group(function () {
+    Route::get('/search', [Cie10Controller::class, 'search'])->name('cie10.search');
+    Route::post('/', [Cie10Controller::class, 'store'])->name('cie10.store');
+});
+
     Route::get('/consultas/verificar-inicio/{pacienteId}', [ConsultaController::class, 'verificarConsultaInicio'])
          ->name('consultas.verificar-inicio');
     Route::match(['get', 'post'], '/consultas/buscar-paciente', [ConsultaController::class, 'buscarPaciente'])
@@ -68,16 +75,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/consultas/historial-diagnosticos/{paciente}', [ConsultaController::class, 'historialDiagnosticos']);
 
     //Farmacos
-    Route::resource('farmacos', FarmacoController::class);
-
+    Route::get('/farmacos/buscar', [FarmacoController::class, 'buscar'])->name('farmacos.buscar');
     Route::get('/farmacos/{farmaco}/stock', [StockController::class, 'manage'])->name('stocks.manage');
     Route::put('/farmacos/{farmaco}/stock', [StockController::class, 'update'])->name('stocks.update');
+    Route::resource('farmacos', FarmacoController::class);    
 
-    //Farmacos
+    //CITAS
     Route::resource('citas', CitaController::class);
     Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
     Route::post('/citas', [CitaController::class, 'store'])->name('citas.store');
     Route::post('/consultas/buscar-paciente', [ConsultaController::class, 'buscarPaciente']);
+
+    Route::prefix('recetas')->group(function () {
+        Route::post('/', [RecetaController::class, 'store'])->name('recetas.store');
+        Route::get('/por-consulta/{consultaId}', [RecetaController::class, 'getRecetaPorConsulta'])
+             ->name('recetas.get-by-consulta');
+        Route::get('/{id}/generar-pdf', [RecetaController::class, 'generarPDFReceta'])
+             ->name('recetas.generate-pdf');
+    });
+    
+    Route::prefix('refracciones')->group(function () {
+        Route::post('/', [RefraccionController::class, 'store']);
+        Route::get('/por-consulta/{consultaId}', [RefraccionController::class, 'getPorConsulta'])
+             ->name('refracciones.por-consulta');
+        Route::get('/{id}/generar-pdf', [RefraccionController::class, 'generarPDF'])
+             ->name('refracciones.pdf');
+    });
 });
 
 // Rutas de administración (requieren autenticación y rol admin)

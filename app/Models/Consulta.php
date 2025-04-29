@@ -5,6 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Paciente;
+use App\Models\User;
+use App\Models\Receta;
+use App\Models\Examen;
 
 class Consulta extends Model
 {
@@ -17,7 +23,7 @@ class Consulta extends Model
 
     protected $fillable = [  
         'paciente_id',
-        'codigo_consulta',
+        'codigo_historial',
         'antecedentes_personales_hta',
         'antecedentes_personales_alergias',
         'antecedentes_personales_dm',
@@ -256,5 +262,10 @@ class Consulta extends Model
     public function terminosBiomicroscopia()
     {
         return $this->hasMany(TerminoBiomicroscopia::class);
+    }
+
+    public function receta(): HasOne
+    {
+        return $this->hasOne(Receta::class, 'consulta_id');
     }
 }

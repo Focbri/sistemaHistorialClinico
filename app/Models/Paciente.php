@@ -25,6 +25,7 @@ class Paciente extends Model
         'fecha_nacimiento',
         'edad',
         'peso',
+        'tipo_documento',
         'dni',
         'sexo',
         'estado_civil',
@@ -36,7 +37,18 @@ class Paciente extends Model
         'acompañante',
         'referido',
         'foto_perfil',
+        'codigo_historial',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($paciente) {
+            // Generar código de historial al crear un nuevo paciente
+            if (empty($paciente->codigo_historial)) {
+                $paciente->codigo_historial = 'HCL-' . $paciente->dni;
+            }
+        });
+    }
 
     /**
      * Relación con el modelo Consulta (un paciente puede tener muchas consultas).
@@ -45,7 +57,7 @@ class Paciente extends Model
      */
     public function consultas(): HasMany
     {
-        return $this->hasMany(Consulta::class);
+        return $this->hasMany(Consulta::class)->orderBy('created_at', 'desc');
     }
 
     /**
@@ -90,8 +102,8 @@ class Paciente extends Model
             'apellido' => 'required|string|max:255',
             'dni' => 'required|string|unique:pacientes,dni|max:20',
             'telefono' => 'nullable|string|max:20',
-            'email' => 'required|email|unique:pacientes,email|max:255',
-            'direccion' => 'required|string|max:255',
+            'email' => 'nullable|email|unique:pacientes,email|max:255',
+            'direccion' => 'nullable|string|max:255',
             'edad' => 'nullable|integer|min:0',
         ];
     }
@@ -119,16 +131,7 @@ class Paciente extends Model
             'dni.required' => 'El DNI es requerido.',
             'dni.string' => 'El DNI debe ser un texto.',
             'dni.unique' => 'El DNI ya está registrado.',
-            'dni.max' => 'El DNI no debe exceder los 20 caracteres.',
-            'telefono.string' => 'El teléfono debe ser un texto.',
-            'telefono.max' => 'El teléfono no debe exceder los 20 caracteres.',
-            'email.required' => 'El correo electrónico es requerido.',
-            'email.email' => 'El correo electrónico debe ser una dirección válida.',
-            'email.unique' => 'El correo electrónico ya está registrado.',
-            'email.max' => 'El correo electrónico no debe exceder los 255 caracteres.',
-            'direccion.required' => 'La dirección es requerida.',
-            'direccion.string' => 'La dirección debe ser un texto.',
-            'direccion.max' => 'La dirección no debe exceder los 255 caracteres.',
+            'dni.max' => 'El DNI no debe exceder los 8 caracteres.',
         ];
     }
 }

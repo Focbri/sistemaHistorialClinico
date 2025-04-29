@@ -14,6 +14,7 @@ export default defineConfig({
         include: ['react', 'react-dom', 'react-modal'],
     },
     server: {
+        host: '0.0.0.0', // Permite conexiones desde la red local
         hmr: {
             host: 'localhost',
         },

@@ -1,4 +1,5 @@
 const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
+    console.log('Edad recibida:', edadPaciente, 'Tipo:', typeof edadPaciente);
     // Función dummy para cuando esté en modo lectura
     const handleChange = (field, value) => {
         if (!readOnly && setData) {

@@ -53,8 +53,7 @@ export default function ManageStock({ auth, farmaco, stock, almacenes }) {
                                                     Cantidad Actual
                                                 </label>
                                                 <input
-                                                    type="number"
-                                                    min="0"
+                                                    type="text"
                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                                     value={data[key]}
                                                     onChange={e => setData(key, parseInt(e.target.value) || 0)}

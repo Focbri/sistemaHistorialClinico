@@ -197,7 +197,7 @@ export default function PacientesEdit({ auth, paciente }) {
                                         </div>
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Nombres</label>
-                                            <input required
+                                            <input 
                                                 type="text"
                                                 value={data.nombres}
                                                 onChange={(e) => setData('nombres', e.target.value)}
@@ -211,7 +211,7 @@ export default function PacientesEdit({ auth, paciente }) {
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Fecha Nacimiento</label>
-                                            <input required
+                                            <input 
                                                 type="date"
                                                 value={data.fecha_nacimiento}
                                                 onChange={(e) => setData('fecha_nacimiento', e.target.value)}
@@ -223,7 +223,7 @@ export default function PacientesEdit({ auth, paciente }) {
                                         <div className='grid grid-cols-2'>
                                             <div className="mb-4 mr-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">Edad</label>
-                                                <input required
+                                                <input 
                                                     type="number"
                                                     min={0}
                                                     max={999}
@@ -260,7 +260,7 @@ export default function PacientesEdit({ auth, paciente }) {
 
                                             <div className="mr-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">Sexo</label>
-                                                    <select required
+                                                    <select 
                                                         value={data.sexo}
                                                         onChange={(e) => setData('sexo', e.target.value)}
                                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -274,7 +274,7 @@ export default function PacientesEdit({ auth, paciente }) {
 
                                             <div className="mb-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">DNI</label>
-                                                <input required
+                                                <input 
                                                     type="number"
                                                     min={8}
                                                     max={99999999}
@@ -326,7 +326,7 @@ export default function PacientesEdit({ auth, paciente }) {
 
                                         <div className="mr-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Procedencia</label>
-                                                <select required
+                                                <select 
                                                     value={data.procedencia}
                                                     onChange={(e) => setData('procedencia', e.target.value)}
                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
@@ -381,7 +381,7 @@ export default function PacientesEdit({ auth, paciente }) {
 
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Domicilio</label>
-                                            <input required
+                                            <input 
                                                 type="text"
                                                 value={data.direccion}
                                                 onChange={(e) => setData('direccion', e.target.value)}
@@ -394,7 +394,7 @@ export default function PacientesEdit({ auth, paciente }) {
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Teléfono</label>
-                                            <input required
+                                            <input 
                                                 type="number"                                                
                                                 value={data.telefono}
                                                 min={0}
@@ -412,7 +412,7 @@ export default function PacientesEdit({ auth, paciente }) {
 
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Acompañante</label>
-                                            <input required
+                                            <input 
                                                 type="text"
                                                 maxLength={9}
                                                 value={data.acompañante}
@@ -448,7 +448,7 @@ export default function PacientesEdit({ auth, paciente }) {
 
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Email</label>
-                                            <input required
+                                            <input 
                                                 type="email"
                                                 value={data.email}
                                                 onChange={(e) => setData('email', e.target.value)}

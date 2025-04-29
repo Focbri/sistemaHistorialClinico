@@ -8,13 +8,15 @@ import AntecedentesPersonales from '@/Components/AntecedentesPersonales';
 import ExamenOcular from '@/Components/ExamenOcular';
 import FondoOjo from '@/Components/FondoOjo';
 import PlanSelector from '@/Components/PlanSelector';
+import RecetaMedica from '@/Components/RecetaMedica';
 import TerminoBiomicroscopiaSearch from '@/Components/TerminoBiomicroscopiaSearch';
 import TerminoMotivoConsultaSearch from '@/Components/TerminoMotivoConsultaSearch';
 
 export default function ConsultasCreate({ auth }) {
     const { data, setData, post, errors, processing } = useForm({
         paciente_id: '',
-        dni: '',    
+        dni: '',
+        identificacion: '',
         nombres: '',
         apellido_paterno: '',
         apellido_materno: '',
@@ -121,6 +123,14 @@ export default function ConsultasCreate({ auth }) {
         exam_old_cerca_dip: '',
         //
         comentario: '',
+        receta: {
+            paciente_id: '',
+            medico_id: auth.user.id,
+            diagnostico: '',
+            fecha: new Date().toISOString().split('T')[0],
+            indicaciones: '',
+            farmacos: []
+        },
     });
 
     // Estado para controlar qué secciones están expandidas
@@ -134,10 +144,14 @@ export default function ConsultasCreate({ auth }) {
         fondoOjo: false,
         diagnostico: false,
         tratamiento: false,
+        recetas: false,
         plan: false,
         examenesIndicados: false,
         evoluciones: false
     });
+
+    const [datosReceta, setDatosReceta] = useState(null);
+    const [errorReceta, setErrorReceta] = useState(null);
 
     // Función para alternar secciones (modificada)
     const toggleSection = (section) => {
@@ -279,8 +293,6 @@ export default function ConsultasCreate({ auth }) {
      const handleMarkerClickOI = (marcadorOI) => {
         setMarcadorActivoOI(marcadorOI.id === marcadorActivoOI ? null : marcadorOI.id);
     };
-
-    // Manejar selección de una opción
     
 
     // Cerrar el contenedor de opciones al hacer clic fuera
@@ -586,57 +598,107 @@ export default function ConsultasCreate({ auth }) {
         }
     };
 
-    const handleSubmit = (e) => {
+    const generarPDFReceta = async (recetaData) => {
+        try {
+            const response = await fetch('/api/generar-receta-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(recetaData)
+            });
+    
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Receta_${recetaData.paciente.nombres}_${recetaData.paciente.apellido_paterno}_${new Date().toISOString().split('T')[0]}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } else {
+                throw new Error('Error al generar el PDF');
+            }
+        } catch (error) {
+            console.error('Error generando PDF:', error);
+            alert('Error al generar la receta en PDF');
+        }
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // No necesitas convertir a string, Laravel lo manejará como array
         const formData = new FormData();
-        setData('tipo_consulta', tipoConsulta);
         
-        // Agregar todos los campos, incluyendo el array de cirugías
+        // Agregar campos de la consulta
         Object.keys(data).forEach((key) => {
-            if (key !== 'examenes_indicados_img' && key !== 'examenes_indicados_archivos') {
-                // Enviar el array directamente
-                formData.append(key, Array.isArray(data[key]) ? JSON.stringify(data[key]) : data[key]);
+            if (key !== 'examenes_indicados_img' && key !== 'examenes_indicados_archivos' && key !== 'receta') {
+                formData.append(key, data[key]);
             }
         });
         
-        formData.append('paciente_id', data.paciente_id);
-        formData.append('tipo_consulta', data.tipo_consulta);
-
-        // Agregar las imágenes seleccionadas
+        // Agregar datos de la receta si existe
+        if (data.receta && data.receta.medicamentos && data.receta.medicamentos.length > 0) {
+            formData.append('receta[paciente_id]', data.paciente_id);
+            formData.append('receta[medico_id]', auth.user.id);
+            formData.append('receta[cie10_codes]', data.receta.cie10_codes || '');
+            formData.append('receta[medicamentos]', JSON.stringify(data.receta.medicamentos));
+            formData.append('receta[indicaciones_generales]', data.receta.indicaciones_generales || '');
+            formData.append('receta[fecha]', data.receta.fecha || new Date().toISOString().split('T')[0]);
+        }
+    
+    
+        // Agregar archivos (imágenes y documentos)
         if (data.examenes_indicados_img && data.examenes_indicados_img.length > 0) {
             data.examenes_indicados_img.forEach((file, index) => {
                 formData.append(`examenes_indicados_img[${index}]`, file);
             });
         }
-
-        // Agregar los archivos seleccionados
+    
         if (data.examenes_indicados_archivos && data.examenes_indicados_archivos.length > 0) {
             data.examenes_indicados_archivos.forEach((file, index) => {
                 formData.append(`examenes_indicados_archivos[${index}]`, file);
             });
         }
-
+    
         // Enviar el formulario
         post(route('consultas.store'), formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
             onSuccess: () => {
-                // Limpiar el formulario o redirigir
                 setPreviewImages([]);
                 setPreviewArchivos([]);
             },
             onError: (errors) => {
                 if (errors.tipo_consulta) {
                     alert('Error: ' + errors.tipo_consulta);
-                    // Forzar a tipo evolución si hubo error
                     setData('tipo_consulta', 'evolucion');
+                }
+                if (errors.receta) {
+                    toggleSection('recetas');
                 }
             }
         });
     };
+
+    // Función para validar la receta
+const validarReceta = (receta) => {
+    if (!receta) return 'No hay datos de receta';
+    if (!receta.diagnostico || receta.diagnostico.trim() === '') return 'El diagnóstico es requerido';
+    if (!receta.medicamentos || receta.medicamentos.length === 0) return 'Debe agregar al menos un medicamento';
+    
+    for (const med of receta.medicamentos) {
+        if (!med.dosis || !med.frecuencia || !med.duracion) {
+            return 'Todos los medicamentos deben tener dosis, frecuencia y duración';
+        }
+    }
+    
+    return null;
+};
 
     return (
         <AuthenticatedLayout
@@ -760,13 +822,13 @@ export default function ConsultasCreate({ auth }) {
                                     {/* Sidebar */}
                                     <div className="w-full md:w-64 bg-[#005b96] p-4 flex-shrink-0">
                                         <div className='flex items-center justify-end'>                                        
-                                            <PacienteForm
-                                                data={data}
-                                                setData={setData}
-                                                pacienteEncontrado={pacienteEncontrado}
-                                                buscarPaciente={buscarPaciente}
-                                                errors={errors}
-                                            />
+                                        <PacienteForm
+                                            data={data}
+                                            setData={setData}
+                                            pacienteEncontrado={pacienteEncontrado}
+                                            setPacienteEncontrado={setPacienteEncontrado} // ¡Esta es la prop que faltaba!
+                                            errors={errors}
+                                        />
                                         </div>
                                         <div className="sticky top-4 space-y-2">
                                             <h3 className="text-2xl text-center mb-2">
@@ -842,6 +904,13 @@ export default function ConsultasCreate({ auth }) {
                                                     </button>
                                                     <button
                                                         type="button"
+                                                        onClick={() => toggleSection('recetas')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.recetas ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Recetas
+                                                    </button>
+                                                    <button
+                                                        type="button"
                                                         onClick={() => toggleSection('plan')}
                                                         className={`w-full text-left px-4 py-2 rounded ${expandedSections.plan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
@@ -905,6 +974,13 @@ export default function ConsultasCreate({ auth }) {
                                                         className={`w-full text-left px-4 py-2 rounded ${expandedSections.tratamiento ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
                                                         Tratamiento
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('recetas')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.recetas ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Recetas
                                                     </button>
                                                     <button
                                                         type="button"
@@ -1149,7 +1225,10 @@ export default function ConsultasCreate({ auth }) {
                                                                 Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
                                                             </p>
                                                             <div className="mb-4">
-                                                                <Cie10Search onSelectResult={handleSelectResult} />
+                                                            <Cie10Search 
+                                                            onSelectResult={handleSelectResult}
+                                                            initialSelected={data.impresion_diagnostica ? data.impresion_diagnostica.split('; ') : []}
+                                                            />
                                                             </div>
                                                             <div className="mb-4">
                                                                 <div className="mt-2 p-2 border border-gray-200 rounded-md">
@@ -1179,6 +1258,18 @@ export default function ConsultasCreate({ auth }) {
                                                             />
                                                         </div>
                                                     </div>
+                                                )}
+                                                {/* 10. Receta Médica */}
+                                                {expandedSections.recetas && (
+                                                <RecetaMedica 
+                                                    consultaId={consulta.id} // Usa data.id si es la consulta actual
+                                                    pacienteId={data.paciente_id}
+                                                    medicoId={auth.user.id}
+                                                    diagnostico={data.impresion_diagnostica}
+                                                    onRecetaChange={(recetaData) => {
+                                                        setData('receta', recetaData);
+                                                    }}
+                                                />
                                                 )}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (
@@ -1413,7 +1504,10 @@ export default function ConsultasCreate({ auth }) {
                                                                 Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
                                                             </p>
                                                             <div className="mb-4">
-                                                                <Cie10Search onSelectResult={handleSelectResult} />
+                                                            <Cie10Search 
+                                                                onSelectResult={handleSelectResult}
+                                                                initialSelected={data.impresion_diagnostica ? data.impresion_diagnostica.split('; ') : []}
+                                                            />
                                                             </div>
                                                             <div className="mb-4">
                                                                 <div className="mt-2 p-2 border border-gray-200 rounded-md">
@@ -1443,6 +1537,18 @@ export default function ConsultasCreate({ auth }) {
                                                             />
                                                         </div>
                                                     </div>
+                                                )}
+                                                {/* 10. Receta Médica */}
+                                                {expandedSections.recetas && (
+                                                <RecetaMedica 
+                                                    consultaId={null} // Usa data.id si es la consulta actual
+                                                    pacienteId={data.paciente_id}
+                                                    medicoId={auth.user.id}
+                                                    cie10Codes={data.cie10Codes}
+                                                    onRecetaChange={(recetaData) => {
+                                                        setData('receta', recetaData);
+                                                    }}
+                                                />
                                                 )}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (

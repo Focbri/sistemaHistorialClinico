@@ -10,12 +10,10 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class PacienteController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $pacientes = Paciente::when($request->dni, function ($query, $dni) {
@@ -29,17 +27,11 @@ class PacienteController extends Controller
         return inertia('Pacientes/Index', ['pacientes' => $pacientes]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return inertia('Pacientes/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         try {
@@ -48,15 +40,24 @@ class PacienteController extends Controller
                 'nombres' => 'required|string|max:255',
                 'apellido_paterno' => 'required|string|max:255',
                 'apellido_materno' => 'required|string|max:255',
-                'dni' => 'required|string|size:8|unique:pacientes,dni,',
-                'fecha_nacimiento' => 'required|date',
-                'edad' => 'required|integer|min:0|max:120',
-                'sexo' => 'required|in:M,F',
+                'tipo_documento' => 'required|in:dni,ce',
+                'dni' => [
+                    'required',
+                    'string',
+                    Rule::when($request->tipo_documento === 'dni', 'digits:8'),
+                    Rule::when($request->tipo_documento === 'ce', 'digits_between:9,12'),
+                    Rule::unique('pacientes')->where(function ($query) use ($request) {
+                        return $query->where('tipo_documento', $request->tipo_documento);
+                    })
+                ],
+                'fecha_nacimiento' => 'nullable|date',
+                'edad' => 'nullable|integer|min:0|max:120',
+                'sexo' => 'nullable|in:M,F',
                 'estado_civil' => 'nullable|string|max:50',
                 'ocupacion' => 'nullable|string|max:100',
                 'procedencia' => 'nullable|string|max:100',
-                'direccion' => 'required|string|max:255',
-                'telefono' => 'required|string|max:15',
+                'direccion' => 'nullable|string|max:255',
+                'telefono' => 'nullable|string|max:15',
                 'email' => 'nullable|email|max:255',
                 'acompañante' => 'nullable|string|max:100',
                 'referido' => 'nullable|string|max:100',
@@ -80,8 +81,9 @@ class PacienteController extends Controller
             $extension = $file->extension();
             $nombreUnico = $this->sanitizeFileName($nombreArchivo) . '_' . time() . '.' . $extension;
             
+            // Nueva estructura de carpetas: pacientes/[tipo_documento]_[dni]/fotos_perfil
             $path = $file->storeAs(
-                'pacientes/' . $request->dni . '/fotos_perfil',
+                'pacientes/' . $request->tipo_documento . '_' . $request->dni . '/fotos_perfil',
                 $nombreUnico,
                 'public'
             );
@@ -101,9 +103,6 @@ class PacienteController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Paciente $paciente)
     {
         $pacienteData = $this->preparePacienteData($paciente);
@@ -118,9 +117,6 @@ class PacienteController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit($id)
     {
         $paciente = Paciente::findOrFail($id);
@@ -133,9 +129,6 @@ class PacienteController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
         try {
@@ -144,15 +137,25 @@ class PacienteController extends Controller
                 'nombres' => 'required|string|max:255',
                 'apellido_paterno' => 'required|string|max:255',
                 'apellido_materno' => 'required|string|max:255',
-                'dni' => 'required|string|size:8|unique:pacientes,dni,'.$id,
-                'fecha_nacimiento' => 'required|date',
-                'edad' => 'required|integer|min:0|max:120',
-                'sexo' => 'required|in:M,F',
+                'tipo_documento' => 'required|in:dni,ce',
+                'dni' => [
+                    'required',
+                    'string',
+                    Rule::when($request->tipo_documento === 'dni', 'digits:8'),
+                    Rule::when($request->tipo_documento === 'ce', 'digits_between:9,12'),
+                    Rule::unique('pacientes')->where(function ($query) use ($request, $id) {
+                        return $query->where('tipo_documento', $request->tipo_documento)
+                                    ->where('id', '!=', $id);
+                    })
+                ],
+                'fecha_nacimiento' => 'date',
+                'edad' => 'integer|min:0|max:120',
+                'sexo' => 'in:M,F',
                 'estado_civil' => 'nullable|string|max:50',
                 'ocupacion' => 'nullable|string|max:100',
                 'procedencia' => 'nullable|string|max:100',
-                'direccion' => 'required|string|max:255',
-                'telefono' => 'required|string|max:15',
+                'direccion' => 'string|max:255',
+                'telefono' => 'string|max:15',
                 'email' => 'nullable|email|max:255',
                 'acompañante' => 'nullable|string|max:100',
                 'referido' => 'nullable|string|max:100',
@@ -166,64 +169,78 @@ class PacienteController extends Controller
 
             $paciente = Paciente::findOrFail($id);
 
+             // Verificar si cambió el documento
+            $documentoCambiado = ($paciente->dni != $request->dni) || 
+            ($paciente->tipo_documento != $request->tipo_documento);
+
+
             // Procesar archivos a eliminar
-            $filesToDelete = $request->filled('files_to_delete') 
-                ? json_decode($request->input('files_to_delete'), true) ?? []
-                : [];
+        $filesToDelete = $request->filled('files_to_delete') 
+        ? json_decode($request->input('files_to_delete'), true) ?? []
+        : [];
 
-            foreach ($filesToDelete as $filePath) {
-                if (Storage::disk('public')->exists($filePath)) {
-                    Storage::disk('public')->delete($filePath);
-                }
+        foreach ($filesToDelete as $filePath) {
+            if (Storage::disk('public')->exists($filePath)) {
+                Storage::disk('public')->delete($filePath);
             }
-
-            // Procesar nueva foto de perfil
-            $fotoPerfil = $paciente->foto_perfil;
-            
-            if ($request->hasFile('foto_perfil')) {
-                // Eliminar foto anterior si existe
-                if ($fotoPerfil && Storage::disk('public')->exists($fotoPerfil)) {
-                    Storage::disk('public')->delete($fotoPerfil);
-                }
-                
-                 // Guardar nueva foto con nombre original
-                $file = $request->file('foto_perfil');
-                $nombreOriginal = $file->getClientOriginalName();
-                $nombreArchivo = pathinfo($nombreOriginal, PATHINFO_FILENAME);
-                $extension = $file->extension();
-                $nombreUnico = $this->sanitizeFileName($nombreArchivo) . '_' . time() . '.' . $extension;
-                
-                $path = $file->storeAs(
-                    'pacientes/' . $paciente->dni . '/fotos_perfil',
-                    $nombreUnico,
-                    'public'
-                );
-                
-                $fotoPerfil = $path;
-                } elseif (empty($request->foto_perfil_existente) && $fotoPerfil) {
-                    // Si se eliminó la foto existente y no se subió una nueva
-                    if (Storage::disk('public')->exists($fotoPerfil)) {
-                        Storage::disk('public')->delete($fotoPerfil);
-                    }
-                    $fotoPerfil = null;
-                }
-            // Actualizar paciente
-            $paciente->update(array_merge($validatedData, [
-                'foto_perfil' => $fotoPerfil
-            ]));
-
-            return redirect()->route('pacientes.index')->with('success', 'Paciente actualizado correctamente.');
-            
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->withErrors(['message' => 'Error al actualizar el paciente: ' . $e->getMessage()])
-                ->withInput();
         }
+
+        // Procesar nueva foto de perfil
+        $fotoPerfil = $paciente->foto_perfil;
+        
+        if ($request->hasFile('foto_perfil')) {
+            // Eliminar foto anterior si existe
+            if ($fotoPerfil && Storage::disk('public')->exists($fotoPerfil)) {
+                Storage::disk('public')->delete($fotoPerfil);
+            }
+            
+            // Guardar nueva foto con nombre original
+            $file = $request->file('foto_perfil');
+            $nombreOriginal = $file->getClientOriginalName();
+            $nombreArchivo = pathinfo($nombreOriginal, PATHINFO_FILENAME);
+            $extension = $file->extension();
+            $nombreUnico = $this->sanitizeFileName($nombreArchivo) . '_' . time() . '.' . $extension;
+            
+            // Usar nueva estructura de carpetas
+            $path = $file->storeAs(
+                'pacientes/' . $request->tipo_documento . '_' . $request->dni . '/fotos_perfil',
+                $nombreUnico,
+                'public'
+            );
+            
+            $fotoPerfil = $path;
+        } elseif (empty($request->foto_perfil_existente) && $fotoPerfil) {
+            // Si se eliminó la foto existente y no se subió una nueva
+            if (Storage::disk('public')->exists($fotoPerfil)) {
+                Storage::disk('public')->delete($fotoPerfil);
+            }
+            $fotoPerfil = null;
+        }
+
+        // Si cambió el documento, renombrar carpeta
+        if ($documentoCambiado) {
+            $this->renombrarCarpetaPaciente(
+                $paciente, 
+                $request->dni, 
+                $request->tipo_documento
+            );
+        }
+
+        // Actualizar paciente
+        $paciente->update(array_merge($validatedData, [
+            'foto_perfil' => $fotoPerfil
+        ]));
+
+
+                return redirect()->route('pacientes.index')->with('success', 'Paciente actualizado correctamente.');
+                
+            } catch (\Exception $e) {
+                return redirect()->back()
+                    ->withErrors(['message' => 'Error al actualizar el paciente: ' . $e->getMessage()])
+                    ->withInput();
+            }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Paciente $paciente)
     {
         DB::beginTransaction();
@@ -266,9 +283,6 @@ class PacienteController extends Controller
         return $filename;
     }
 
-    /**
-     * Validación de datos del paciente
-     */
     protected function validatePacienteData(Request $request, $id = null, $forUpdate = false)
     {
         $rules = [
@@ -295,9 +309,6 @@ class PacienteController extends Controller
         return $request->validate($rules);
     }
 
-    /**
-     * Prepara los datos del paciente para la vista
-     */
     protected function preparePacienteData(Paciente $paciente)
     {
         $pacienteData = $paciente->toArray();
@@ -315,9 +326,6 @@ class PacienteController extends Controller
         return $pacienteData;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     protected function guardarArchivosPaciente($files, $dni, $tipo = 'otros')
     {
         $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $dni);
@@ -351,9 +359,6 @@ class PacienteController extends Controller
         return $archivos;
     }
 
-    /**
-     * Método para procesar y validar archivos de pacientes
-     */
     protected function procesarArchivosPaciente(Request $request, Paciente $paciente, $filesToDelete = [])
     {
         $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $paciente->dni);
@@ -405,9 +410,6 @@ class PacienteController extends Controller
         return $archivosProcesados;
     }
 
-    /**
-     * Método para parsear datos de archivos (compatible con ambos controladores)
-     */
     protected function parseFileData($data)
     {
         if (empty($data)) return [];        
@@ -436,9 +438,6 @@ class PacienteController extends Controller
         }
     }
 
-    /**
-     * Método para actualizar imagen de perfil (API)
-     */
     public function updateImagen($id, Request $request)
     {
         $paciente = Paciente::findOrFail($id);
@@ -485,9 +484,6 @@ class PacienteController extends Controller
         }
     }
 
-    /**
-     * Método para eliminar imagen de perfil (API)
-     */
     public function deleteImagen(Paciente $paciente)
     {
         DB::beginTransaction();
@@ -515,9 +511,6 @@ class PacienteController extends Controller
         }
     }
 
-    /**
-     * Método para eliminar la foto de perfil
-     */
     protected function eliminarFotoPerfil(Paciente $paciente)
     {
         if ($paciente->foto_perfil && Storage::disk('public')->exists($paciente->foto_perfil)) {
@@ -531,42 +524,36 @@ class PacienteController extends Controller
         }
     }
 
-    /**
-     * Método para guardar foto de perfil
-     */
-    protected function guardarFotoPerfil($file, $dni)
+    protected function guardarFotoPerfil($file, $paciente)
     {
         try {
-            $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $dni);
+            $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $paciente->dni);
             if (empty($dniClean)) {
-                throw new \Exception('DNI no válido para crear carpeta');
+                throw new \Exception('Documento no válido para crear carpeta');
             }
             
-            $carpeta = "pacientes/{$dniClean}/perfil";
-            
-            // Crear directorio si no existe
-            Storage::disk('public')->makeDirectory($carpeta, 0755, true);
-            
-            // Generar nombre único para el archivo
-            $nombreArchivo = 'perfil_'.time().'.'.$file->extension();
-            
-            // Guardar el archivo
-            $path = $file->storeAs(
-                $carpeta,
-                $nombreArchivo,
-                'public'
-            );
-            
-            return $path;
-        } catch (\Exception $e) {
-            Log::error('Error al guardar foto: '.$e->getMessage());
-            return null;
+            $carpeta = "pacientes/{$paciente->tipo_documento}_{$dniClean}/perfil";
+                
+                // Crear directorio si no existe
+                Storage::disk('public')->makeDirectory($carpeta, 0755, true);
+                
+                // Generar nombre único para el archivo
+                $nombreArchivo = 'perfil_'.time().'.'.$file->extension();
+                
+                // Guardar el archivo
+                $path = $file->storeAs(
+                    $carpeta,
+                    $nombreArchivo,
+                    'public'
+                );
+                
+                return $path;
+            } catch (\Exception $e) {
+                Log::error('Error al guardar foto: '.$e->getMessage());
+                return null;
+            }
         }
-    }
 
-    /**
-     * Método para eliminar toda la carpeta de un paciente
-     */
     protected function eliminarCarpetaPaciente($dni)
     {
         $dniClean = preg_replace('/[^A-Za-z0-9]/', '', $dni);
@@ -577,16 +564,14 @@ class PacienteController extends Controller
         }
     }
 
-    /**
-     * Método para renombrar carpeta cuando cambia el DNI
-     */
-    protected function renombrarCarpetaPaciente($oldDni, $newDni)
+
+    protected function renombrarCarpetaPaciente($paciente, $newDni, $newTipoDocumento)
     {
-        $oldDniClean = preg_replace('/[^A-Za-z0-9]/', '', $oldDni);
+        $oldDniClean = preg_replace('/[^A-Za-z0-9]/', '', $paciente->dni);
         $newDniClean = preg_replace('/[^A-Za-z0-9]/', '', $newDni);
         
-        $oldPath = "pacientes/{$oldDniClean}";
-        $newPath = "pacientes/{$newDniClean}";
+        $oldPath = "pacientes/{$paciente->tipo_documento}_{$oldDniClean}";
+        $newPath = "pacientes/{$newTipoDocumento}_{$newDniClean}";
 
         if (Storage::disk('public')->exists($oldPath)) {
             Storage::disk('public')->move($oldPath, $newPath);
@@ -609,41 +594,43 @@ class PacienteController extends Controller
         }
     }
 
-    public function buscarPacientePorDNI(Request $request)
-{
-    $dni = trim($request->input('dni'));
-    Log::info('Buscando paciente con DNI:', ['dni' => $dni]);
+    public function buscarPaciente(Request $request)
+    {
+        $documento = trim($request->input('identificacion'));
+        $tipo = $request->input('tipo_documento', 'dni'); // Por defecto busca DNI
 
-    $paciente = Paciente::where('dni', $dni)->first();
+        $paciente = Paciente::where('dni', $documento)
+                    ->orWhere('ce', $documento)
+                    ->first();
 
-    if ($paciente) {
-        Log::info('Paciente encontrado:', ['paciente' => $paciente]);
-        return response()->json([
-            'success' => true,
-            'paciente' => [
-                'id' => $paciente->id,
-                'nombres' => $paciente->nombres,
-                'apellido_paterno' => $paciente->apellido_paterno,
-                'apellido_materno' => $paciente->apellido_materno,
-                'dni' => $paciente->dni,
-                'telefono' => $paciente->telefono,
-                'email' => $paciente->email,
-                'fecha_nacimiento' => $paciente->fecha_nacimiento ? $paciente->fecha_nacimiento->format('Y-m-d') : null,
-                'edad' => $paciente->edad,
-                'sexo' => $paciente->sexo,
-                'peso' => $paciente->peso,
-                'estado_civil' => $paciente->estado_civil,
-                'ocupacion' => $paciente->ocupacion,
-                'direccion' => $paciente->direccion,
-                'procedencia' => $paciente->procedencia,
-                'acompañante' => $paciente->acompañante,
-                'referido' => $paciente->referido,
-                // Agrega cualquier otro campo necesario
-            ],
-        ]);
+        if ($paciente) {
+            Log::info('Paciente encontrado:', ['paciente' => $paciente]);
+            return response()->json([
+                'success' => true,
+                'paciente' => [
+                    'id' => $paciente->id,
+                    'nombres' => $paciente->nombres,
+                    'apellido_paterno' => $paciente->apellido_paterno,
+                    'apellido_materno' => $paciente->apellido_materno,
+                    'dni' => $paciente->dni,
+                    'telefono' => $paciente->telefono,
+                    'email' => $paciente->email,
+                    'fecha_nacimiento' => $paciente->fecha_nacimiento ? $paciente->fecha_nacimiento->format('Y-m-d') : null,
+                    'edad' => $paciente->edad,
+                    'sexo' => $paciente->sexo,
+                    'peso' => $paciente->peso,
+                    'estado_civil' => $paciente->estado_civil,
+                    'ocupacion' => $paciente->ocupacion,
+                    'direccion' => $paciente->direccion,
+                    'procedencia' => $paciente->procedencia,
+                    'acompañante' => $paciente->acompañante,
+                    'referido' => $paciente->referido,
+                    // Agrega cualquier otro campo necesario
+                ],
+            ]);
+        }
+        
+        Log::warning('Paciente no encontrado para documento:', ['tipo' => $tipo, 'documento' => $documento]);
+        return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
     }
-    
-    Log::warning('Paciente no encontrado para DNI:', ['dni' => $dni]);
-    return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
-}
 }

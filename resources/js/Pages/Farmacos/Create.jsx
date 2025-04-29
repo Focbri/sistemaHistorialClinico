@@ -7,16 +7,12 @@ export default function Create({ auth, presentaciones }) {
         componente_activo: '',
         presentacion: '',
         concentracion: '',
-        stock_inicial: 0,
-        almacen: 'visual' // Valor por defecto cambiado a minúsculas
+        stocks: {
+            visual: 0,
+            insamed: 0,
+            s_p: 0
+        }
     });
-
-    // Opciones de almacenes disponibles
-    const almacenes = [
-        { value: 'visual', label: 'Visual' },
-        { value: 'insamed', label: 'Insamed' },
-        { value: 's_p', label: 'S&P' }
-    ];
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -27,11 +23,17 @@ export default function Create({ auth, presentaciones }) {
             componente_activo: data.componente_activo,
             presentacion: data.presentacion,
             concentracion: data.concentracion,
-            stock_inicial: data.stock_inicial,
-            almacen: data.almacen
+            stocks: data.stocks
         };
 
         post(route('farmacos.store'), formData);
+    };
+
+    const handleStockChange = (almacen, value) => {
+        setData('stocks', {
+            ...data.stocks,
+            [almacen]: parseInt(value) || 0
+        });
     };
 
     return (
@@ -119,45 +121,42 @@ export default function Create({ auth, presentaciones }) {
                                         )}
                                     </div>
 
-                                    {/* Stock Inicial */}
+                                    {/* Stocks para cada almacén */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">
-                                            Stock Inicial
+                                            Stock Visual
                                         </label>
                                         <input
-                                            type="number"
-                                            min="0"
+                                            type="text"
                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                            value={data.stock_inicial}
-                                            onChange={e => setData('stock_inicial', parseInt(e.target.value) || 0)}
+                                            value={data.stocks.visual}
+                                            onChange={e => handleStockChange('visual', e.target.value)}
                                         />
-                                        {errors.stock_inicial && (
-                                            <p className="mt-1 text-sm text-red-600">{errors.stock_inicial}</p>
-                                        )}
                                     </div>
 
-                                    {/* Almacén (solo si hay stock inicial) */}
-                                    {data.stock_inicial > 0 && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700">
-                                                Almacén Destino*
-                                            </label>
-                                            <select
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                                value={data.almacen}
-                                                onChange={e => setData('almacen', e.target.value)}
-                                            >
-                                                {almacenes.map((almacen) => (
-                                                    <option key={almacen.value} value={almacen.value}>
-                                                        {almacen.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            {errors.almacen && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.almacen}</p>
-                                            )}
-                                        </div>
-                                    )}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Stock Insamed
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                            value={data.stocks.insamed}
+                                            onChange={e => handleStockChange('insamed', e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Stock S&P
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                            value={data.stocks.s_p}
+                                            onChange={e => handleStockChange('s_p', e.target.value)}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="flex justify-end mt-6 space-x-2">
