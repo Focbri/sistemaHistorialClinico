@@ -7,7 +7,6 @@ import Cie10Search from '@/Components/Cie10Search';
 import AntecedentesPersonales from '@/Components/AntecedentesPersonales';
 import ExamenOcular from '@/Components/ExamenOcular';
 import FondoOjo from '@/Components/FondoOjo';
-import PlanSelector from '@/Components/PlanSelector';
 import RecetaMedica from '@/Components/RecetaMedica';
 import TerminoBiomicroscopiaSearch from '@/Components/TerminoBiomicroscopiaSearch';
 import TerminoMotivoConsultaSearch from '@/Components/TerminoMotivoConsultaSearch';
@@ -123,14 +122,7 @@ export default function ConsultasCreate({ auth }) {
         exam_old_cerca_dip: '',
         //
         comentario: '',
-        receta: {
-            paciente_id: '',
-            medico_id: auth.user.id,
-            diagnostico: '',
-            fecha: new Date().toISOString().split('T')[0],
-            indicaciones: '',
-            farmacos: []
-        },
+        receta: null,
     });
 
     // Estado para controlar qué secciones están expandidas
@@ -628,8 +620,25 @@ export default function ConsultasCreate({ auth }) {
         }
     };
 
-    const handleSubmit = async (e) => {
+      const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Solo validar receta si hay medicamentos
+        if (data.receta?.medicamentos?.length > 0) {
+            const errorReceta = validarReceta(data.receta);
+            if (errorReceta) {
+                setErrorReceta(errorReceta);
+                toggleSection('recetas');
+                return;
+            }
+            
+            // Actualizar stock solo si hay medicamentos
+            const stockSuccess = await actualizarStockBackend(data.receta.medicamentos);
+            if (!stockSuccess) {
+                setErrorReceta('Error al actualizar el stock de medicamentos');
+                return;
+            }
+        }
         
         const formData = new FormData();
         
@@ -640,29 +649,30 @@ export default function ConsultasCreate({ auth }) {
             }
         });
         
-        // Agregar datos de la receta si existe
+        // Agregar datos de receta al formData como JSON
         if (data.receta && data.receta.medicamentos && data.receta.medicamentos.length > 0) {
-            formData.append('receta[paciente_id]', data.paciente_id);
-            formData.append('receta[medico_id]', auth.user.id);
-            formData.append('receta[cie10_codes]', data.receta.cie10_codes || '');
-            formData.append('receta[medicamentos]', JSON.stringify(data.receta.medicamentos));
-            formData.append('receta[indicaciones_generales]', data.receta.indicaciones_generales || '');
-            formData.append('receta[fecha]', data.receta.fecha || new Date().toISOString().split('T')[0]);
-        }
-    
-    
-        // Agregar archivos (imágenes y documentos)
-        if (data.examenes_indicados_img && data.examenes_indicados_img.length > 0) {
+            formData.append('receta', JSON.stringify({
+              paciente_id: data.paciente_id,
+              medico_id: auth.user.id,
+              cie10_codes: data.receta.cie10_codes || [],
+              fecha: data.receta.fecha || new Date().toISOString().split('T')[0],
+              indicaciones_generales: data.receta.indicaciones_generales || '',
+              medicamentos: data.receta.medicamentos || []
+            }));
+          }
+          
+          // Agregar archivos (imágenes y documentos)
+          if (data.examenes_indicados_img && data.examenes_indicados_img.length > 0) {
             data.examenes_indicados_img.forEach((file, index) => {
-                formData.append(`examenes_indicados_img[${index}]`, file);
+              formData.append(`examenes_indicados_img[${index}]`, file);
             });
-        }
-    
-        if (data.examenes_indicados_archivos && data.examenes_indicados_archivos.length > 0) {
+          }
+        
+          if (data.examenes_indicados_archivos && data.examenes_indicados_archivos.length > 0) {
             data.examenes_indicados_archivos.forEach((file, index) => {
-                formData.append(`examenes_indicados_archivos[${index}]`, file);
+              formData.append(`examenes_indicados_archivos[${index}]`, file);
             });
-        }
+          }
     
         // Enviar el formulario
         post(route('consultas.store'), formData, {
@@ -670,10 +680,12 @@ export default function ConsultasCreate({ auth }) {
                 'Content-Type': 'multipart/form-data',
             },
             onSuccess: () => {
+                // Limpiar estados después del éxito
                 setPreviewImages([]);
                 setPreviewArchivos([]);
-            },
+              },
             onError: (errors) => {
+                console.error('Errores al enviar:', errors);
                 if (errors.tipo_consulta) {
                     alert('Error: ' + errors.tipo_consulta);
                     setData('tipo_consulta', 'evolucion');
@@ -686,19 +698,62 @@ export default function ConsultasCreate({ auth }) {
     };
 
     // Función para validar la receta
-const validarReceta = (receta) => {
-    if (!receta) return 'No hay datos de receta';
-    if (!receta.diagnostico || receta.diagnostico.trim() === '') return 'El diagnóstico es requerido';
-    if (!receta.medicamentos || receta.medicamentos.length === 0) return 'Debe agregar al menos un medicamento';
-    
-    for (const med of receta.medicamentos) {
-        if (!med.dosis || !med.frecuencia || !med.duracion) {
-            return 'Todos los medicamentos deben tener dosis, frecuencia y duración';
+    const validarReceta = (receta) => {
+        if (!receta || !receta.medicamentos || receta.medicamentos.length === 0) {
+          return null; // No hay receta o no hay medicamentos, no hay error
         }
-    }
+        
+        // Solo validar si hay medicamentos
+        for (const med of receta.medicamentos) {
+          if (!med.cantidad || med.cantidad <= 0) {
+            return `La cantidad para ${med.nombre_comercial} debe ser mayor a cero`;
+          }
+          if (!med.dosis || med.dosis.trim() === '') {
+            return `La dosis para ${med.nombre_comercial} es requerida`;
+          }
+          if (!med.frecuencia || med.frecuencia.trim() === '') {
+            return `La frecuencia para ${med.nombre_comercial} es requerida`;
+          }
+          if (!med.duracion || med.duracion.trim() === '') {
+            return `La duración para ${med.nombre_comercial} es requerida`;
+          }
+        }
+        
+        return null;
+    };
     
-    return null;
-};
+    const actualizarStockBackend = async (medicamentos) => {
+    try {
+        console.log('Enviando a /farmacos/stock/actualizar-por-receta:', {
+        medicamentos: medicamentos.map(m => ({
+            farmaco_id: m.farmaco_id || m.id, // Usar farmaco_id como prioridad
+            cantidad: parseInt(m.cantidad)
+        }))
+        });
+    
+        const response = await axios.post('/farmacos/stock/actualizar-por-receta', {
+        medicamentos: medicamentos.map(m => ({
+            farmaco_id: m.farmaco_id || m.id,
+            cantidad: parseInt(m.cantidad)
+        }))
+        }, {
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+        });
+    
+        console.log('Respuesta del servidor:', response.data);
+        return response.data.success;
+    } catch (error) {
+        console.error('Error al actualizar stock:', {
+        message: error.message,
+        response: error.response?.data,
+        config: error.config
+        });
+        return false;
+    }
+    };
 
     return (
         <AuthenticatedLayout
@@ -1262,14 +1317,24 @@ const validarReceta = (receta) => {
                                                 {/* 10. Receta Médica */}
                                                 {expandedSections.recetas && (
                                                 <RecetaMedica 
-                                                    consultaId={consulta.id} // Usa data.id si es la consulta actual
-                                                    pacienteId={data.paciente_id}
-                                                    medicoId={auth.user.id}
-                                                    diagnostico={data.impresion_diagnostica}
-                                                    onRecetaChange={(recetaData) => {
-                                                        setData('receta', recetaData);
-                                                    }}
-                                                />
+                                                consultaId={null}
+                                                pacienteId={data.paciente_id}
+                                                medicoId={auth.user.id}
+                                                onRecetaChange={(recetaData) => {
+                                                  console.log('Datos de receta actualizados:', recetaData);
+                                                  setData('receta', {
+                                                    ...recetaData,
+                                                    medicamentos: recetaData.medicamentos.map(med => ({
+                                                      farmaco_id: med.farmaco_id,  // Usar farmaco_id consistentemente
+                                                      nombre_comercial: med.nombre_comercial,
+                                                      cantidad: med.cantidad,
+                                                      dosis: med.dosis,
+                                                      frecuencia: med.frecuencia,
+                                                      duracion: med.duracion
+                                                    }))
+                                                  });
+                                                }}
+                                              />
                                                 )}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (
@@ -1540,15 +1605,25 @@ const validarReceta = (receta) => {
                                                 )}
                                                 {/* 10. Receta Médica */}
                                                 {expandedSections.recetas && (
-                                                <RecetaMedica 
-                                                    consultaId={null} // Usa data.id si es la consulta actual
-                                                    pacienteId={data.paciente_id}
-                                                    medicoId={auth.user.id}
-                                                    cie10Codes={data.cie10Codes}
-                                                    onRecetaChange={(recetaData) => {
-                                                        setData('receta', recetaData);
-                                                    }}
-                                                />
+                                               <RecetaMedica 
+                                               consultaId={null}
+                                               pacienteId={data.paciente_id}
+                                               medicoId={auth.user.id}
+                                               onRecetaChange={(recetaData) => {
+                                                 console.log('Datos de receta actualizados:', recetaData);
+                                                 setData('receta', {
+                                                   ...recetaData,
+                                                   medicamentos: recetaData.medicamentos.map(med => ({
+                                                     farmaco_id: med.farmaco_id,  // Usar farmaco_id consistentemente
+                                                     nombre_comercial: med.nombre_comercial,
+                                                     cantidad: med.cantidad,
+                                                     dosis: med.dosis,
+                                                     frecuencia: med.frecuencia,
+                                                     duracion: med.duracion
+                                                   }))
+                                                 });
+                                               }}
+                                             />
                                                 )}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (

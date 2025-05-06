@@ -11,14 +11,12 @@ class Receta extends Model
         'paciente_id',
         'medico_id',
         'cie10_codes',
-        'medicamentos', // JSON
         'indicaciones_generales',
         'fecha',
         'pdf_path'
     ];
 
     protected $casts = [
-        'medicamentos' => 'array',
         'fecha' => 'date',
         'cie10_codes' => 'array',
     ];
@@ -36,5 +34,10 @@ class Receta extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function medicamentos()
+    {
+        return $this->hasMany(MedicamentoReceta::class);
     }
 }

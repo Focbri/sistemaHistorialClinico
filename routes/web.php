@@ -12,24 +12,21 @@ use App\Http\Controllers\FarmacoController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\RefraccionController;
-use App\Models\User;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Application;
+use Inertia\Inertia;
 
 // Ruta de inicio (pública)
 Route::get('/', function () {
-    if (Auth::check()) {
-        return redirect()->route('inicio');
-    }
-
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return Auth::check() 
+        ? redirect()->route('inicio')
+        : Inertia::render('Welcome', [
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+            'laravelVersion' => Application::VERSION,
+            'phpVersion' => PHP_VERSION,
+        ]);
 });
 
 // Rutas protegidas por autenticación
@@ -37,76 +34,112 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Menú principal
     Route::get('/inicio', [InicioController::class, 'index'])->name('inicio');
     
-    // Dashboard/Reportes
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-    Route::get('/dashboard/top-cie10', [DashboardController::class, 'getTopCie10']);
-    Route::get('/cie10/search', [DashboardController::class, 'searchCie10']);
+    // Dashboard
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard.index');
+        Route::get('/top-cie10', [DashboardController::class, 'getTopCie10'])->name('dashboard.top-cie10');
+    });
     
     // Perfil de usuario
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
     
     // Pacientes
     Route::resource('pacientes', PacienteController::class);
-    Route::post('/pacientes/buscar-por-dni', [PacienteController::class, 'buscarPacientePorDNI'])
+    Route::post('pacientes/buscar-por-dni', [PacienteController::class, 'buscarPacientePorDNI'])
          ->name('pacientes.buscar-por-dni');
     
     // Consultas
     Route::resource('consultas', ConsultaController::class);
-    Route::put('consultas/{consulta}', [ConsultaController::class, 'update'])
-         ->name('consultas.update');
+    Route::prefix('consultas')->group(function () {
+        Route::get('verificar-inicio/{pacienteId}', [ConsultaController::class, 'verificarConsultaInicio'])
+             ->name('consultas.verificar-inicio');
+        Route::match(['get', 'post'], 'buscar-paciente', [ConsultaController::class, 'buscarPaciente'])
+             ->name('consultas.buscar-paciente');
+        Route::get('{id}/generar-pdf', [ConsultaController::class, 'generarPDF'])
+             ->name('consultas.generar-pdf');
+        Route::get('historial-diagnosticos/{paciente}', [ConsultaController::class, 'historialDiagnosticos'])
+             ->name('consultas.historial-diagnosticos');
+    });
 
+    // CIE10
     Route::prefix('cie10')->group(function () {
-    Route::get('/search', [Cie10Controller::class, 'search'])->name('cie10.search');
-    Route::post('/', [Cie10Controller::class, 'store'])->name('cie10.store');
-});
+        Route::get('search', [Cie10Controller::class, 'search'])->name('cie10.search');
+        Route::post('/', [Cie10Controller::class, 'store'])->name('cie10.store');
+    });
 
-    Route::get('/consultas/verificar-inicio/{pacienteId}', [ConsultaController::class, 'verificarConsultaInicio'])
-         ->name('consultas.verificar-inicio');
-    Route::match(['get', 'post'], '/consultas/buscar-paciente', [ConsultaController::class, 'buscarPaciente'])
-         ->name('consultas.buscar-paciente');
-    Route::get('/consultas/{id}/generar-pdf', [ConsultaController::class, 'generarPDF'])
-         ->name('consultas.generarPDF');
-    Route::get('/terminos-biomicroscopia/search', [ConsultaController::class, 'buscarTerminosBiomicroscopia']);
-    Route::post('/terminos-biomicroscopia', [ConsultaController::class, 'guardarTerminoBiomicroscopia']);
-    Route::get('/terminos-motivo-consulta/search', [ConsultaController::class, 'buscarTerminosMotivoConsulta']);
-    Route::post('/terminos-motivo-consulta', [ConsultaController::class, 'guardarTerminoMotivoConsulta']);
-    Route::get('/consultas/historial-diagnosticos/{paciente}', [ConsultaController::class, 'historialDiagnosticos']);
+    // Términos médicos
+    Route::prefix('terminos')->group(function () {
+        Route::get('biomicroscopia/search', [ConsultaController::class, 'buscarTerminosBiomicroscopia'])
+             ->name('terminos.biomicroscopia.search');
+        Route::post('biomicroscopia', [ConsultaController::class, 'guardarTerminoBiomicroscopia'])
+             ->name('terminos.biomicroscopia.store');
+        Route::get('motivo-consulta/search', [ConsultaController::class, 'buscarTerminosMotivoConsulta'])
+             ->name('terminos.motivo-consulta.search');
+        Route::post('motivo-consulta', [ConsultaController::class, 'guardarTerminoMotivoConsulta'])
+             ->name('terminos.motivo-consulta.store');
+    });
 
-    //Farmacos
-    Route::get('/farmacos/buscar', [FarmacoController::class, 'buscar'])->name('farmacos.buscar');
-    Route::get('/farmacos/{farmaco}/stock', [StockController::class, 'manage'])->name('stocks.manage');
-    Route::put('/farmacos/{farmaco}/stock', [StockController::class, 'update'])->name('stocks.update');
-    Route::resource('farmacos', FarmacoController::class);    
+    Route::prefix('farmacos')->group(function () {
+        // Ruta de búsqueda PRIMERO, antes del resource
+        Route::get('buscar', [StockController::class, 'buscarFarmacos'])->name('farmacos.buscar');
+        
+        // Resource para operaciones CRUD
+        Route::resource('/', FarmacoController::class)->names([
+            'index' => 'farmacos.index',
+            'store' => 'farmacos.store',
+            'update' => 'farmacos.update',
+            'destroy' => 'farmacos.destroy',
+            'create' => 'farmacos.create',
+            'edit' => 'farmacos.edit'
+        ])->parameters(['' => 'farmaco']);
+        
+        // Gestión de stock
+        Route::prefix('{farmaco}/stock')->group(function () {
+            Route::get('/', [StockController::class, 'manage'])->name('farmacos.stock.manage');
+            Route::put('/', [StockController::class, 'update'])->name('farmacos.stock.update');
+        });
+    
+         // Operaciones de stock (general)
+    Route::prefix('stock')->group(function () {
+        Route::post('actualizar-por-receta', [StockController::class, 'actualizarPorReceta'])
+            ->name('farmacos.stock.actualizar-por-receta');
+            
+        Route::post('verificar', [StockController::class, 'verificarStock'])
+            ->name('farmacos.stock.verificar');
+    });
+    });
 
-    //CITAS
-    Route::resource('citas', CitaController::class);
-    Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
-    Route::post('/citas', [CitaController::class, 'store'])->name('citas.store');
-    Route::post('/consultas/buscar-paciente', [ConsultaController::class, 'buscarPaciente']);
+    // Citas
+    Route::resource('citas', CitaController::class)->except(['show']);
 
+    // Recetas
     Route::prefix('recetas')->group(function () {
         Route::post('/', [RecetaController::class, 'store'])->name('recetas.store');
-        Route::get('/por-consulta/{consultaId}', [RecetaController::class, 'getRecetaPorConsulta'])
+        Route::get('por-consulta/{consultaId}', [RecetaController::class, 'getRecetaPorConsulta'])
              ->name('recetas.get-by-consulta');
-        Route::get('/{id}/generar-pdf', [RecetaController::class, 'generarPDFReceta'])
+        Route::get('{id}/generar-pdf', [RecetaController::class, 'generarPDFReceta'])
              ->name('recetas.generate-pdf');
+        Route::post('verificar-stock', [RecetaController::class, 'verificarStockReceta'])
+             ->name('recetas.verificar-stock');
     });
     
+    // Refracciones
     Route::prefix('refracciones')->group(function () {
-        Route::post('/', [RefraccionController::class, 'store']);
-        Route::get('/por-consulta/{consultaId}', [RefraccionController::class, 'getPorConsulta'])
+        Route::post('/', [RefraccionController::class, 'store'])->name('refracciones.store');
+        Route::get('por-consulta/{consultaId}', [RefraccionController::class, 'getPorConsulta'])
              ->name('refracciones.por-consulta');
-        Route::get('/{id}/generar-pdf', [RefraccionController::class, 'generarPDF'])
+        Route::get('{id}/generar-pdf', [RefraccionController::class, 'generarPDF'])
              ->name('refracciones.pdf');
     });
 });
 
-// Rutas de administración (requieren autenticación y rol admin)
-Route::middleware(['auth', 'verified', 'admin'])->group(function () {
-    Route::resource('admin/users', UserController::class)->names('admin.users');
+// Rutas de administración
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(function () {
+    Route::resource('users', UserController::class)->names('admin.users');
 });
 
-// Rutas de autenticación
 require __DIR__.'/auth.php';

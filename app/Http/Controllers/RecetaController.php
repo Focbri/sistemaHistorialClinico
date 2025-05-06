@@ -3,53 +3,178 @@
 namespace App\Http\Controllers;
 
 use App\Models\Receta;
+use App\Models\MedicamentoReceta;
+use App\Models\Farmaco;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\Consulta;
-use App\Models\Paciente;
-use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class RecetaController extends Controller
 {
     public function store(Request $request)
-    {
+{
+    // Verificar si hay datos de receta
+    if (!$request->has('receta') || $request->receta === null) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Consulta guardada sin receta médica'
+        ]);
+    }
+
+    DB::beginTransaction();
+    try {
+        // Validar solo los campos básicos primero
         $validated = $request->validate([
             'consulta_id' => 'required|exists:consultas,id',
             'paciente_id' => 'required|exists:pacientes,id',
             'medico_id' => 'required|exists:users,id',
-            'cie10_codes' => 'required|array', // Cambiado de diagnostico a cie10_codes
-            'medicamentos' => 'required|array',
-            'indicaciones_generales' => 'nullable|string',
             'fecha' => 'required|date',
         ]);
 
-        // Convertir arrays a JSON
-        $validated['cie10_codes'] = json_encode($validated['cie10_codes']);
-        $validated['medicamentos'] = json_encode($validated['medicamentos']);
+        // Validar campos específicos de receta si existen
+        $request->validate([
+            'cie10_codes' => 'nullable|array',
+            'medicamentos' => 'nullable|array',
+            'medicamentos.*.nombre_comercial' => 'required_with:medicamentos|string',
+            'medicamentos.*.cantidad' => 'required_with:medicamentos|integer|min:1',
+            'medicamentos.*.dosis' => 'required_with:medicamentos|string',
+            'medicamentos.*.frecuencia' => 'required_with:medicamentos|string',
+            'medicamentos.*.duracion' => 'required_with:medicamentos|string',
+            'medicamentos.*.farmaco_id' => 'nullable|exists:farmacos,id',
+            'indicaciones_generales' => 'nullable|string',
+        ]);
 
-        Receta::create($validated);
+        // Combinar datos validados
+        $validated = array_merge($validated, $request->only([
+            'cie10_codes', 'medicamentos', 'indicaciones_generales'
+        ]));
 
-        return back()->with('success', 'Receta guardada correctamente');
+        // Crear la receta
+        $recetaData = [
+            'consulta_id' => $validated['consulta_id'],
+            'paciente_id' => $validated['paciente_id'],
+            'medico_id' => $validated['medico_id'],
+            'fecha' => $validated['fecha'],
+            'indicaciones_generales' => $validated['indicaciones_generales'] ?? null,
+        ];
+
+        // Agregar CIE-10 si existen
+        if (!empty($validated['cie10_codes'])) {
+            $recetaData['cie10_codes'] = json_encode($validated['cie10_codes']);
+        }
+
+        $receta = Receta::create($recetaData);
+
+        // Procesar medicamentos solo si existen
+        $erroresStock = [];
+        if (!empty($validated['medicamentos'])) {
+            foreach ($validated['medicamentos'] as $medicamento) {
+                $medData = [
+                    'receta_id' => $receta->id,
+                    'nombre_comercial' => $medicamento['nombre_comercial'],
+                    'cantidad' => $medicamento['cantidad'],
+                    'dosis' => $medicamento['dosis'],
+                    'frecuencia' => $medicamento['frecuencia'],
+                    'duracion' => $medicamento['duracion'],
+                    'es_manual' => empty($medicamento['farmaco_id'])
+                ];
+
+                if (!empty($medicamento['farmaco_id'])) {
+                    $farmaco = Farmaco::with('stock')->find($medicamento['farmaco_id']);
+                    
+                    if (!$farmaco) {
+                        $erroresStock[] = "Medicamento no encontrado: {$medicamento['nombre_comercial']}";
+                        continue;
+                    }
+
+                    $stockTotal = $farmaco->stock_disponible;
+                    if ($stockTotal < $medicamento['cantidad']) {
+                        $erroresStock[] = "Stock insuficiente para {$farmaco->nombre_comercial} (Stock: {$stockTotal}, Requerido: {$medicamento['cantidad']})";
+                        continue;
+                    }
+                    
+                    $medData['farmaco_id'] = $medicamento['farmaco_id'];
+                    
+                    // Actualizar stock
+                    if (!$this->actualizarStock($farmaco, $medicamento['cantidad'])) {
+                        $erroresStock[] = "Error al actualizar stock para {$farmaco->nombre_comercial}";
+                        continue;
+                    }
+                }
+
+                MedicamentoReceta::create($medData);
+            }
+
+            if (!empty($erroresStock)) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Problemas con el stock de medicamentos',
+                    'errors' => $erroresStock
+                ], 422);
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'receta_id' => $receta->id,
+            'message' => empty($validated['medicamentos']) && empty($validated['cie10_codes']) 
+                ? 'Receta guardada sin medicamentos ni diagnósticos' 
+                : 'Receta guardada correctamente'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error al guardar receta: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al guardar la receta: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+protected function actualizarStock(Farmaco $farmaco, $cantidad)
+{
+    $cantidadRestante = $cantidad;
+    
+    // Ordenar almacenes por stock descendente
+    $almacenes = [
+        ['nombre' => 'visual', 'stock' => $farmaco->stock->visual],
+        ['nombre' => 'insamed', 'stock' => $farmaco->stock->insamed],
+        ['nombre' => 's_p', 'stock' => $farmaco->stock->s_p]
+    ];
+    
+    usort($almacenes, function($a, $b) {
+        return $b['stock'] <=> $a['stock'];
+    });
+
+    foreach ($almacenes as $almacen) {
+        if ($cantidadRestante <= 0) break;
+        
+        $descontar = min($cantidadRestante, $farmaco->stock->{$almacen['nombre']});
+        if ($descontar > 0) {
+            $farmaco->stock->decrement($almacen['nombre'], $descontar);
+            $cantidadRestante -= $descontar;
+        }
+    }
+
+    return $cantidadRestante === 0;
+}
 
     public function generarPDFReceta($id)
     {
         try {
-            $receta = Receta::with(['consulta.paciente'])->findOrFail($id);
-
-            // Convertir campos JSON a arrays
-            $cie10Codes = json_decode($receta->cie10_codes, true) ?? [];
-            $medicamentos = is_string($receta->medicamentos) 
-                ? json_decode($receta->medicamentos, true) ?? []
-                : $receta->medicamentos;
+            $receta = Receta::with(['consulta.paciente', 'medicamentos.farmaco'])->findOrFail($id);
 
             $pdf = Pdf::loadView('recetas.pdf', [
                 'receta' => $receta,
                 'paciente' => $receta->consulta->paciente,
-                'cie10Codes' => $cie10Codes,
-                'medicamentos' => $medicamentos,
+                'cie10Codes' => json_decode($receta->cie10_codes, true) ?? [],
+                'medicamentos' => $receta->medicamentos, // Ahora viene de la relación
                 'fechaActual' => now()->format('d/m/Y'),
                 'codigoReceta' => 'REC-' . str_pad($receta->id, 6, '0', STR_PAD_LEFT)
             ]);
@@ -68,7 +193,7 @@ class RecetaController extends Controller
     public function getRecetaPorConsulta($consultaId)
     {
         try {
-            $receta = Receta::where('consulta_id', $consultaId)->first();
+            $receta = Receta::with('medicamentos')->where('consulta_id', $consultaId)->first();
     
             if (!$receta) {
                 return response()->json([
@@ -79,12 +204,23 @@ class RecetaController extends Controller
     
             return response()->json([
                 'success' => true,
-                'id' => $receta->id,
-                'consulta_id' => $receta->consulta_id,
-                'cie10_codes' => json_decode($receta->cie10_codes, true) ?? [],
-                'medicamentos' => is_string($receta->medicamentos) 
-                    ? json_decode($receta->medicamentos, true) 
-                    : $receta->medicamentos
+                'receta' => [
+                    'id' => $receta->id,
+                    'consulta_id' => $receta->consulta_id,
+                    'cie10_codes' => json_decode($receta->cie10_codes, true) ?? [],
+                    'medicamentos' => $receta->medicamentos->map(function($med) {
+                        return [
+                            'id' => $med->id,
+                            'farmaco_id' => $med->farmaco_id,
+                            'nombre_comercial' => $med->nombre_comercial,
+                            'cantidad' => $med->cantidad,
+                            'dosis' => $med->dosis,
+                            'frecuencia' => $med->frecuencia,
+                            'duracion' => $med->duracion,
+                            'es_manual' => $med->es_manual
+                        ];
+                    })
+                ]
             ]);
     
         } catch (\Exception $e) {

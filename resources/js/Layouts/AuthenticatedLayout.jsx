@@ -45,10 +45,10 @@ export default function AuthenticatedLayout({ header, children }) {
 
             <nav className=" bg-[#005B96]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
+                    <div className="flex h-16 justify-between 2xl:h-24">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                <Link href="/" className='flex items-center h-14'>
+                                <Link href="/" className='flex items-center h-14 2xl:h-20'>
                                     <ApplicationLogo />
                                 </Link>
                             </div>

@@ -148,70 +148,90 @@ class FarmacoController extends Controller
             ->with('success', 'Stocks actualizados correctamente');
     }
 
-    public function buscar(Request $request)
+    // En FarmacoController.php
+public function buscar(Request $request)
 {
-    Log::info("Accediendo a /farmacos/buscar", ['search' => $request->query('search')]);
-    try {
-        $request->validate([
-            'search' => 'nullable|string|max:255'
-        ]);
+    $query = $request->input('search');
+    
+    $farmacos = Farmaco::with('stock') // Cargar relación de stock
+        ->where('nombre_comercial', 'like', "%{$query}%")
+        ->orWhere('componente_activo', 'like', "%{$query}%")
+        ->limit(10)
+        ->get()
+        ->map(function ($farmaco) {
+            return [
+                'id' => $farmaco->id,
+                'nombre_comercial' => $farmaco->nombre_comercial,
+                'componente_activo' => $farmaco->componente_activo,
+                'presentacion' => $farmaco->presentacion,
+                'concentracion' => $farmaco->concentracion,
+                'stock_total' => $farmaco->stock_total // Usando el accessor del modelo
+            ];
+        });
 
-        $search = $request->query('search', '');
-        
-        $query = Farmaco::query()->with('stock');
-        
-        if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+    return response()->json($farmacos);
+}
+
+public function buscarConStock(Request $request)
+{
+    $request->validate([
+        'search' => 'nullable|string',
+        'with_stock' => 'nullable|boolean'
+    ]);
+
+    $query = Farmaco::query()
+        ->with(['stock'])
+        ->when($request->search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('nombre_comercial', 'like', "%{$search}%")
                   ->orWhere('componente_activo', 'like', "%{$search}%");
             });
-        }
+        })
+        ->when($request->boolean('with_stock', true), function ($query) {
+            $query->whereHas('stock', function($q) {
+                $q->whereRaw('(visual + insamed + s_p) > 0');
+            });
+        });
 
-        $farmacos = $query->limit(10)->get();
+    $farmacos = $query->limit(20)->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $farmacos->map(function ($farmaco) {
-                return [
-                    'id' => $farmaco->id,
-                    'nombre' => $farmaco->nombre_comercial,
-                    'presentacion' => $farmaco->presentacion,
-                    'componente_activo' => $farmaco->componente_activo,
-                    'concentracion' => $farmaco->concentracion,
-                    'stock_visual' => $farmaco->stock->visual ?? 0,
-                    'stock_insamed' => $farmaco->stock->insamed ?? 0,
-                    'stock_s_p' => $farmaco->stock->s_p ?? 0,
-                    'stock_total' => ($farmaco->stock->visual ?? 0) + 
-                                    ($farmaco->stock->insamed ?? 0) + 
-                                    ($farmaco->stock->s_p ?? 0),
-                    'almacen_principal' => $this->getAlmacenPrincipal($farmaco)
-                ];
-            })
-        ]);
+    return response()->json(
+        $farmacos->map(function ($farmaco) {
+            $stockData = $farmaco->stock ? [
+                'visual' => $farmaco->stock->visual ?? 0,
+                'insamed' => $farmaco->stock->insamed ?? 0,
+                's_p' => $farmaco->stock->s_p ?? 0
+            ] : ['visual' => 0, 'insamed' => 0, 's_p' => 0];
 
-    } catch (\Exception $e) {
-        Log::error("Error en búsqueda de fármacos: " . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Error en el servidor al buscar fármacos'
-        ], 500);
+            $stockTotal = $stockData['visual'] + $stockData['insamed'] + $stockData['s_p'];
+
+            return [
+                'id' => $farmaco->id,
+                'nombre_comercial' => $farmaco->nombre_comercial,
+                'componente_activo' => $farmaco->componente_activo,
+                'presentacion' => $farmaco->presentacion,
+                'concentracion' => $farmaco->concentracion,
+                'stock' => $stockData,
+                'stock_total' => $stockTotal,
+                'stock_detalle' => $stockData // Para compatibilidad con el frontend
+            ];
+        })
+    );
+}
+
+    private function getAlmacenPrincipal($farmaco)
+    {
+        if (!$farmaco->stock) return 'N/A';
+        
+        $stocks = [
+            'Visual' => $farmaco->stock->visual ?? 0,
+            'Insamed' => $farmaco->stock->insamed ?? 0,
+            'S/P' => $farmaco->stock->s_p ?? 0
+        ];
+        
+        arsort($stocks);
+        return array_key_first($stocks);
     }
-}
-
-private function getAlmacenPrincipal($farmaco)
-{
-    if (!$farmaco->stock) return 'N/A';
-    
-    $stocks = [
-        'Visual' => $farmaco->stock->visual ?? 0,
-        'Insamed' => $farmaco->stock->insamed ?? 0,
-        'S/P' => $farmaco->stock->s_p ?? 0
-    ];
-    
-    arsort($stocks);
-    return array_key_first($stocks);
-}
-
     // Método show básico si lo necesitas para otras rutas
     public function show($id)
     {

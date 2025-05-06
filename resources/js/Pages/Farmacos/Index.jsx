@@ -124,7 +124,7 @@ export default function Index({ auth, farmacos, filters }) {
                                                             Editar
                                                         </Link>
                                                         <Link 
-                                                            href={route('stocks.manage', farmaco.id)}
+                                                            href={route('farmacos.stock.manage', farmaco.id)}
                                                             className="text-green-600 hover:text-green-900"
                                                         >
                                                             Stock
