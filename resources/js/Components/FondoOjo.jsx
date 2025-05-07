@@ -59,6 +59,28 @@ const FondoOjo = ({
         }
     };
 
+    // Agregamos los nuevos campos al estado inicial si no existen
+    useEffect(() => {
+        if (!modoVisualizacion) {
+            const camposRequeridos = [
+                'f_o_dilat_pup_od',
+                'f_o_dilat_pup_oi',
+                'f_o_locs_tres_od',
+                'f_o_locs_tres_oi',
+                'f_o_fundoscopia_od',
+                'f_o_fundoscopia_oi',
+                'f_o_conclusion',
+                'f_o_plan'
+            ];
+            
+            camposRequeridos.forEach(campo => {
+                if (data[campo] === undefined) {
+                    safeSetData(campo, '');
+                }
+            });
+        }
+    }, []);
+
     // Función para obtener posición inicial
     const getInitialPosition = (marcador, tipoOjo) => {
         const posKey = `${tipoOjo}_${marcador.id}`;
@@ -289,19 +311,6 @@ const FondoOjo = ({
         });
     };
 
-    // Controlador para cambiar el tamaño de la imagen
-    const cambiarTamaño = (operacion) => {
-        setDimensiones(prev => {
-            const nuevoAncho = operacion === '+' ? 
-                Math.min(600, prev.width + 50) : 
-                Math.max(200, prev.width - 50);
-            return {
-                width: nuevoAncho,
-                height: nuevoAncho // Mantener relación cuadrada
-            };
-        });
-    };
-
     // Renderizar textarea
     const renderTextarea = () => {
         if (!textAreaAbierto || modoVisualizacion) return null;
@@ -423,6 +432,96 @@ const FondoOjo = ({
                         {modoVisualizacion && renderContenedoresVisualizacion(marcadoresOI, 'OI')}
                     </div>
                     <span className="mt-2 font-medium">Ojo Izquierdo (OI)</span>
+                </div>
+            </div>
+
+            {/* Nuevos campos de texto */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Dilatación pupilar OD</label>
+                        <input
+                            type="text"
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            value={data.f_o_dilat_pup_od || ''}
+                            onChange={(e) => safeSetData('f_o_dilat_pup_od', e.target.value)}
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">LOCS tres OD</label>
+                        <input
+                            type="text"
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            value={data.f_o_locs_tres_od || ''}
+                            onChange={(e) => safeSetData('f_o_locs_tres_od', e.target.value)}
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Fundoscopia OD</label>
+                        <textarea
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            rows={3}
+                            value={data.f_o_fundoscopia_od || ''}
+                            onChange={(e) => safeSetData('f_o_fundoscopia_od', e.target.value)}
+                        />
+                    </div>
+                </div>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Dilatación pupilar OI</label>
+                        <input
+                            type="text"
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            value={data.f_o_dilat_pup_oi || ''}
+                            onChange={(e) => safeSetData('f_o_dilat_pup_oi', e.target.value)}
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">LOCS tres OI</label>
+                        <input
+                            type="text"
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            value={data.f_o_locs_tres_oi || ''}
+                            onChange={(e) => safeSetData('f_o_locs_tres_oi', e.target.value)}
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Fundoscopia OI</label>
+                        <textarea
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            rows={3}
+                            value={data.f_o_fundoscopia_oi || ''}
+                            onChange={(e) => safeSetData('f_o_fundoscopia_oi', e.target.value)}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Campos de conclusión y plan */}
+            <div className="w-full space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Conclusión</label>
+                    <textarea
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        value={data.f_o_conclusion || ''}
+                        onChange={(e) => safeSetData('f_o_conclusion', e.target.value)}
+                    />
+                </div>
+                
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Plan</label>
+                    <textarea
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        value={data.f_o_plan || ''}
+                        onChange={(e) => safeSetData('f_o_plan', e.target.value)}
+                    />
                 </div>
             </div>
 

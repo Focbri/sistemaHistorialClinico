@@ -294,6 +294,14 @@ public function store(Request $request)
             'fondo_ojo_vitreo_oi' => 'nullable|string',
             'fondo_ojo_disco_o_oi' => 'nullable|string',
             'fondo_ojo_vasos_oi' => 'nullable|string',
+            'f_o_dilat_pup_od' => 'nullable|string',
+            'f_o_dilat_pup_oi' => 'nullable|string',
+            'f_o_locs_tres_od' => 'nullable|string',
+            'f_o_locs_tres_oi' => 'nullable|string',
+            'f_o_fundoscopia_od' => 'nullable|string',
+            'f_o_fundoscopia_oi' => 'nullable|string',
+            'f_o_conclusion' => 'nullable|string',
+            'f_o_plan' => 'nullable|string',
             //
             'exam_new_distancia_esfera_od' => 'nullable|string',
             'exam_new_distancia_esfera_oi' => 'nullable|string',
@@ -480,6 +488,14 @@ public function store(Request $request)
             'fondo_ojo_vitreo_oi' => $request->fondo_ojo_vitreo_oi,
             'fondo_ojo_disco_o_oi' => $request->fondo_ojo_disco_o_oi,
             'fondo_ojo_vasos_oi' => $request->fondo_ojo_vasos_oi,
+            'f_o_dilat_pup_od' => $request->f_o_dilat_pup_od,
+            'f_o_dilat_pup_oi' => $request->f_o_dilat_pup_oi,
+            'f_o_locs_tres_od' => $request->f_o_locs_tres_od,
+            'f_o_locs_tres_oi' => $request->f_o_locs_tres_oi,
+            'f_o_fundoscopia_od' => $request->f_o_fundoscopia_od,
+            'f_o_fundoscopia_oi' => $request->f_o_fundoscopia_oi,
+            'f_o_conclusion' => $request->f_o_conclusion,
+            'f_o_plan' => $request->f_o_plan,
             'comentario' => $request->comentario,
         ]);
 
@@ -653,7 +669,6 @@ public function store(Request $request)
                 ]);
             }
         }
-        /////
 
         // Después de crear la consulta, asociar términos si es necesario
         if ($request->has('motivo_consulta_terms')) {

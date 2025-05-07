@@ -76,7 +76,7 @@ class Consulta extends Model
         'biomicroscopia_ca_oi',
         'biomicroscopia_iris_oi',
         'biomicroscopia_cristalino_oi',
-        //
+        //FONDO OJO
         'fondo_ojo_posiciones',
         'fondo_ojo_retina_p_od',
         'fondo_ojo_macula_od',
@@ -88,6 +88,15 @@ class Consulta extends Model
         'fondo_ojo_disco_o_oi',
         'fondo_ojo_vasos_oi',
         'fondo_ojo_retina_p_oi',
+        'f_o_dilat_pup_od',
+        'f_o_dilat_pup_oi',
+        'f_o_locs_tres_od',
+        'f_o_locs_tres_oi',
+        'f_o_fundoscopia_od',
+        'f_o_fundoscopia_oi',
+        'f_o_conclusion',
+        'f_o_plan',
+        //EXAMENES
         'exam_new_distancia_esfera_od' ,
         'exam_new_distancia_esfera_oi' ,
         'exam_new_distancia_cilindro_od' ,
