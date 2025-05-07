@@ -6,6 +6,7 @@ import PacienteForm from '@/Components/PacienteForm';
 import Cie10Search from '@/Components/Cie10Search';
 import AntecedentesPersonales from '@/Components/AntecedentesPersonales';
 import ExamenOcular from '@/Components/ExamenOcular';
+import Refraccion from '@/Components/Refraccion';
 import FondoOjo from '@/Components/FondoOjo';
 import RecetaMedica from '@/Components/RecetaMedica';
 import TerminoBiomicroscopiaSearch from '@/Components/TerminoBiomicroscopiaSearch';
@@ -137,6 +138,7 @@ export default function ConsultasCreate({ auth }) {
         diagnostico: false,
         tratamiento: false,
         recetas: false,
+        refraccion: false,
         plan: false,
         examenesIndicados: false,
         evoluciones: false
@@ -931,6 +933,13 @@ export default function ConsultasCreate({ auth }) {
                                                     </button>
                                                     <button
                                                         type="button"
+                                                        onClick={() => toggleSection('refraccion')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.refraccion ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Refracción
+                                                    </button>
+                                                    <button
+                                                        type="button"
                                                         onClick={() => toggleSection('biomicroscopia')}
                                                         className={`w-full text-left px-4 py-2 rounded ${expandedSections.biomicroscopia ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
@@ -1001,6 +1010,13 @@ export default function ConsultasCreate({ auth }) {
                                                         className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenOcular ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
                                                         Examen Ocular
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('refraccion')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.refraccion ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Refracción
                                                     </button>
                                                     <button
                                                         type="button"
@@ -1174,6 +1190,22 @@ export default function ConsultasCreate({ auth }) {
                                                                 Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
                                                             </p>
                                                             <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/*REFRACCION */}
+                                                {expandedSections.refraccion && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
+                                                            </p>
+                                                            <Refraccion 
+                                                                data={data} 
+                                                                setData={setData}
+                                                                edadPaciente={parseInt(data.edad) || 0}
+                                                                readOnly={false} // O true si es una vista de solo lectura
+                                                            />
                                                         </div>
                                                     </div>
                                                 )}
@@ -1463,6 +1495,29 @@ export default function ConsultasCreate({ auth }) {
                                                                 Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
                                                             </p>
                                                             <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/*REFRACCION */}
+                                                {expandedSections.refraccion && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
+                                                            </p>
+                                                            {expandedSections.refraccion && (
+                                                                <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                                    <div className="p-4">
+                                                                        <Refraccion 
+                                                                            data={data} 
+                                                                            setData={setData}
+                                                                            edadPaciente={parseInt(data.edad) || 0}
+                                                                            readOnly={false}
+                                                                            consultaId={data.id} // Pasar el ID de la consulta si ya existe
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}

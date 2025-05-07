@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
+import Pagination from '@/Components/Pagination';
 
 export default function ConsultasIndex({ auth, consultas, links }) {
     console.log('Consultas recibidas:', consultas); // Depuración
@@ -209,6 +210,12 @@ export default function ConsultasIndex({ auth, consultas, links }) {
 
                                 <div className="flex space-x-2">
                                     <Link
+                                        href={route('cirugias.create')}
+                                        className="px-4 py-2 text-white bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    >
+                                        Crear Nueva Cirugía
+                                    </Link>
+                                    <Link
                                         href={route('consultas.create')}
                                         className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                                     >
@@ -220,61 +227,80 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                             {/* Tabla de consultas */}
                             <div className="overflow-x-auto">
                                 <table className="min-w-full border border-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código Consulta</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creada</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>                                            
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {consultas.data.length > 0 ? (
-                                            consultas.data.map((consulta) => (
-                                                <tr key={consulta.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.codigo_historial}</td>
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalle</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {consultas.data.length > 0 ? (
+                                            consultas.data.map((item) => (
+                                                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                                     <td className="px-4 py-4 text-sm text-gray-900">
-                                                        {new Date(consulta.created_at).toLocaleDateString()}
+                                                        {item.tipo_consulta ? (
+                                                            <span className={`px-2 py-1 rounded-full text-xs ${
+                                                                item.tipo_consulta === 'inicio' ? 'bg-blue-100 text-blue-800' :
+                                                                item.tipo_consulta === 'evolucion' ? 'bg-green-100 text-green-800' :
+                                                                'bg-gray-100 text-gray-800'
+                                                            }`}>
+                                                                {item.tipo_consulta === 'inicio' ? 'C. Inicio' : 
+                                                                item.tipo_consulta === 'evolucion' ? 'C. Evolución' : 'Cirugía'}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                                                Cirugía
+                                                            </span>
+                                                        )}
                                                     </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.paciente.email}</td>                                                    
-                                                    <td className="px-4 py-4 text-sm text-gray-900">{consulta.paciente.dni}</td>
+                                                    <td className="px-4 py-4 text-sm text-gray-900">{item.codigo_historial}</td>
                                                     <td className="px-4 py-4 text-sm text-gray-900">
-                                                        {consulta.paciente.nombres} {consulta.paciente.apellido_paterno} {consulta.paciente.apellido_materno}
-                                                    </td>                                                    
+                                                        {new Date(item.created_at).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-sm text-gray-900">
+                                                        {item.paciente.nombres} {item.paciente.apellido_paterno}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-sm text-gray-900">
+                                                        {item.paciente.dni}
+                                                    </td>
                                                     <td className="px-4 py-4 text-sm text-gray-900">
                                                         <div className="flex items-center space-x-2">
                                                             <Link
-                                                                href={route('consultas.show', consulta.id)}
-                                                                className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                href={item.tipo_consulta ? 
+                                                                    route('consultas.show', item.id) : 
+                                                                    route('cirugias.show', item.id)}
+                                                                className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                                                             >
                                                                 Ver
                                                             </Link>
                                                             <Link
-                                                                href={route('consultas.edit', consulta.id)}
+                                                                href={route('consultas.edit', item.id)}
                                                                 className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                                             >
                                                                 Editar
                                                             </Link>
                                                             {(auth.user.role === 'admin' || auth.user.role === 'root') && (
                                                                 <button
-                                                                    onClick={() => openDeleteModal(consulta.id)}
+                                                                    onClick={() => openDeleteModal(item.id)}
                                                                     className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                                                                 >
                                                                     Eliminar
                                                                 </button>
                                                             )}
                                                             <button
-                                                                onClick={() => descargarPDF(consulta.id)}
+                                                                onClick={() => descargarPDF(item.id)}
                                                                 className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                                                             >
                                                                 PDF Consulta
                                                             </button>
                                                             {/* Botón para PDF de receta (solo si existe) */}
-                                                            {consulta.receta && (
+                                                            {item.receta && (
                                                                 <button
-                                                                    onClick={() => descargarPDFReceta(consulta.id)}
+                                                                    onClick={() => descargarPDFReceta(item.id)}
                                                                     className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
                                                                 >
                                                                     PDF Receta
@@ -282,9 +308,9 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                                             )}
                                                             
                                                             {/* Botón para crear receta (si no existe) */}
-                                                            {!consulta.receta && (
+                                                            {!item.receta && (
                                                                 <Link
-                                                                    href={route('consultas.edit', consulta.id)}
+                                                                    href={route('consultas.edit', item.id)}
                                                                     className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                                                                     data={{ activeTab: 'recetas' }}
                                                                 >
@@ -307,24 +333,13 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                             </div>
 
                             {/* Paginación */}
-                            <div className="mt-6 flex justify-between items-center">
-                                {links.prev && (
-                                    <Link
-                                        href={links.prev}
-                                        className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        Anterior
-                                    </Link>
-                                )}
-                                {links.next && (
-                                    <Link
-                                        href={links.next}
-                                        className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        Siguiente
-                                    </Link>
-                                )}
-                            </div>
+                            <div className="mt-4">
+                            <Pagination 
+    links={consultas.links} 
+    preserveState
+    only={['consultas', 'filters']}
+/>
+                    </div>
                         </div>
                     </div>
                 </div>

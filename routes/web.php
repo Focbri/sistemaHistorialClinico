@@ -12,6 +12,7 @@ use App\Http\Controllers\FarmacoController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\RefraccionController;
+use App\Http\Controllers\CirugiaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Application;
@@ -64,6 +65,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('historial-diagnosticos/{paciente}', [ConsultaController::class, 'historialDiagnosticos'])
              ->name('consultas.historial-diagnosticos');
     });
+
+    // Cirugías
+    Route::get('/cirugias/create', [CirugiaController::class, 'create'])->name('cirugias.create');
+    Route::post('/cirugias', [CirugiaController::class, 'store'])->name('cirugias.store');
+    Route::resource('cirugias', CirugiaController::class)->except(['edit', 'update']);
 
     // CIE10
     Route::prefix('cie10')->group(function () {
@@ -127,9 +133,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
              ->name('recetas.verificar-stock');
     });
     
-    // Refracciones
     Route::prefix('refracciones')->group(function () {
         Route::post('/', [RefraccionController::class, 'store'])->name('refracciones.store');
+        Route::put('/{refraccion}', [RefraccionController::class, 'update'])->name('refracciones.update');
         Route::get('por-consulta/{consultaId}', [RefraccionController::class, 'getPorConsulta'])
              ->name('refracciones.por-consulta');
         Route::get('{id}/generar-pdf', [RefraccionController::class, 'generarPDF'])

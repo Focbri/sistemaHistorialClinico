@@ -134,4 +134,9 @@ class Paciente extends Model
             'dni.max' => 'El DNI no debe exceder los 8 caracteres.',
         ];
     }
+
+    public function cirugias()
+{
+    return $this->hasMany(Cirugia::class);
+}
 }

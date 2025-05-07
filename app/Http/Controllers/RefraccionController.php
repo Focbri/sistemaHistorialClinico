@@ -14,25 +14,93 @@ class RefraccionController extends Controller
     {
         $validated = $request->validate([
             'consulta_id' => 'required|exists:consultas,id',
-            'distancia_esfera_od' => 'nullable|string|max:10',
-            'distancia_cilindro_od' => 'nullable|string|max:10',
-            'distancia_eje_od' => 'nullable|string|max:10',
-            'distancia_esfera_oi' => 'nullable|string|max:10',
-            'distancia_cilindro_oi' => 'nullable|string|max:10',
-            'distancia_eje_oi' => 'nullable|string|max:10',
-            'distancia_dip' => 'nullable|string|max:10',
-            'cerca_esfera_od' => 'nullable|string|max:10',
-            'cerca_cilindro_od' => 'nullable|string|max:10',
-            'cerca_eje_od' => 'nullable|string|max:10',
-            'cerca_esfera_oi' => 'nullable|string|max:10',
-            'cerca_cilindro_oi' => 'nullable|string|max:10',
-            'cerca_eje_oi' => 'nullable|string|max:10',
-            'cerca_dip' => 'nullable|string|max:10',
-            'adicion_cerca' => 'nullable|string|max:10',
-            'instrucciones' => 'nullable|string|max:255'
+            // Examen previo - Distancia
+            'exam_old_distancia_esfera_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_cilindro_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_eje_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_esfera_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_cilindro_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_eje_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_dip' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            // Examen previo - Cerca
+            'exam_old_cerca_esfera_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_cilindro_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_eje_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_esfera_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_cilindro_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_eje_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_dip' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            // Examen actual - Distancia
+            'exam_new_distancia_esfera_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_cilindro_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_eje_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_esfera_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_cilindro_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_eje_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_dip' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            // Examen actual - Cerca
+            'exam_new_cerca_esfera_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_cilindro_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_eje_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_esfera_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_cilindro_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_eje_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_dip' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            // Campos adicionales
+            'instrucciones' => 'nullable|string|max:255',
+            'adiciones' => 'nullable|string|max:255'
         ]);
         
         $refraccion = Refraccion::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $refraccion
+        ]);
+    }
+    
+    public function update(Request $request, Refraccion $refraccion)
+    {
+        $validated = $request->validate([
+            'consulta_id' => 'required|exists:consultas,id',
+            // Examen previo - Distancia
+            'exam_old_distancia_esfera_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_cilindro_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_eje_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_esfera_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_cilindro_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_eje_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_distancia_dip' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            // Examen previo - Cerca
+            'exam_old_cerca_esfera_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_cilindro_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_eje_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_esfera_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_cilindro_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_eje_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_old_cerca_dip' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            // Examen actual - Distancia
+            'exam_new_distancia_esfera_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_cilindro_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_eje_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_esfera_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_cilindro_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_eje_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_distancia_dip' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            // Examen actual - Cerca
+            'exam_new_cerca_esfera_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_cilindro_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_eje_od' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_esfera_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_cilindro_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_eje_oi' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            'exam_new_cerca_dip' => 'nullable|regex:/^[+-]?\d{1,3}(?:\.\d{1,2})?$/',
+            // Campos adicionales
+            'instrucciones' => 'nullable|string|max:255',
+            'adiciones' => 'nullable|string|max:255'
+        ]);
+        
+        $refraccion->update($validated);
 
         return response()->json([
             'success' => true,

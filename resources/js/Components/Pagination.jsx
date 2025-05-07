@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 
-export default function Pagination({ links, ...props }) {
+export default function Pagination({ links, only = [], ...props }) {
     // Si no hay links o no es un array, no mostrar nada
     if (!links || !Array.isArray(links)) {
         return null;
@@ -21,7 +21,7 @@ export default function Pagination({ links, ...props }) {
                         href={links[0].url}
                         preserveScroll
                         preserveState
-                        only={['farmacos', 'filters']}
+                        only={only}
                         className="inline-flex items-center pt-4 pr-1 text-sm font-medium text-gray-500 border-t-2 border-transparent hover:text-gray-700 hover:border-gray-300"
                     >
                         &laquo; Anterior
@@ -37,7 +37,7 @@ export default function Pagination({ links, ...props }) {
                         href={link.url || '#'}
                         preserveScroll
                         preserveState
-                        only={['farmacos', 'filters']}
+                        only={only}
                         className={`inline-flex items-center px-4 pt-4 text-sm font-medium border-t-2 ${
                             link.active
                                 ? 'border-blue-500 text-blue-600'
@@ -56,7 +56,7 @@ export default function Pagination({ links, ...props }) {
                         href={links[links.length - 1].url}
                         preserveScroll
                         preserveState
-                        only={['farmacos', 'filters']}
+                        only={only}
                         className="inline-flex items-center pt-4 pl-1 text-sm font-medium text-gray-500 border-t-2 border-transparent hover:text-gray-700 hover:border-gray-300"
                     >
                         Siguiente &raquo;
