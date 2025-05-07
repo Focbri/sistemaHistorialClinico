@@ -238,97 +238,111 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                {consultas.data.length > 0 ? (
-                                            consultas.data.map((item) => (
-                                                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                                        {item.tipo_consulta ? (
-                                                            <span className={`px-2 py-1 rounded-full text-xs ${
-                                                                item.tipo_consulta === 'inicio' ? 'bg-blue-100 text-blue-800' :
-                                                                item.tipo_consulta === 'evolucion' ? 'bg-green-100 text-green-800' :
-                                                                'bg-gray-100 text-gray-800'
-                                                            }`}>
-                                                                {item.tipo_consulta === 'inicio' ? 'C. Inicio' : 
-                                                                item.tipo_consulta === 'evolucion' ? 'C. Evolución' : 'Cirugía'}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                                                                Cirugía
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">{item.codigo_historial}</td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                                        {new Date(item.created_at).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                                        {item.paciente.nombres} {item.paciente.apellido_paterno}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                                        {item.paciente.dni}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                                        <div className="flex items-center space-x-2">
-                                                            <Link
-                                                                href={item.tipo_consulta ? 
-                                                                    route('consultas.show', item.id) : 
-                                                                    route('cirugias.show', item.id)}
-                                                                className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                                                            >
-                                                                Ver
-                                                            </Link>
-                                                            <Link
-                                                                href={route('consultas.edit', item.id)}
-                                                                className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                                            >
-                                                                Editar
-                                                            </Link>
-                                                            {(auth.user.role === 'admin' || auth.user.role === 'root') && (
-                                                                <button
-                                                                    onClick={() => openDeleteModal(item.id)}
-                                                                    className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                                                                >
-                                                                    Eliminar
-                                                                </button>
-                                                            )}
-                                                            <button
-                                                                onClick={() => descargarPDF(item.id)}
-                                                                className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                            >
-                                                                PDF Consulta
-                                                            </button>
-                                                            {/* Botón para PDF de receta (solo si existe) */}
-                                                            {item.receta && (
-                                                                <button
-                                                                    onClick={() => descargarPDFReceta(item.id)}
-                                                                    className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
-                                                                >
-                                                                    PDF Receta
-                                                                </button>
-                                                            )}
-                                                            
-                                                            {/* Botón para crear receta (si no existe) */}
-                                                            {!item.receta && (
-                                                                <Link
-                                                                    href={route('consultas.edit', item.id)}
-                                                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                                    data={{ activeTab: 'recetas' }}
-                                                                >
-                                                                    Crear Receta
-                                                                </Link>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="6" className="px-4 py-4 text-center text-sm text-gray-500">
-                                                    No se encontraron consultas.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
+    {consultas.data.length > 0 ? (
+        consultas.data.map((item) => {
+            const horasTranscurridas = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60);
+            const puedeEditar = ['admin', 'medico'].includes(auth.user.role) || horasTranscurridas <= 48;
+            
+            return (
+                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                        {item.tipo_consulta ? (
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                                item.tipo_consulta === 'inicio' ? 'bg-blue-100 text-blue-800' :
+                                item.tipo_consulta === 'evolucion' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                            }`}>
+                                {item.tipo_consulta === 'inicio' ? 'C. Inicio' : 
+                                item.tipo_consulta === 'evolucion' ? 'C. Evolución' : 'Cirugía'}
+                            </span>
+                        ) : (
+                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                Cirugía
+                            </span>
+                        )}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">{item.codigo_historial}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                        {new Date(item.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                        {item.paciente.nombres} {item.paciente.apellido_paterno}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                        {item.paciente.dni}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                        <div className="flex items-center space-x-2">
+                            <Link
+                                href={item.tipo_consulta ? 
+                                    route('consultas.show', item.id) : 
+                                    route('cirugias.show', item.id)}
+                                className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                            >
+                                Ver
+                            </Link>
+                            {puedeEditar ? (
+                                <Link
+                                    href={route('consultas.edit', item.id)}
+                                    className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600"
+                                >
+                                    Editar
+                                </Link>
+                            ) : (
+                                <button
+                                    onClick={() => {
+                                        alert(`No puedes editar esta consulta porque han pasado ${Math.floor(horasTranscurridas)} horas desde su creación.\n\nSolo los administradores y médicos pueden editar consultas después de 48 horas.`);
+                                    }}
+                                    className="px-3 py-1 text-white bg-gray-400 rounded cursor-not-allowed"
+                                    title="No puedes editar después de 48 horas"
+                                >
+                                    Editar
+                                </button>
+                            )}
+                            {(auth.user.role === 'admin' || auth.user.role === 'root') && (
+                                <button
+                                    onClick={() => openDeleteModal(item.id)}
+                                    className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                >
+                                    Eliminar
+                                </button>
+                            )}
+                            <button
+                                onClick={() => descargarPDF(item.id)}
+                                className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            >
+                                PDF Consulta
+                            </button>
+                            {item.receta && (
+                                <button
+                                    onClick={() => descargarPDFReceta(item.id)}
+                                    className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
+                                >
+                                    PDF Receta
+                                </button>
+                            )}
+                            {!item.receta && (
+                                <Link
+                                    href={route('consultas.edit', item.id)}
+                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                    data={{ activeTab: 'recetas' }}
+                                >
+                                    Crear Receta
+                                </Link>
+                            )}
+                        </div>
+                    </td>
+                </tr>
+            );
+        })
+    ) : (
+        <tr>
+            <td colSpan="6" className="px-4 py-4 text-center text-sm text-gray-500">
+                No se encontraron consultas.
+            </td>
+        </tr>
+    )}
+</tbody>
                                 </table>
                             </div>
 

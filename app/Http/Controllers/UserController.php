@@ -3,121 +3,136 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use \App\Models\Consulta;
-use \App\Models\User;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use \App\Models\Paciente;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class UserController extends Controller
 {
     public function index(Request $request)
     {
-        // Obtén todos los usuarios excepto el que tiene un ID específico
-        $users = User::where('id', '!=', 1)->get(); // Cambia 1 por el ID del usuario que no quieres mostrar
+        // Verificar autenticación y rol
+        if (!Auth::check() || Auth::user()->role !== 'admin') {
+            abort(403, 'No tienes permiso para acceder a esta sección');
+        }
 
+        $users = User::all();
+        
         return Inertia::render('Admin/Users/Index', [
-            'auth' => [
-                'user' => Auth::user(),
-            ],
+            'auth' => ['user' => Auth::user()],
             'users' => $users,
+            'roles' => User::ROLES
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('Admin/Users/Create');
+        if (!Auth::check() || Auth::user()->role !== 'admin') {
+            abort(403);
+        }
+
+        return Inertia::render('Admin/Users/Create', [
+            'roles' => User::ROLES
+        ]);
     }
 
     public function store(Request $request)
     {
-        // Validar los datos del formulario
+        if (!Auth::check() || Auth::user()->role !== 'admin') {
+            abort(403);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-            'role' => 'required|in:admin,medico', // Solo permite 'admin' o 'usuario'
+            'password' => ['required', 'confirmed', Password::defaults()],
+            'role' => 'required|in:'.implode(',', array_keys(User::ROLES)),
         ]);
 
-        // Crear el usuario
-        \App\Models\User::create([
+        User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-            'role' => $request->role, // Asignar el rol seleccionado
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
         ]);
 
-        // Redirigir con un mensaje de éxito
         return redirect()->route('admin.users.index')
             ->with('success', 'Usuario creado exitosamente.');
     }
 
     public function show($id)
     {
-        // Obtener el usuario por su ID
-        $user = \App\Models\User::findOrFail($id);
+        $user = User::findOrFail($id);
+        
+        // Solo admin o el mismo usuario pueden ver el perfil
+        if (!Auth::check() || (Auth::user()->role !== 'admin' && Auth::id() != $id)) {
+            abort(403);
+        }
 
-        // Retornar la vista con los detalles del usuario
         return Inertia::render('Admin/Users/Show', [
             'user' => $user,
         ]);
     }
 
-    public function destroy($id)
-    {
-        // Obtener el usuario por su ID
-        $user = \App\Models\User::findOrFail($id);
-
-        // Eliminar el usuario
-        $user->delete();
-
-        // Redirigir con un mensaje de éxito
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Usuario eliminado exitosamente.');
-    }
-
     public function edit($id)
     {
-        // Obtener el usuario por su ID
-        $user = \App\Models\User::findOrFail($id);
+        $user = User::findOrFail($id);
+        
+        // Solo admin puede editar, y no puede editar a otros admins
+        if (!Auth::check() || Auth::user()->role !== 'admin' || $user->role === 'admin') {
+            abort(403);
+        }
 
-        // Retornar la vista con los datos del usuario
         return Inertia::render('Admin/Users/Edit', [
             'user' => $user,
+            'roles' => User::ROLES
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        // Obtener el usuario por su ID
-        $user = \App\Models\User::findOrFail($id);
+        $user = User::findOrFail($id);
+        
+        if (!Auth::check() || Auth::user()->role !== 'admin' || $user->role === 'admin') {
+            abort(403);
+        }
 
-        // Validar los datos del formulario
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'password' => ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-            'role' => 'required|in:admin,medico', // Solo permite 'admin' o 'usuario'
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
+            'password' => ['nullable', 'confirmed', Password::defaults()],
+            'role' => 'required|in:'.implode(',', array_keys(User::ROLES)),
         ]);
 
-        // Actualizar los datos del usuario
-        $user->update([
+        $updateData = [
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->role,
-        ]);
+        ];
 
-        // Actualizar la contraseña si se proporciona
         if ($request->password) {
-            $user->update([
-                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-            ]);
+            $updateData['password'] = Hash::make($request->password);
         }
 
-        // Redirigir con un mensaje de éxito
+        $user->update($updateData);
+
         return redirect()->route('admin.users.index')
             ->with('success', 'Usuario actualizado exitosamente.');
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        
+        if (!Auth::check() || Auth::user()->role !== 'admin' || $user->role === 'admin') {
+            abort(403);
+        }
+
+        $user->delete();
+
+        return redirect()->route('admin.users.index')
+            ->with('success', 'Usuario eliminado exitosamente.');
     }
 }

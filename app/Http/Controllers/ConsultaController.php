@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use phpDocumentor\Reflection\DocBlock\Tags\Var_;
+use Illuminate\Support\Carbon;
 
 class ConsultaController extends Controller
 {
@@ -206,6 +207,11 @@ public function edit($id)
     
     return Inertia::render('Consultas/Edit', [
         'consulta' => $consulta,
+        'auth' => [
+            'user' => [
+                'role' => Auth::user()->role // Usar el facade Auth
+            ]
+        ]
     ]);
 }
 // Guardar la consulta de inicio
@@ -431,9 +437,6 @@ public function store(Request $request)
                 ];
             }
         }
-
-        // Contar las consultas previas del paciente
-        $numeroConsultas = Consulta::where('paciente_id', $paciente->id)->count();
 
         // Generar código de historial si es la primera consulta
         if (!$paciente->codigo_historial) {
@@ -905,6 +908,14 @@ public function update(Request $request, $id)
         
         // Buscar la consulta
         $consulta = Consulta::findOrFail($id);
+
+        // Verificación en el backend
+        if (!in_array(Auth::user()->role, ['admin', 'medico'])) {
+            $horasTranscurridas = Carbon::parse($consulta->created_at)->diffInHours(now());
+            if ($horasTranscurridas > 48) {
+                return back()->with('error', 'No puedes editar esta consulta después de 48 horas');
+            }
+        }
 
         // 1. Actualizar campos directos de biomicroscopía
         $biomicroscopiaFields = [

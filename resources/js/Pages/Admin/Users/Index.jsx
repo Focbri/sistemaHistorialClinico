@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 
-export default function Index({ auth, users }) {
+export default function Index({ auth, users, roles }) {
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -53,7 +53,7 @@ export default function Index({ auth, users }) {
                                                     {user.email}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-gray-900">
-                                                    {user.role}
+                                                    {roles[user.role] || user.role} {/* Muestra la etiqueta legible */}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-gray-900">
                                                     <div className="flex items-center space-x-2">

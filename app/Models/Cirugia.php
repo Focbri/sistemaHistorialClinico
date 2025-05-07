@@ -36,10 +36,4 @@ class Cirugia extends Model
     {
         return $this->belongsTo(Paciente::class);
     }
-    /*
-     public function user()
-{
-    return $this->belongsTo(User::class);
-}
-    */
 }

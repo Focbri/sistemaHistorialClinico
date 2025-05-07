@@ -12,11 +12,14 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    const ROLES = [
+        'admin' => 'Administrador',
+        'medico' => 'Médico',
+        'medico_externo' => 'Médico Externo',
+        'recepcionista' => 'Recepcionista',
+        'invitado' => 'Invitado'
+    ];
+
     protected $fillable = [
         'name',
         'email',
@@ -24,21 +27,11 @@ class User extends Authenticatable
         'role', // Agregar el campo 'role'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -63,4 +56,27 @@ class User extends Authenticatable
     {
         return $this->role === 'medico';
     }
+
+    /**
+     * Verifica si el usuario es un médico externo.
+     */
+    public function isMedicoExterno(): bool
+    {
+        return $this->role === 'medico_externo';
+    }
+    /**
+     * Verifica si el usuario es recepcionista.
+     */
+    public function isRecepcionista(): bool
+    {
+        return $this->role === 'recepcionista';
+    }
+    /**
+     * Verifica si el usuario es invitado.
+     */
+    public function isInvitado(): bool
+    {
+        return $this->role === 'invitado';
+    }
+    
 }

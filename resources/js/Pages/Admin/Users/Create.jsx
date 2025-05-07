@@ -14,6 +14,15 @@ export default function Create({ auth }) {
         role: 'medico', // Valor por defecto
     });
 
+     // Definimos los roles disponibles
+     const ROLES = {
+        'admin': 'Administrador',
+        'medico': 'Médico',
+        'medico_externo': 'Médico Externo',
+        'recepcionista': 'Recepcionista',
+        'invitado': 'Invitado'
+    };
+
     const submit = (e) => {
         e.preventDefault();
         post(route('admin.users.store'), {
@@ -103,11 +112,14 @@ export default function Create({ auth }) {
                                         name="role"
                                         value={data.role}
                                         onChange={(e) => setData('role', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         required
                                     >
-                                        <option value="admin">Administrador</option>
-                                        <option value="medico">Medico</option>
+                                        {Object.entries(ROLES).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
                                     </select>
                                     <InputError message={errors.role} className="mt-2" />
                                 </div>

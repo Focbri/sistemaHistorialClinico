@@ -1,17 +1,17 @@
 import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-export default function Inicio() {
+export default function Inicio({auth}) {
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout
+            user={auth.user} 
+        >
             <Head title="Inicio" />
             
             <div className="py-12 lg:py-10 xl:py-20 2xl:py-20">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900 lg:p-0">
-
-                            
+                        <div className="p-6 text-gray-900 lg:p-0">                            
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {/* Gestión de Pacientes */}
                                 <Link 
@@ -33,15 +33,17 @@ export default function Inicio() {
                                     <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Registros médicos completos</p>
                                 </Link>
                                 
-                                {/* Reportes */}
-                                <Link 
-                                    href={route('dashboard.index')} 
-                                    className="bg-purple-100 hover:bg-purple-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
-                                >
-                                    <div className="text-5xl mb-4 2xl:text-8xl">📊</div>
-                                    <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Reportes</h2>
-                                    <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Generación de reportes estadísticos</p>
-                                </Link>
+                                {/* Reportes - Solo visible si no es médico_externo */}
+                                {[1, 2].includes(auth.user.id) && (
+                                    <Link 
+                                        href={route('dashboard.index')} 
+                                        className="bg-purple-100 hover:bg-purple-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
+                                    >
+                                        <div className="text-5xl mb-4 2xl:text-8xl">📊</div>
+                                        <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Reportes</h2>
+                                        <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Generación de reportes estadísticos</p>
+                                    </Link>
+                                )}
                                 
                                 {/* Gestión de Usuarios */}
                                 <Link 
