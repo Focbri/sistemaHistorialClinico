@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class RecetaController extends Controller
 {
@@ -165,78 +166,136 @@ protected function actualizarStock(Farmaco $farmaco, $cantidad)
     return $cantidadRestante === 0;
 }
 
-    public function generarPDFReceta($id)
-    {
-        try {
-            $receta = Receta::with(['consulta.paciente', 'medicamentos.farmaco'])->findOrFail($id);
+public function generarPDFReceta($id)
+{
+    try {
+        // 1. Obtener datos básicos de la receta
+        $receta = Receta::with(['consulta.paciente', 'medico'])
+                      ->findOrFail($id);
 
-            $pdf = Pdf::loadView('recetas.pdf', [
-                'receta' => $receta,
-                'paciente' => $receta->consulta->paciente,
-                'cie10Codes' => json_decode($receta->cie10_codes, true) ?? [],
-                'medicamentos' => $receta->medicamentos, // Ahora viene de la relación
-                'fechaActual' => now()->format('d/m/Y'),
-                'codigoReceta' => 'REC-' . str_pad($receta->id, 6, '0', STR_PAD_LEFT)
-            ]);
+        // 2. Obtener medicamentos (versión adaptada a tu estructura)
+        $medicamentos = DB::table('medicamentos_receta')
+                        ->where('receta_id', $id)
+                        ->select([
+                            'nombre_comercial',
+                            'cantidad',
+                            'dosis',
+                            'frecuencia',
+                            'duracion',
+                            'farmaco_id' // Para referencia aunque no lo usemos
+                        ])
+                        ->get();
 
-            return $pdf->stream('receta.pdf');
+        // 3. Opcional: Obtener datos adicionales de fármacos si existen
+        $farmacosIds = $medicamentos->pluck('farmaco_id')->filter()->unique();
+        $farmacosData = DB::table('farmacos')
+                         ->whereIn('id', $farmacosIds)
+                         ->select('id', 'componente_activo')
+                         ->get()
+                         ->keyBy('id');
 
-        } catch (\Exception $e) {
-            Log::error('Error al generar receta PDF: ' . $e->getMessage());
+        // 4. Preparar datos para la vista
+        $data = [
+            'receta' => $receta,
+            'paciente' => $receta->consulta->paciente,
+            'medico' => $receta->medico,
+            'cie10Codes' => $receta->cie10_codes ? json_decode($receta->cie10_codes, true) : [],
+            'medicamentos' => $medicamentos->map(function($med) use ($farmacosData) {
+                return [
+                    'nombre_comercial' => $med->nombre_comercial,
+                    'cantidad' => $med->cantidad,
+                    'dosis' => $med->dosis,
+                    'frecuencia' => $med->frecuencia,
+                    'duracion' => $med->duracion,
+                    'componente_activo' => $med->farmaco_id ? 
+                        ($farmacosData[$med->farmaco_id]->componente_activo ?? null) : null
+                ];
+            }),
+            'fechaActual' => now()->format('d/m/Y'),
+            'codigoReceta' => 'REC-'.str_pad($receta->id, 6, '0', STR_PAD_LEFT)
+        ];
+
+        // 5. Generar PDF
+        $pdf = PDF::loadView('recetas.pdf', $data);
+        return $pdf->download("Receta_{$receta->consulta->paciente->dni}.pdf");
+
+    } catch (\Exception $e) {
+        Log::error('Error al generar PDF', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al generar PDF: '.$e->getMessage()
+        ], 500);
+    }
+}
+
+public function getRecetaPorConsulta($consultaId)
+{
+    try {
+        Log::info('Buscando receta para consulta: '.$consultaId);
+        
+        $receta = Receta::with(['medicamentos' => function($query) {
+                $query->with('farmaco');
+            }])
+            ->where('consulta_id', $consultaId)
+            ->first();
+
+        Log::info('Receta encontrada: '.($receta ? $receta->id : 'null'));
+
+        if (!$receta) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+                'message' => 'No se encontró receta para esta consulta'
+            ], 200);
         }
-    }
 
-    public function getRecetaPorConsulta($consultaId)
-    {
-        try {
-            $receta = Receta::with('medicamentos')->where('consulta_id', $consultaId)->first();
-    
-            if (!$receta) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se encontró receta para esta consulta'
-                ], 404);
-            }
-    
-            return response()->json([
-                'success' => true,
-                'receta' => [
-                    'id' => $receta->id,
-                    'consulta_id' => $receta->consulta_id,
-                    'cie10_codes' => json_decode($receta->cie10_codes, true) ?? [],
-                    'medicamentos' => $receta->medicamentos->map(function($med) {
-                        return [
-                            'id' => $med->id,
-                            'farmaco_id' => $med->farmaco_id,
-                            'nombre_comercial' => $med->nombre_comercial,
-                            'cantidad' => $med->cantidad,
-                            'dosis' => $med->dosis,
-                            'frecuencia' => $med->frecuencia,
-                            'duracion' => $med->duracion,
-                            'es_manual' => $med->es_manual
-                        ];
-                    })
-                ]
-            ]);
-    
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al buscar receta: ' . $e->getMessage()
-            ], 500);
-        }
+        // Asegurar que medicamentos es siempre una colección
+        $medicamentos = $receta->medicamentos ?: collect();
+
+        return response()->json([
+            'success' => true,
+            'id' => $receta->id,
+            'receta' => [
+                'id' => $receta->id,
+                'consulta_id' => $receta->consulta_id,
+                'cie10_codes' => $receta->cie10_codes ?? [],
+                'medicamentos' => $medicamentos->map(function($med) {
+                    return [
+                        'id' => $med->id,
+                        'farmaco_id' => $med->farmaco_id,
+                        'nombre_comercial' => $med->nombre_comercial,
+                        'cantidad' => $med->cantidad,
+                        'dosis' => $med->dosis,
+                        'frecuencia' => $med->frecuencia,
+                        'duracion' => $med->duracion,
+                        'es_manual' => $med->es_manual,
+                        'farmaco' => $med->farmaco ? [
+                            'id' => $med->farmaco->id,
+                            'nombre_comercial' => $med->farmaco->nombre_comercial,
+                            'nombre_generico' => $med->farmaco->nombre_generico // Asegúrate de incluir esto
+                        ] : null
+                    ];
+                })
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error al buscar receta: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al buscar receta: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     // Métodos protegidos para funcionalidad interna
     protected function generarPDF($receta, $medico)
     {
         $images = [
             'logo' => $this->imageToBase64(public_path('img/logoVisualOsf.png')),
-            'firma' => $this->imageToBase64(public_path('img/firma_medico.png'))
+            //'firma' => $this->imageToBase64(public_path('img/firma_medico.png'))
         ];
 
         // Convertir cie10_codes a array si es necesario

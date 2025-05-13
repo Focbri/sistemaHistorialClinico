@@ -66,7 +66,7 @@ export default function PacientesShow({ auth, paciente }) {
                                             </div>
 
                                             <div className="mb-4">
-                                                <label className="block text-sm font-medium text-gray-700">Sexo</label>
+                                                <label className="block text-sm font-medium text-gray-700">Género</label>
                                                 <p className="mt-1">{paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
                                             </div>
                                         </div>

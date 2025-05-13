@@ -38,28 +38,47 @@ export default function ConsultasIndex({ auth, consultas, links }) {
         }
     };
 
-    // Función para descargar PDF con notificación
-    const descargarPDF = async (id) => {
+const descargarPDFConsulta = async (consultaId) => {
+    try {
+        setPdfNotificationMessage('Generando PDF de consulta...');
+        setShowPdfNotification(true);
+        
+        // Primero verificar si la consulta existe
+        const response = await fetch(route('consultas.show', consultaId));
+        if (!response.ok) {
+            throw new Error('Consulta no encontrada');
+        }
+        
+        // Luego descargar el PDF
+        const pdfWindow = window.open(route('consultas.pdf', { consulta: consultaId }), '_blank');
+        
+        if (!pdfWindow || pdfWindow.closed) {
+            // Fallback para navegadores que bloquean popups
+            window.location.href = route('consultas.pdf', { consulta: consultaId });
+        }
+        
+        setPdfNotificationMessage('PDF generado con éxito');
+    } catch (error) {
+        console.error('Error:', error);
+        setPdfNotificationMessage(error.message || 'Error al generar el PDF');
+    } finally {
+        setTimeout(() => setShowPdfNotification(false), 5000);
+    }
+};
+
+    const descargarPDFCirugia = async (cirugiaId) => {
         try {
-            const response = await fetch(route('consultas.generarPDF', id));
-            const result = await response.json();
-    
-            if (result.success) {
-                setPdfNotificationMessage('PDF generado y guardado correctamente');
-                setShowPdfNotification(true);
-                
-                // Ocultar notificación después de 5 segundos
-                setTimeout(() => {
-                    setShowPdfNotification(false);
-                }, 5000);
-            } else {
-                setPdfNotificationMessage(result.message || 'Error al generar el PDF');
-                setShowPdfNotification(true);
-            }
-        } catch (error) {
-            console.error('Error al generar el PDF:', error);
-            setPdfNotificationMessage('Error al generar el PDF');
+            setPdfNotificationMessage('Generando reporte de cirugía...');
             setShowPdfNotification(true);
+            
+            window.open(route('cirugias.pdf', { cirugia: cirugiaId }), '_blank');
+            
+            setPdfNotificationMessage('Reporte de cirugía generado');
+        } catch (error) {
+            console.error('Error al generar PDF de cirugía:', error);
+            setPdfNotificationMessage('Error al generar el reporte');
+        } finally {
+            setTimeout(() => setShowPdfNotification(false), 5000);
         }
     };
 
@@ -68,31 +87,43 @@ export default function ConsultasIndex({ auth, consultas, links }) {
             setPdfNotificationMessage('Preparando receta médica...');
             setShowPdfNotification(true);
             
-            // 1. Verificar si existe receta para esta consulta
-            const response = await fetch(route('recetas.get-by-consulta', { consultaId }));
-            
+            // 1. Verificar si existe receta
+            const response = await fetch(route('recetas.get-by-consulta', { consultaId }), {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+            });
+    
             if (!response.ok) {
-                throw new Error('Error al verificar receta');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Error al verificar receta');
             }
     
             const data = await response.json();
             
-            if (!data.success) {
+            // Verificar estructura de respuesta
+            if (!data.success || !data.receta) {
                 throw new Error(data.message || 'No existe receta para esta consulta');
             }
     
-            // 2. Generar el PDF - usar el nombre correcto de la ruta
-            window.open(route('recetas.generate-pdf', { id: data.id }), '_blank');
+            // 2. Generar el PDF - verificar que data.receta.id existe
+            if (!data.receta.id) {
+                throw new Error('ID de receta no válido');
+            }
+    
+            // Abrir en nueva pestaña
+            window.open(route('recetas.generate-pdf', { id: data.receta.id }), '_blank');
             
             setPdfNotificationMessage('Receta generada correctamente');
         } catch (error) {
             console.error('Error al generar receta:', error);
             setPdfNotificationMessage(error.message);
             
-            // Redirigir a edición para crear receta si no existe
             if (error.message.includes('No existe receta')) {
                 router.visit(route('consultas.edit', consultaId), {
-                    data: { activeTab: 'recetas' }
+                    data: { activeTab: 'recetas' },
+                    preserveScroll: true
                 });
             }
         } finally {
@@ -211,15 +242,21 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                 <div className="flex space-x-2">
                                     <Link
                                         href={route('cirugias.create')}
-                                        className="px-4 py-2 text-white bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="px-4 py-2 flex justify-center items-center gap-2 text-white bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
                                     >
-                                        Crear Nueva Cirugía
+                                        <span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 16 16"><path fill="#fff" d="M7.5 4a.5.5 0 0 1 .5.5V7h2.5a.5.5 0 0 1 0 1H8v2.5a.5.5 0 0 1-1 0V8H4.5a.5.5 0 0 1 0-1H7V4.5a.5.5 0 0 1 .5-.5"></path><path fill="#fff" fillRule="evenodd" d="M0 6.4c0-2.24 0-3.36.436-4.22A4.03 4.03 0 0 1 2.186.43c.856-.436 1.98-.436 4.22-.436h2.2c2.24 0 3.36 0 4.22.436c.753.383 1.36.995 1.75 1.75c.436.856.436 1.98.436 4.22v2.2c0 2.24 0 3.36-.436 4.22a4.03 4.03 0 0 1-1.75 1.75c-.856.436-1.98.436-4.22.436h-2.2c-2.24 0-3.36 0-4.22-.436a4.03 4.03 0 0 1-1.75-1.75C0 11.964 0 10.84 0 8.6zM6.4 1h2.2c1.14 0 1.93 0 2.55.051c.605.05.953.142 1.22.276a3.02 3.02 0 0 1 1.31 1.31c.134.263.226.611.276 1.22c.05.617.051 1.41.051 2.55v2.2c0 1.14 0 1.93-.051 2.55c-.05.605-.142.953-.276 1.22a3 3 0 0 1-1.31 1.31c-.263.134-.611.226-1.22.276c-.617.05-1.41.051-2.55.051H6.4c-1.14 0-1.93 0-2.55-.05c-.605-.05-.953-.143-1.22-.277a3 3 0 0 1-1.31-1.31c-.134-.263-.226-.61-.276-1.22c-.05-.617-.051-1.41-.051-2.55v-2.2c0-1.14 0-1.93.051-2.55c.05-.605.142-.953.276-1.22a3.02 3.02 0 0 1 1.31-1.31c.263-.134.611-.226 1.22-.276C4.467 1.001 5.26 1 6.4 1" clipRule="evenodd"></path></svg>
+                                        </span>
+                                        <span>Cirugía</span>
                                     </Link>
                                     <Link
                                         href={route('consultas.create')}
-                                        className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="px-4 py-2 flex justify-center items-center gap-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                                     >
-                                        Crear Nueva Consulta
+                                        <span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 16 16"><path fill="#fff" d="M7.5 4a.5.5 0 0 1 .5.5V7h2.5a.5.5 0 0 1 0 1H8v2.5a.5.5 0 0 1-1 0V8H4.5a.5.5 0 0 1 0-1H7V4.5a.5.5 0 0 1 .5-.5"></path><path fill="#fff" fillRule="evenodd" d="M0 6.4c0-2.24 0-3.36.436-4.22A4.03 4.03 0 0 1 2.186.43c.856-.436 1.98-.436 4.22-.436h2.2c2.24 0 3.36 0 4.22.436c.753.383 1.36.995 1.75 1.75c.436.856.436 1.98.436 4.22v2.2c0 2.24 0 3.36-.436 4.22a4.03 4.03 0 0 1-1.75 1.75c-.856.436-1.98.436-4.22.436h-2.2c-2.24 0-3.36 0-4.22-.436a4.03 4.03 0 0 1-1.75-1.75C0 11.964 0 10.84 0 8.6zM6.4 1h2.2c1.14 0 1.93 0 2.55.051c.605.05.953.142 1.22.276a3.02 3.02 0 0 1 1.31 1.31c.134.263.226.611.276 1.22c.05.617.051 1.41.051 2.55v2.2c0 1.14 0 1.93-.051 2.55c-.05.605-.142.953-.276 1.22a3 3 0 0 1-1.31 1.31c-.263.134-.611.226-1.22.276c-.617.05-1.41.051-2.55.051H6.4c-1.14 0-1.93 0-2.55-.05c-.605-.05-.953-.143-1.22-.277a3 3 0 0 1-1.31-1.31c-.134-.263-.226-.61-.276-1.22c-.05-.617-.051-1.41-.051-2.55v-2.2c0-1.14 0-1.93.051-2.55c.05-.605.142-.953.276-1.22a3.02 3.02 0 0 1 1.31-1.31c.263-.134.611-.226 1.22-.276C4.467 1.001 5.26 1 6.4 1" clipRule="evenodd"></path></svg>
+                                        </span>
+                                        <span>Consulta</span>
                                     </Link>
                                 </div>
                             </div>
@@ -279,14 +316,14 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                     route('cirugias.show', item.id)}
                                 className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                             >
-                                Ver
+                                <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M12 9a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5a5 5 0 0 1 5-5a5 5 0 0 1 5 5a5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"></path></svg>
                             </Link>
                             {puedeEditar ? (
                                 <Link
                                     href={route('consultas.edit', item.id)}
                                     className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600"
                                 >
-                                    Editar
+                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
                                 </Link>
                             ) : (
                                 <button
@@ -304,31 +341,57 @@ export default function ConsultasIndex({ auth, consultas, links }) {
                                     onClick={() => openDeleteModal(item.id)}
                                     className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                                 >
-                                    Eliminar
+                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zM9 17h2V8H9zm4 0h2V8h-2zM7 6v13z"></path></svg>
                                 </button>
                             )}
                             <button
-                                onClick={() => descargarPDF(item.id)}
-                                className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                onClick={() => descargarPDFConsulta(item.id)}
+                                className="px-3 py-1 flex justify-center items-center text-white bg-green-500 rounded hover:bg-green-600 disabled:bg-green-300"
+                                title="Descargar PDF de consulta"
+                                disabled={showPdfNotification && pdfNotificationMessage.includes('Generando')}
                             >
-                                PDF Consulta
+                                <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
+                                    <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
+                                </svg>
+                                <span className="ml-1">Consulta</span>
                             </button>
                             {item.receta && (
                                 <button
                                     onClick={() => descargarPDFReceta(item.id)}
-                                    className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
+                                    className="px-3 py-1 flex justify-center items-center bg-purple-500 text-white rounded hover:bg-purple-600"
                                 >
-                                    PDF Receta
+                                    <span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
+                                    </span>
+                                    <span>Receta</span>
+                                </button>
+                            )}
+                            {/* Botón para descargar PDF de refracción */}
+                            {item.refraccion && (
+                                <button
+                                    onClick={() => descargarPDFRefraccion(item.id)}
+                                    className="px-3 py-1 flex justify-center items-center text-white bg-teal-500 rounded hover:bg-teal-600"
+                                    title="Descargar examen de refracción"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
+                                        <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
+                                    </svg>
+                                    <span className="ml-1">Refracción</span>
                                 </button>
                             )}
                             {!item.receta && (
-                                <Link
-                                    href={route('consultas.edit', item.id)}
-                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                    data={{ activeTab: 'recetas' }}
+                                <span className='hidden'>crear receta</span>
+                            )}
+                            {!item.tipo_consulta && (
+                                <button
+                                    onClick={() => descargarPDFCirugia(item.id)}
+                                    className="px-3 py-1 flex justify-center items-center text-white bg-indigo-500 rounded hover:bg-indigo-600"
                                 >
-                                    Crear Receta
-                                </Link>
+                                    <span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
+                                    </span>
+                                    <span>Cirugía</span>
+                                </button>
                             )}
                         </div>
                     </td>

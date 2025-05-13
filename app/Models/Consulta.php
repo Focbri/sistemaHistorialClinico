@@ -11,6 +11,7 @@ use App\Models\Paciente;
 use App\Models\User;
 use App\Models\Receta;
 use App\Models\Examen;
+use Illuminate\Support\Facades\Auth;
 
 class Consulta extends Model
 {
@@ -23,6 +24,7 @@ class Consulta extends Model
 
     protected $fillable = [  
         'paciente_id',
+        'user_id',
         'codigo_historial',
         'antecedentes_personales_hta',
         'antecedentes_personales_alergias',
@@ -154,6 +156,7 @@ class Consulta extends Model
         return [
             'paciente_id' => 'required|exists:pacientes,id',
             'codigo_consulta' => 'required|string|max:50',
+            'user_id' => 'sometimes|exists:users,id',
             'antecedentes_personales_hta' => 'nullable|string',
             'antecedentes_personales_alergias' => 'nullable|string',
             'antecedentes_personales_dm' => 'nullable|string',
@@ -277,4 +280,26 @@ class Consulta extends Model
     {
         return $this->hasOne(Receta::class, 'consulta_id');
     }
+
+    protected static function boot()
+{
+    parent::boot();
+
+    static::creating(function ($consulta) {
+        if (\Illuminate\Support\Facades\Auth::check()) { // ← Usando el facade completo
+            $consulta->user_id = \Illuminate\Support\Facades\Auth::id();
+        } else {
+            throw new \Exception('No hay usuario autenticado al crear una consulta');
+        }
+    });
+}
+
+public function refraccion()
+{
+    return $this->hasOne(Refraccion::class);
+}
+public function medico()
+{
+    return $this->belongsTo(User::class, 'medico_id');
+}
 }

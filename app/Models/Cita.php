@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Cita extends Model
 {
@@ -11,7 +12,8 @@ class Cita extends Model
         'medico_id',
         'fecha_hora',
         'motivo',
-        'estado'
+        'estado',
+        'user_id',
     ];
     
     public function paciente()
@@ -22,5 +24,28 @@ class Cita extends Model
     public function medico()
     {
         return $this->belongsTo(User::class, 'medico_id');
+    }
+
+    public function user()
+{
+    return $this->belongsTo(User::class);
+}
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($cita) {
+            // Asignar usuario autenticado
+            if (Auth::check()) {
+                $cita->user_id = Auth::id();
+            } else {
+                throw new \Exception('No hay usuario autenticado al registrar la cirugía');
+            }
+
+            // Obtener el paciente relacionado
+            $paciente = $cita->paciente;
+            
+        });
     }
 }

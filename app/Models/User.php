@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Auth;
 
 class User extends Authenticatable
 {
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role', // Agregar el campo 'role'
+        'created_by', // Agregar el campo 'user_id'
     ];
 
     protected $hidden = [
@@ -39,6 +41,30 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => 'string', // Cast para el campo 'role'
         ];
+    }
+
+    public function creador()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // Relación con usuarios creados por este usuario
+    public function usuariosCreados()
+    {
+        return $this->hasMany(User::class, 'created_by');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            // Auto-asignar el usuario creador si hay alguien autenticado
+            if (Auth::check()) {
+                $user->created_by = Auth::id();
+            }
+            // Si no hay usuario autenticado (ej: seeder), será null
+        });
     }
 
     /**
@@ -77,6 +103,5 @@ class User extends Authenticatable
     public function isInvitado(): bool
     {
         return $this->role === 'invitado';
-    }
-    
+    }    
 }

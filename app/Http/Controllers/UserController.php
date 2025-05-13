@@ -40,11 +40,13 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        if (!Auth::check() || Auth::user()->role !== 'admin') {
-            abort(403);
+        $user = Auth::user();
+    
+        if (!$user || $user->role !== 'admin') {
+            abort(403, 'Acceso no autorizado');
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
@@ -52,10 +54,11 @@ class UserController extends Controller
         ]);
 
         User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
+            'created_by' => Auth::id(), // Asegúrate que created_by esté en $fillable
         ]);
 
         return redirect()->route('admin.users.index')

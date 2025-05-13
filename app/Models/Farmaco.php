@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class Farmaco extends Model
 {
@@ -16,7 +17,8 @@ class Farmaco extends Model
         'nombre_comercial',
         'componente_activo',
         'presentacion',
-        'concentracion'
+        'concentracion',
+        'user_id',
     ];
     
     /**
@@ -186,4 +188,27 @@ public function scopePorAlmacen($query, string $almacen, int $minimo = 0)
         $q->where($almacen, '>', $minimo);
     });
 }
+
+public function user()
+{
+    return $this->belongsTo(User::class);
+}
+
+protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($cirugia) {
+            // Asignar usuario autenticado
+            if (Auth::check()) {
+                $cirugia->user_id = Auth::id();
+            } else {
+                throw new \Exception('No hay usuario autenticado al registrar la cirugía');
+            }
+
+            // Obtener el paciente relacionado
+            $paciente = $cirugia->paciente;
+            
+        });
+    }
 }

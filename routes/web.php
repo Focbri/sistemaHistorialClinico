@@ -60,16 +60,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
              ->name('consultas.verificar-inicio');
         Route::match(['get', 'post'], 'buscar-paciente', [ConsultaController::class, 'buscarPaciente'])
              ->name('consultas.buscar-paciente');
-        Route::get('{id}/generar-pdf', [ConsultaController::class, 'generarPDF'])
-             ->name('consultas.generar-pdf');
+             //PDF PARA CONSULTA
+        Route::get('{consulta}/pdf', [ConsultaController::class, 'generarPDF'])
+         ->name('consultas.pdf');
         Route::get('historial-diagnosticos/{paciente}', [ConsultaController::class, 'historialDiagnosticos'])
              ->name('consultas.historial-diagnosticos');
     });
 
     // Cirugías
-    Route::get('/cirugias/create', [CirugiaController::class, 'create'])->name('cirugias.create');
-    Route::post('/cirugias', [CirugiaController::class, 'store'])->name('cirugias.store');
-    Route::resource('cirugias', CirugiaController::class)->except(['edit', 'update']);
+    Route::prefix('cirugias')->group(function () {
+        Route::get('/', [CirugiaController::class, 'index'])->name('cirugias.index');
+        Route::get('/create', [CirugiaController::class, 'create'])->name('cirugias.create');
+        Route::post('/', [CirugiaController::class, 'store'])->name('cirugias.store');
+        Route::get('/{cirugia}', [CirugiaController::class, 'show'])->name('cirugias.show');
+        Route::get('/{cirugia}/edit', [CirugiaController::class, 'edit'])->name('cirugias.edit');
+        Route::put('/{cirugia}', [CirugiaController::class, 'update'])->name('cirugias.update');
+        Route::delete('/{cirugia}', [CirugiaController::class, 'destroy'])->name('cirugias.destroy');
+        
+        // Ruta para generar PDF
+        Route::get('/cirugias/{cirugia}/pdf', [CirugiaController::class, 'generarPDF'])
+     ->name('cirugias.pdf')
+     ->middleware('auth');
+    });
 
     // CIE10
     Route::prefix('cie10')->group(function () {

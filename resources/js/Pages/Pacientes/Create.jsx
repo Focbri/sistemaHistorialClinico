@@ -14,7 +14,7 @@ export default function PacientesCreate({ auth }) {
         apellido_paterno: '',
         apellido_materno: '',
         nombres: '',
-        fecha_nacimiento: null,
+        fecha_nacimiento: '',
         edad: '',
         peso: '',
         tipo_documento: 'dni', // Nuevo campo para tipo de documento
@@ -169,21 +169,34 @@ export default function PacientesCreate({ auth }) {
         });
     };
 
-    // Calcular edad automáticamente cuando cambia la fecha de nacimiento
-    useEffect(() => {
-        if (data.fecha_nacimiento) {
-            const birthDate = new Date(data.fecha_nacimiento);
+    // Función mejorada para calcular edad
+useEffect(() => {
+    if (data.fecha_nacimiento) {
+        const calculateAge = (birthDate) => {
             const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
+            const birth = new Date(birthDate);
             
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            // Verificar que la fecha sea válida
+            if (isNaN(birth.getTime())) return '';
+            
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            
+            // Ajustar edad si aún no ha pasado el mes de cumpleaños
+            // o si es el mes pero no ha pasado el día
+            if (monthDiff < 0 || 
+                (monthDiff === 0 && today.getDate() < birth.getDate())) {
                 age--;
             }
             
-            setData('edad', age.toString());
-        }
-    }, [data.fecha_nacimiento]);
+            // Validar que la edad no sea negativa (fecha futura)
+            return age < 0 ? 0 : age;
+        };
+        
+        const age = calculateAge(data.fecha_nacimiento);
+        setData('edad', age.toString());
+    }
+}, [data.fecha_nacimiento]);
 
     return (
         <AuthenticatedLayout
@@ -289,7 +302,7 @@ export default function PacientesCreate({ auth }) {
                                             <label className="block text-sm uppercase font-medium text-gray-700">Fecha Nacimiento</label>
                                             <input 
                                                 type="date"
-                                                value={data.fecha_nacimiento}
+                                                value={data.fecha_nacimiento || ''}
                                                 onChange={(e) => setData('fecha_nacimiento', e.target.value)}
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                             />
@@ -304,7 +317,7 @@ export default function PacientesCreate({ auth }) {
                                                     min={0}
                                                     max={999}
                                                     maxLength={3}
-                                                    value={data.edad}
+                                                    value={data.edad || ''}
                                                     onChange={(e) => {
                                                         if (e.target.value.length <= 3) {
                                                             setData('edad', e.target.value);
@@ -319,25 +332,23 @@ export default function PacientesCreate({ auth }) {
                                                 <label className="block text-sm uppercase font-medium text-gray-700">Peso Kg</label>
                                                 <input
                                                     type="number"
-                                                    min={0}
-                                                    max={999.99}
-                                                    value={data.peso}
-                                                    step={0.01}
+                                                    value={data.peso || ''}
                                                     onChange={(e) => {
-                                                        // Limitar a 6 caracteres (incluyendo el punto decimal)
-                                                        if (e.target.value.length <= 6) {
-                                                            setData('peso', e.target.value);
+                                                        const value = e.target.value;
+                                                        // Validación opcional para decimales
+                                                        if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                                            setData('peso', value);
                                                         }
                                                     }}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                    step="0.01"
                                                 />
                                                 {errors.peso && <p className="text-sm text-red-500">{errors.peso}</p>}
                                             </div>
 
                                             <div className="mr-4">
-                                                <label className="block text-sm uppercase font-medium text-gray-700">Sexo</label>
+                                                <label className="block text-sm uppercase font-medium text-gray-700">Género</label>
                                                     <select 
-                                                        value={data.sexo}
+                                                        value={data.sexo || ''}
                                                         onChange={(e) => setData('sexo', e.target.value)}
                                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                                     >
@@ -409,7 +420,7 @@ export default function PacientesCreate({ auth }) {
                                         </div>
 
                                         <div className="mr-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Procedencia</label>
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Distrito de Procedencia</label>
                                                 <select 
                                                     value={data.procedencia}
                                                     onChange={(e) => setData('procedencia', e.target.value)}
@@ -529,7 +540,7 @@ export default function PacientesCreate({ auth }) {
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Email</label>
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Correo</label>
                                             <input 
                                                 type="email"
                                                 value={data.email}

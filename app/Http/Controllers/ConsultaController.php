@@ -21,13 +21,15 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use phpDocumentor\Reflection\DocBlock\Tags\Var_;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Validator;
+
 
 class ConsultaController extends Controller
 {
     public function index(Request $request) 
 {
     // Consultas médicas
-    $queryConsultas = Consulta::with(['paciente', 'receta', 'user'])
+    $queryConsultas = Consulta::with(['paciente', 'receta', 'user', 'refraccion'])
         ->when($request->filled('dni'), function($q) use ($request) {
             $q->whereHas('paciente', function($q) use ($request) {
                 $q->where('dni', 'like', '%'.$request->dni.'%');
@@ -218,9 +220,14 @@ public function edit($id)
 public function store(Request $request)
 {
     try {
+        // Verificar autenticación
+        if (!Auth::check()) {
+            throw new \Exception('Usuario no autenticado');
+        }
         // Validar los datos del formulario
         $request->validate([ 
             'paciente_id' => 'required|exists:pacientes,id',
+            'user_id' => 'sometimes|exists:users,id',
             'antecedentes_personales_hta' => 'nullable|string',
             'antecedentes_personales_alergias' => 'nullable|string',
             'antecedentes_personales_dm' => 'nullable|string',
@@ -446,6 +453,7 @@ public function store(Request $request)
         
         // Crear la consulta
         $consulta = Consulta::create([
+            'user_id' => Auth::id(),
             'codigo_historial' => $paciente->codigo_historial,
             'paciente_id' => $request->paciente_id,
             'tipo_consulta' => $request->tipo_consulta,
@@ -1316,69 +1324,82 @@ protected function parseFondoOjoPosiciones($data)
     return []; // Valor por defecto si está vacío o es inválido
 }
 // Método para generar el PDF
-public function generarPDF($id)
+// ConsultaController.php
+public function generarPDF(Consulta $consulta)
 {
     try {
-        // Obtener la consulta con relaciones
-        $consulta = Consulta::with(['paciente', 'examen'])->findOrFail($id);
+        // Cargar relaciones con manejo de errores
+        $consulta->load(['paciente', 'medico']);
         
         if (!$consulta->paciente) {
-            Log::error('La consulta no tiene un paciente asociado:', ['consulta_id' => $id]);
-            return redirect()->back()->with('error', 'La consulta no tiene un paciente asociado.');
+            throw new \Exception("No se encontró el paciente asociado a esta consulta");
         }
 
-        // Fechas importantes
-        $fechaActual = now()->format('d/m/Y');
-        $horaActual = now()->format('H:i');
-        $fechaConsulta = $consulta->created_at->format('d/m/Y');
+        $filtredData = $this->filtrarDatosParaPDF($consulta);
+        
+        // Verificar datos críticos
+        if (empty($filtredData['paciente']['dni']) || empty($filtredData['medico']['name'])) {
+            throw new \Exception("Datos incompletos para generar el PDF");
+        }
 
-        // Convertir imágenes a base64
-        $images = [
-            'logo' => $this->imageToBase64(public_path('img/logoVisualOsf.png')),
-            'ojo_derecho' => $this->imageToBase64(public_path('img/fondo_ojo_derecho.png')),
-            'ojo_izquierdo' => $this->imageToBase64(public_path('img/fondo_ojo_izquierdo.png'))
-
-        ];
-
-        // Obtener el código de consulta (usar el existente o generar uno)
-        $codigoConsulta = $consulta->codigo_consulta ?? 'CON-' . str_pad($consulta->id, 6, '0', STR_PAD_LEFT);
-
-        // Pasar datos a la vista
-        $pdf = Pdf::loadView('consultas.pdf', [
-            'consulta' => $consulta,
-            'images' => $images,
-            'fechaActual' => $fechaActual,
-            'horaActual' => $horaActual,
-            'fechaConsulta' => $fechaConsulta,
-            'codigoConsulta' => $codigoConsulta  // Pasar el código a la vista
-        ]);
-
-        // Configurar DomPDF
-        $pdf->setOptions([
-            'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled' => true,
-            'defaultFont' => 'sans-serif',
-            'enable_css_float' => true,
-            'dpi' => 300
-        ]);
-
-        // Guardar el PDF
-        $filePath = $this->guardarPDF($consulta, $pdf);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'PDF generado y guardado correctamente.',
-            'path' => $filePath,
-            'download_url' => Storage::url($filePath)
-        ]);
-
+        $pdf = PDF::loadView('consultas.consulta_pdf', $filtredData);
+        
+        return $pdf->download("consulta_{$consulta->paciente->dni}_{$consulta->created_at->format('YmdHis')}.pdf");
+        
     } catch (\Exception $e) {
-        Log::error('Error al generar el PDF:', ['error' => $e->getMessage()]);
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al generar el PDF: ' . $e->getMessage(),
-        ], 500);
+        Log::error("Error al generar PDF: " . $e->getMessage());
+        abort(500, "Error al generar el documento. Por favor intente nuevamente.");
     }
+}
+private function filtrarDatosParaPDF(Consulta $consulta)
+{
+    // Obtener datos necesarios excluyendo receta y refracción
+    return [
+        'paciente' => [
+            'nombres' => $consulta->paciente->nombres,
+            'apellido_paterno' => $consulta->paciente->apellido_paterno,
+            'apellido_materno' => $consulta->paciente->apellido_materno,
+            'dni' => $consulta->paciente->dni,
+            'edad' => $consulta->paciente->edad,
+            'sexo' => $consulta->paciente->sexo,
+            'telefono' => $consulta->paciente->telefono,
+            'email' => $consulta->paciente->email,
+            'direccion' => $consulta->paciente->direccion,
+            'fecha_nacimiento' => $consulta->paciente->fecha_nacimiento,
+        ],
+        'consulta' => $consulta->only([
+            'antecedentes_personales_hta',
+            'antecedentes_personales_dm',
+            'antecedentes_personales_alergias',
+            'antecedentes_personales_otros',
+            'antecedentes_patologicos_familiares',
+            'cirugias_previas',
+            'motivo_consulta_inicio',
+            'motivo_consulta_signos',
+            'motivo_consulta_enfermedad',
+            'motivo_consulta_otros',
+            'examen_av_sc_od',
+            'examen_av_sc_oi',
+            'examen_av_cc_od',
+            'examen_av_cc_oi',
+            'biomicroscopia_movoculares_od',
+            'biomicroscopia_movoculares_oi',
+            'biomicroscopia_cornea_od',
+            'biomicroscopia_cornea_oi',
+            'fondo_ojo_retina_p_od',
+            'fondo_ojo_retina_p_oi',
+            'fondo_ojo_macula_od',
+            'fondo_ojo_macula_oi',
+            'impresion_diagnostica',
+            'tratamiento',
+            'plan',
+            'comentario'
+        ]),
+        'medico' => [
+            'name' => $consulta->medico->name ?? 'Médico no asignado',
+            'numero_colegiatura' => $consulta->medico->numero_colegiatura ?? 'N/A'
+        ]
+    ];
 }
 // Método auxiliar para convertir imágenes a base64 para PDF
 private function imageToBase64($path)

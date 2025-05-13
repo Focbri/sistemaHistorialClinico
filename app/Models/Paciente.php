@@ -18,7 +18,8 @@ class Paciente extends Model
      *
      * @var array
      */
-    protected $fillable = [ 
+    protected $fillable = [
+        'user_id',
         'apellido_paterno',
         'apellido_materno',
         'nombres',
@@ -110,8 +111,7 @@ class Paciente extends Model
 
     protected $casts = [
         'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'foto_perfil' => 'array',
+        'updated_at' => 'datetime'
     ];
 
     /**
@@ -138,5 +138,24 @@ class Paciente extends Model
     public function cirugias()
 {
     return $this->hasMany(Cirugia::class);
+}
+
+protected static function boot()
+{
+    parent::boot();
+
+    static::creating(function ($paciente) {
+        // Usa el facade Auth en lugar del helper auth()
+        if (\Illuminate\Support\Facades\Auth::check()) {
+            $paciente->user_id = \Illuminate\Support\Facades\Auth::id();
+        } else {
+            throw new \Exception('No hay usuario autenticado al crear un paciente');
+        }
+
+        // Generar código de historial
+        if (empty($paciente->codigo_historial)) {
+            $paciente->codigo_historial = 'HCL-' . $paciente->dni;
+        }
+    });
 }
 }

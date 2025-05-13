@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Cirugia;
 use App\Models\Paciente;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CirugiaController extends Controller
 {
@@ -54,5 +58,35 @@ class CirugiaController extends Controller
     return inertia('Cirugias/Show', [
         'cirugia' => $cirugia->load('paciente', 'user')
     ]);
+}
+
+public function generarPDF($id)
+{
+    try {
+        $cirugia = Cirugia::with(['paciente', 'user'])->findOrFail($id);
+        
+        // Procesar personal_enfermeria - ya es un array, no necesita json_decode
+        $personalEnfermeria = $cirugia->personal_enfermeria ?? [];
+        
+        // Si por alguna razón viene como string JSON, intentamos convertirlo
+        if (is_string($personalEnfermeria)) {
+            $decoded = json_decode($personalEnfermeria, true);
+            $personalEnfermeria = (json_last_error() === JSON_ERROR_NONE) ? $decoded : [$personalEnfermeria];
+        }
+
+        $data = [
+            'cirugia' => $cirugia,
+            'personalEnfermeria' => (array)$personalEnfermeria, // Asegurarse que es array
+            'fechaActual' => now()->format('d/m/Y'),
+            'horaActual' => now()->format('H:i')
+        ];
+
+        $pdf = Pdf::loadView('cirugias.pdf', $data);
+        return $pdf->download("Cirugia_{$cirugia->paciente->dni}.pdf");
+
+    } catch (\Exception $e) {
+        Log::error('Error al generar PDF de cirugía: ' . $e->getMessage());
+        return back()->with('error', 'Error al generar el PDF: ' . $e->getMessage());
+    }
 }
 }

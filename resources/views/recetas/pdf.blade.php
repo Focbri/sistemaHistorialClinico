@@ -6,68 +6,66 @@
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; }
         .header { text-align: center; margin-bottom: 30px; }
-        .header img { max-width: 150px; }
-        .title { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
         .patient-info { margin-bottom: 20px; }
-        .section { margin-bottom: 15px; }
-        .section-title { font-weight: bold; margin-bottom: 5px; }
-        .footer { margin-top: 40px; text-align: right; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        table, th, td { border: 1px solid #ddd; }
-        th, td { padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .section-title { font-weight: bold; margin-bottom: 5px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="title">RECETA MÉDICA</div>
-        <div>N° {{ $codigoReceta }}</div>
+        <h2>RECETA MÉDICA</h2>
+        <p>N° {{ $codigoReceta }}</p>
     </div>
 
     <div class="patient-info">
-        <div class="section">
-            <span class="section-title">Paciente:</span>
-            {{ $paciente->nombres }} {{ $paciente->apellido_paterno }} {{ $paciente->apellido_materno }}
-        </div>
-        <div class="section">
-            <span class="section-title">DNI:</span>
-            {{ $paciente->dni }}
-        </div>
-        <div class="section">
-            <span class="section-title">Fecha:</span>
-            {{ $fechaActual }}
-        </div>
+        <div><span class="section-title">Paciente:</span> {{ $paciente->nombres }} {{ $paciente->apellido_paterno }} {{ $paciente->apellido_materno }}</div>
+        <div><span class="section-title">DNI:</span> {{ $paciente->dni }}</div>
+        <div><span class="section-title">Fecha:</span> {{ $fechaActual }}</div>
     </div>
 
+    @if(!empty($cie10Codes) && count($cie10Codes) > 0)
     <div class="section">
         <div class="section-title">Diagnóstico:</div>
-        <div>{{ $receta->diagnostico }}</div>
+        <ul>
+            @foreach($cie10Codes as $code)
+                <li>{{ $code }}</li>
+            @endforeach
+        </ul>
     </div>
+    @endif
 
-    <div class="section">
+    <!-- Sección de Medicamentos -->
+<div class="section">
     <div class="section-title">Medicamentos:</div>
-    @if(!empty($medicamentos))
-        <table>
-            <thead>
-                <tr>
-                    <th>Medicamento</th>
-                    <th>Dosis</th>
-                    <th>Frecuencia</th>
-                    <th>Duración</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($medicamentos as $med)
-                <tr>
-                    <td>{{ $med['nombre'] ?? 'N/A' }}</td>
-                    <td>{{ $med['dosis'] ?? 'N/A' }}</td>
-                    <td>{{ $med['frecuencia'] ?? 'N/A' }}</td>
-                    <td>{{ $med['duracion'] ?? 'N/A' }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+    
+    @if(count($medicamentos) > 0)
+    <table class="table-medicamentos">
+        <thead>
+            <tr>
+                <th>Medicamento</th>
+                <th>Componente Activo</th>
+                <th>Cantidad</th>
+                <th>Dosis</th>
+                <th>Frecuencia</th>
+                <th>Duración</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($medicamentos as $med)
+            <tr>
+                <td>{{ $med['nombre_comercial'] }}</td>
+                <td>{{ $med['componente_activo'] ?? 'N/A' }}</td>
+                <td>{{ $med['cantidad'] }}</td>
+                <td>{{ $med['dosis'] }}</td>
+                <td>{{ $med['frecuencia'] }}</td>
+                <td>{{ $med['duracion'] }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
     @else
-        <p>No se especificaron medicamentos</p>
+    <p class="no-medicamentos">No se prescribieron medicamentos.</p>
     @endif
 </div>
 
@@ -78,8 +76,10 @@
     </div>
     @endif
 
-    <div class="footer">
-        <div style="margin-top: 50px;">__________________________</div>
+    <div style="margin-top: 50px; text-align: right;">
+        <div>__________________________</div>
+        <div>{{ $medico->name ?? 'Médico' }}</div>
+        <div>Lic. Médico Cirujano</div>
     </div>
 </body>
 </html>
