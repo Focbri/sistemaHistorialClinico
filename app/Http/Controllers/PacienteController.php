@@ -565,7 +565,6 @@ class PacienteController extends Controller
         }
     }
 
-
     protected function renombrarCarpetaPaciente($paciente, $newDni, $newTipoDocumento)
     {
         $oldDniClean = preg_replace('/[^A-Za-z0-9]/', '', $paciente->dni);
@@ -634,4 +633,85 @@ class PacienteController extends Controller
         Log::warning('Paciente no encontrado para documento:', ['tipo' => $tipo, 'documento' => $documento]);
         return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
     }
+
+    public function buscarPacienteParaCita(Request $request)
+{
+    $request->validate([
+        'dni' => 'required|string|size:8'
+    ]);
+
+    $paciente = Paciente::where('dni', $request->dni)->first();
+
+    if (!$paciente) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Paciente no encontrado'
+        ], 404);
+    }
+
+    // Devuelve los datos en un formato compatible con Inertia
+    return response()->json([
+        'success' => true,
+        'paciente' => [
+            'id' => $paciente->id,
+            'nombres' => $paciente->nombres,
+            'apellido_paterno' => $paciente->apellido_paterno,
+            'apellido_materno' => $paciente->apellido_materno,
+            'dni' => $paciente->dni,
+            'telefono' => $paciente->telefono ?? 'No registrado',
+            'edad' => $paciente->edad ?? 'No registrada',
+            'fecha_nacimiento' => optional($paciente->fecha_nacimiento)->format('d/m/Y') ?? 'No registrada'
+        ]
+    ]);
+}
+
+    public function consultas(Paciente $paciente)
+{
+    $consultas = $paciente->consultas()
+        ->with(['paciente', 'medico'])
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($consulta) {
+            return [
+                'id' => $consulta->id,
+                'tipo' => 'consulta',
+                'tipo_consulta' => $consulta->tipo_consulta,
+                'codigo_historial' => $consulta->codigo_historial,
+                'codigo_cirugia' => null, // Para consistencia
+                'created_at' => $consulta->created_at->format('Y-m-d H:i:s'),
+                'impresion_diagnostica' => $consulta->impresion_diagnostica,
+                'diagnostico_preoperatorio' => null,
+            ];
+        });
+
+    $cirugias = $paciente->cirugias()
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($cirugia) {
+            return [
+                'id' => $cirugia->id,
+                'tipo' => 'cirugia',
+                'tipo_consulta' => 'Cirugía',
+                'codigo_historial' => $cirugia->codigo_historial, // Asumiendo que existe este campo
+                'created_at' => $cirugia->created_at->format('Y-m-d H:i:s'),
+                'impresion_diagnostica' => $cirugia->diagnostico_preoperatorio,
+                'diagnostico_preoperatorio' => $cirugia->diagnostico_preoperatorio,
+            ];
+        });
+
+    $historial = $consultas->concat($cirugias)
+        ->sortByDesc('created_at')
+        ->values();
+
+    return response()->json([
+        'paciente' => [
+            'id' => $paciente->id,
+            'nombres' => $paciente->nombres,
+            'apellido_paterno' => $paciente->apellido_paterno,
+            'dni' => $paciente->dni
+        ],
+        'consultas' => $historial
+    ]);
+}
+
 }

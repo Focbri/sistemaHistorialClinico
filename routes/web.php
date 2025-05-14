@@ -51,7 +51,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Pacientes
     Route::resource('pacientes', PacienteController::class);
     Route::post('pacientes/buscar-por-dni', [PacienteController::class, 'buscarPacientePorDNI'])
-         ->name('pacientes.buscar-por-dni');
+        ->name('pacientes.buscar-por-dni');
+    // Nueva ruta para obtener consultas del paciente
+    Route::get('pacientes/{paciente}/consultas', [PacienteController::class, 'consultas'])
+        ->name('pacientes.consultas')
+    ->middleware(['auth', 'verified']);
     
     // Consultas
     Route::resource('consultas', ConsultaController::class);
@@ -133,6 +137,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Citas
     Route::resource('citas', CitaController::class)->except(['show']);
+    Route::get('/citas/buscar-paciente', [PacienteController::class, 'buscarPacienteParaCita'])
+    ->name('citas.buscar-paciente');
 
     // Recetas
     Route::prefix('recetas')->group(function () {

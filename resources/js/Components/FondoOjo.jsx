@@ -15,14 +15,34 @@ const FondoOjo = ({
     setData = () => {},
     modoVisualizacion = false
 }) => {
+
+    const DIMENSIONES_ESTANDAR = {
+        width: 400,  // Ancho base para cálculos
+        height: 400, // Alto base para cálculos
+        pdfWidth: 200 // Ancho que usaremos en el PDF
+    };
+
     const contenedorODRef = useRef(null);
     const contenedorOIRef = useRef(null);
     const [marcadorArrastrado, setMarcadorArrastrado] = useState(null);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [estaArrastrando, setEstaArrastrando] = useState(false);
     const inputRef = useRef(null);
-    const [dimensiones, setDimensiones] = useState({ width: 300, height: 300 });
+    const [dimensiones, setDimensiones] = useState({
+        width: DIMENSIONES_ESTANDAR.width,
+        height: DIMENSIONES_ESTANDAR.height
+    });
     const [textAreaAbierto, setTextAreaAbierto] = useState(null);
+
+
+
+const escalarCoordenadasParaPDF = (x, y) => {
+    const factorEscala = DIMENSIONES_ESTANDAR.pdfWidth / DIMENSIONES_ESTANDAR.width;
+    return {
+        x: x * factorEscala,
+        y: y * factorEscala
+    };
+};
 
     // Mapeo de colores CSS a clases de Tailwind
     const COLORES_TAILWIND = {
@@ -150,8 +170,8 @@ const FondoOjo = ({
         let nuevaY = mouseY - offset.y;
 
         // Asegurar que los marcadores no salgan de los límites
-        nuevaX = Math.max(10, Math.min(rect.width - 10, nuevaX));
-        nuevaY = Math.max(10, Math.min(rect.height - 10, nuevaY));
+        nuevaX = Math.max(10, Math.min(390, nuevaX)); // 400 - 10
+        nuevaY = Math.max(10, Math.min(390, nuevaY)); // 400 - 10
 
         const nuevasPosiciones = {
             ...posicionesGuardadas,
@@ -230,6 +250,7 @@ const FondoOjo = ({
     const obtenerColorSubtitulo = (marcador) => {
         return COLORES_TAILWIND[marcador.color] || 'bg-gray-500';
     };
+
 
     // Renderizar marcadores
     const renderMarcadores = (marcadores, tipoOjo) => {
@@ -392,8 +413,8 @@ const FondoOjo = ({
                             src={fondoOjoD}
                             alt="Fondo de Ojo Derecho"
                             style={{ 
-                                width: '100%', 
-                                height: '100%',
+                                width: '400px', 
+                                height: '400px',
                                 pointerEvents: 'none',
                                 objectFit: 'contain'
                             }}
@@ -421,8 +442,8 @@ const FondoOjo = ({
                             src={fondoOjoI}
                             alt="Fondo de Ojo Izquierdo"
                             style={{ 
-                                width: '100%', 
-                                height: '100%',
+                                width: '400px', 
+                                height: '400px',
                                 pointerEvents: 'none',
                                 objectFit: 'contain'
                             }}

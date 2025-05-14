@@ -7,7 +7,6 @@ import React,{ useEffect, useState, useCallback, useRef } from 'react';
 
 import Cie10Search from '@/Components/Cie10Search'; // Importa el componente de búsqueda
 import FondoOjo from '@/Components/FondoOjo';
-import PlanSelector from '@/Components/PlanSelector';
 import PacienteForm from '@/Components/PacienteForm';
 import TerminoBiomicroscopiaSearch from '@/Components/TerminoBiomicroscopiaSearch';
 import TerminoMotivoConsultaSearch from '@/Components/TerminoMotivoConsultaSearch';
@@ -191,20 +190,12 @@ export default function ConsultasEdit({ auth }) {
     const [showHTAText, setShowHTAText] = useState(false);
     const [showDMText, setShowDMText] = useState(false);
     const [showAlergiasText, setShowAlergiasText] = useState(false);
-    const [showPlanText, setShowPlanText] = useState(false);
     const [showOtrosText, setShowOtrosText] = useState(false);
     const [marcadorActivo, setMarcadorActivo] = useState(null);
     const [marcadorActivoOI, setMarcadorActivoOI] = useState(null);
     const [selectedResults, setSelectedResults] = useState(
         consulta?.impresion_diagnostica ? consulta.impresion_diagnostica.split(';').map(item => item.trim()) : []
     );
-
-    // Opciones de plan
-    const [opcionesPlan, setOpcionesPlan] = useState([
-        { id: 1, nombre: 'Plan A', seleccionado: data.plan === 'Plan A' },
-        { id: 2, nombre: 'Plan B', seleccionado: data.plan === 'Plan B' },
-        { id: 3, nombre: 'Plan C', seleccionado: data.plan === 'Plan C' },
-    ]);
 
     const [historialDiagnosticos, setHistorialDiagnosticos] = useState([]);
     const [pacienteEncontrado, setPacienteEncontrado] = useState(false);

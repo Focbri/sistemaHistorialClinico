@@ -569,6 +569,63 @@ public function store(Request $request)
             $this->procesarReceta($request->receta, $consulta->id);
         }
 
+        $examenData = [
+            'consulta_id' => $consulta->id,
+            'examen_av_sc_od' => $request->examen_av_sc_od,
+            'examen_av_cae_od' => $request->examen_av_cae_od,
+            'examen_av_cc_od' => $request->examen_av_cc_od,
+            'examen_av_sc_oi' => $request->examen_av_sc_oi,
+            'examen_av_cae_oi' => $request->examen_av_cae_oi,
+            'examen_av_cc_oi' => $request->examen_av_cc_oi,
+            'examen_pi_tipo' => $request->examen_pi_tipo,
+            'examen_pi_od' => $request->examen_pi_od,
+            'examen_pi_oi' => $request->examen_pi_oi,
+            'examen_ar_sph_od' => $request->examen_ar_sph_od,
+            'examen_ar_cyl_od' => $request->examen_ar_cyl_od,
+            'examen_ar_ax_od' => $request->examen_ar_ax_od,
+            'examen_ar_sph_oi' => $request->examen_ar_sph_oi,
+            'examen_ar_cyl_oi' => $request->examen_ar_cyl_oi,
+            'examen_ar_ax_oi' => $request->examen_ar_ax_oi,
+            'examen_keratometria_qd1_od' => $request->examen_keratometria_qd1_od,
+            'examen_keratometria_qd2_od' => $request->examen_keratometria_qd2_od,
+            'examen_keratometria_eje_od' => $request->examen_keratometria_eje_od,
+            'examen_keratometria_qd1_oi' => $request->examen_keratometria_qd1_oi,
+            'examen_keratometria_qd2_oi' => $request->examen_keratometria_qd2_oi,
+            'examen_keratometria_eje_oi' => $request->examen_keratometria_eje_oi,
+        ];
+
+        // Crear el examen
+        $examen = Examen::create($examenData);
+
+        Log::debug('Datos del examen recibidos:', $request->only([
+            'examen_av_sc_od',
+            'examen_av_cae_od',
+            'examen_av_cc_od',
+            'examen_av_sc_oi',
+            'examen_av_cae_oi',
+            'examen_av_cc_oi',
+            'examen_pi_tipo',
+            'examen_pi_od',
+            'examen_pi_oi',
+            'examen_ar_sph_od',
+            'examen_ar_cyl_od',
+            'examen_ar_ax_od',
+            'examen_ar_sph_oi',
+            'examen_ar_cyl_oi',
+            'examen_ar_ax_oi',
+            'examen_keratometria_qd1_od',
+            'examen_keratometria_qd2_od',
+            'examen_keratometria_eje_od',
+            'examen_keratometria_qd1_oi',
+            'examen_keratometria_qd2_oi',
+            'examen_keratometria_eje_oi',
+            ]));
+
+        if (!$examen) {
+            Log::error('Fallo al crear examen ocular');
+            throw new \Exception('No se pudo crear el registro del examen ocular');
+        }
+
         //BIOMICROSCOPIA
 
         // 1. Verificar que la consulta existe y tiene ID
@@ -1328,8 +1385,8 @@ protected function parseFondoOjoPosiciones($data)
 public function generarPDF(Consulta $consulta)
 {
     try {
-        // Cargar relaciones con manejo de errores
-        $consulta->load(['paciente', 'medico']);
+        // Cargar relaciones necesarias
+        $consulta->load(['paciente', 'medico', 'examen']);
         
         if (!$consulta->paciente) {
             throw new \Exception("No se encontró el paciente asociado a esta consulta");
@@ -1337,12 +1394,10 @@ public function generarPDF(Consulta $consulta)
 
         $filtredData = $this->filtrarDatosParaPDF($consulta);
         
-        // Verificar datos críticos
-        if (empty($filtredData['paciente']['dni']) || empty($filtredData['medico']['name'])) {
-            throw new \Exception("Datos incompletos para generar el PDF");
-        }
-
+        // Configurar DOMPDF para manejar imágenes
         $pdf = PDF::loadView('consultas.consulta_pdf', $filtredData);
+        $pdf->setOption('enable_remote', true); // Habilitar carga de imágenes remotas
+        $pdf->setOption('chroot', public_path()); // Establecer el directorio raíz
         
         return $pdf->download("consulta_{$consulta->paciente->dni}_{$consulta->created_at->format('YmdHis')}.pdf");
         
@@ -1353,7 +1408,9 @@ public function generarPDF(Consulta $consulta)
 }
 private function filtrarDatosParaPDF(Consulta $consulta)
 {
-    // Obtener datos necesarios excluyendo receta y refracción
+    // Obtener datos del examen si existe
+    $examenData = $consulta->examen ? $consulta->examen->toArray() : [];
+
     return [
         'paciente' => [
             'nombres' => $consulta->paciente->nombres,
@@ -1367,34 +1424,60 @@ private function filtrarDatosParaPDF(Consulta $consulta)
             'direccion' => $consulta->paciente->direccion,
             'fecha_nacimiento' => $consulta->paciente->fecha_nacimiento,
         ],
-        'consulta' => $consulta->only([
-            'antecedentes_personales_hta',
-            'antecedentes_personales_dm',
-            'antecedentes_personales_alergias',
-            'antecedentes_personales_otros',
-            'antecedentes_patologicos_familiares',
-            'cirugias_previas',
-            'motivo_consulta_inicio',
-            'motivo_consulta_signos',
-            'motivo_consulta_enfermedad',
-            'motivo_consulta_otros',
-            'examen_av_sc_od',
-            'examen_av_sc_oi',
-            'examen_av_cc_od',
-            'examen_av_cc_oi',
-            'biomicroscopia_movoculares_od',
-            'biomicroscopia_movoculares_oi',
-            'biomicroscopia_cornea_od',
-            'biomicroscopia_cornea_oi',
-            'fondo_ojo_retina_p_od',
-            'fondo_ojo_retina_p_oi',
-            'fondo_ojo_macula_od',
-            'fondo_ojo_macula_oi',
-            'impresion_diagnostica',
-            'tratamiento',
-            'plan',
-            'comentario'
-        ]),
+        'consulta' => array_merge(
+            $consulta->only([
+                'antecedentes_personales_hta',
+                'antecedentes_personales_dm',
+                'antecedentes_personales_alergias',
+                'antecedentes_personales_otros',
+                'antecedentes_patologicos_familiares',
+                'cirugias_previas',
+                'motivo_consulta_inicio',
+                'motivo_consulta_signos',
+                'motivo_consulta_enfermedad',
+                'motivo_consulta_otros',
+                'biomicroscopia_movoculares_od',
+                'biomicroscopia_parpados_od',
+                'biomicroscopia_cornea_od',
+                'biomicroscopia_corneaconj_od',
+                'biomicroscopia_ca_od',
+                'biomicroscopia_iris_od',
+                'biomicroscopia_cristalino_od',
+                'biomicroscopia_movoculares_oi',
+                'biomicroscopia_parpados_oi',
+                'biomicroscopia_cornea_oi',
+                'biomicroscopia_corneaconj_oi',
+                'biomicroscopia_ca_oi',
+                'biomicroscopia_iris_oi',
+                'biomicroscopia_cristalino_oi',
+                'fondo_ojo_posiciones',
+                'fondo_ojo_retina_p_od',
+                'fondo_ojo_macula_od',
+                'fondo_ojo_vitreo_od',
+                'fondo_ojo_disco_o_od',
+                'fondo_ojo_vasos_od',
+                'fondo_ojo_macula_oi',
+                'fondo_ojo_vitreo_oi',
+                'fondo_ojo_disco_o_oi',
+                'fondo_ojo_vasos_oi',
+                'fondo_ojo_retina_p_oi',
+                'f_o_dilat_pup_od',
+                'f_o_dilat_pup_oi',
+                'f_o_locs_tres_od',
+                'f_o_locs_tres_oi',
+                'f_o_fundoscopia_od',
+                'f_o_fundoscopia_oi',
+                'f_o_conclusion',
+                'f_o_plan',
+                'impresion_diagnostica',
+                'tratamiento',
+                'plan',
+                'comentario',
+                'evoluciones',
+                'tipo_consulta',
+            ]),
+            ['examen' => $examenData] // Incluye todos los datos del examen con sus nombres reales
+        ),
         'medico' => [
             'name' => $consulta->medico->name ?? 'Médico no asignado',
             'numero_colegiatura' => $consulta->medico->numero_colegiatura ?? 'N/A'

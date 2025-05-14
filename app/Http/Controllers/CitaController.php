@@ -223,7 +223,7 @@ class CitaController extends Controller
         if ($count >= 16) return 'red';       // Máximo de citas por día
         if ($count >= 12) return 'orange';    // 75% de capacidad
         return 'green';
-    }
+    } 
 
     // En CitaController.php
     public function destroy(Cita $cita)

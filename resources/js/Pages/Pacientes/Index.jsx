@@ -2,59 +2,80 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
+import Pagination from '@/Components/Pagination';
+import axios from 'axios'; // Asegúrate de importar axios
 
 export default function PacientesIndex({ auth, pacientes }) {
     const [searchDni, setSearchDni] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [pacienteToDelete, setPacienteToDelete] = useState(null);
+    const [showConsultasModal, setShowConsultasModal] = useState(false);
+    const [pacienteConsultas, setPacienteConsultas] = useState({
+    nombres: '',
+    apellido_paterno: '',
+    dni: '',
+    consultas: []
+});
+    
+    const [loadingConsultas, setLoadingConsultas] = useState(false);
 
-    // Función para buscar pacientes por DNI
     const handleSearch = (e) => {
         e.preventDefault();
         router.get(route('pacientes.index'), { dni: searchDni });
     };
 
-    // Abrir modal de confirmación
     const openDeleteModal = (paciente) => {
         setPacienteToDelete(paciente);
         setIsDeleteModalOpen(true);
     };
 
-    // Cerrar modal
     const closeDeleteModal = () => {
         setIsDeleteModalOpen(false);
         setPacienteToDelete(null);
     };
 
-     // Confirmar eliminación
-     const confirmDelete = () => {
+    const confirmDelete = () => {
         if (pacienteToDelete) {
             router.delete(route('pacientes.destroy', pacienteToDelete.id), {
-                onSuccess: () => {
-                    closeDeleteModal();
-                    // Inertia manejará automáticamente la recarga de la página
-                },
-                onError: () => {
-                    closeDeleteModal();
-                    // Puedes agregar aquí un toast de error si lo deseas
-                },
+                onSuccess: () => closeDeleteModal(),
+                onError: () => closeDeleteModal(),
             });
         }
     };
 
-    const handleDelete = (id) => {
-        if (confirm('¿Estás seguro de que deseas eliminar este paciente y todas sus consultas relacionadas?')) {
-            console.log('Eliminando paciente con ID:', id); // Depuración
-            router.delete(route('pacientes.destroy', id), {
-                onSuccess: () => {
-                    console.log('Paciente eliminado correctamente'); // Depuración
-                    router.visit(route('pacientes.index'));
-                },
-                onError: () => {
-                    console.log('Error al eliminar paciente'); // Depuración
-                },
+    const openConsultasModal = async (paciente) => {
+    setLoadingConsultas(true);
+    try {
+        const response = await axios.get(route('pacientes.consultas', paciente.id));
+        
+        if (response.data && response.data.consultas) {
+            setPacienteConsultas({
+                nombres: response.data.paciente.nombres,
+                apellido_paterno: response.data.paciente.apellido_paterno,
+                dni: response.data.paciente.dni,
+                consultas: response.data.consultas
             });
+            setShowConsultasModal(true);
+        } else {
+            console.error('Estructura de datos inesperada:', response.data);
+            alert('No se pudieron cargar las consultas. La estructura de datos es inesperada.');
         }
+    } catch (error) {
+        console.error('Error al cargar consultas:', error);
+        alert('Error al cargar las consultas: ' + error.message);
+    } finally {
+        setLoadingConsultas(false);
+    }
+};
+
+    const closeConsultasModal = () => {
+        setShowConsultasModal(false);
+        setPacienteConsultas({
+            nombres: '',
+            apellido_paterno: '',
+            dni: '',
+            consultas: []
+        });
     };
 
     return (
@@ -64,16 +85,13 @@ export default function PacientesIndex({ auth, pacientes }) {
         >
             <Head title="Pacientes" />
 
-            {/* Modal de Confirmación */}
+            {/* Modal de Confirmación de Eliminación */}
             <Dialog
                 open={isDeleteModalOpen}
                 onClose={closeDeleteModal}
                 className="relative z-50"
             >
-                {/* Fondo oscuro */}
                 <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-
-                {/* Contenedor del modal centrado */}
                 <div className="fixed inset-0 flex items-center justify-center p-4">
                     <DialogPanel className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
                         <DialogTitle className="text-lg font-bold text-gray-900">
@@ -96,6 +114,82 @@ export default function PacientesIndex({ auth, pacientes }) {
                                 className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
                             >
                                 Eliminar
+                            </button>
+                        </div>
+                    </DialogPanel>
+                </div>
+            </Dialog>
+            {/* Modal de Historial de Consultas */}
+            <Dialog
+                open={showConsultasModal}
+                onClose={closeConsultasModal}
+                className="relative z-50"
+            >
+                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+                <div className="fixed inset-0 flex items-center justify-center p-4">
+                    <DialogPanel className="w-full max-w-6xl rounded-lg bg-white p-6 shadow-xl max-h-[80vh] overflow-y-auto">
+                        <DialogTitle className="text-lg font-bold text-gray-900">
+                            Historial Clínico - {pacienteConsultas?.nombres} {pacienteConsultas?.apellido_paterno} (DNI: {pacienteConsultas?.dni})
+                        </DialogTitle>
+                        
+                        {loadingConsultas ? (
+                            <div className="flex justify-center py-8">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                            </div>
+                        ) : (
+                            <div className="mt-4">
+                                {pacienteConsultas.consultas && pacienteConsultas.consultas.length > 0 ? (
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full border border-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código Historial</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnóstico</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {pacienteConsultas.consultas.map(item => (
+                                                    <tr key={`${item.tipo}-${item.id}`} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-4 text-sm text-gray-900">
+                                                            {item.tipo === 'cirugia' ? 'Cirugía' : item.tipo_consulta}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-sm text-gray-900">
+                                                            {item.codigo_historial || 'N/A'}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-sm text-gray-900">
+                                                            {new Date(item.created_at).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-sm text-gray-900">
+                                                            {item.impresion_diagnostica || item.diagnostico_preoperatorio || 'Sin diagnóstico'}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-sm text-gray-900">
+                                                            <Link
+                                                                href={route(item.tipo === 'cirugia' ? 'cirugias.show' : 'consultas.show', item.id)}
+                                                                className="text-blue-500 hover:text-blue-700"
+                                                            >
+                                                                Ver detalles
+                                                            </Link>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-500 mt-2">No hay registros clínicos para este paciente.</p>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={closeConsultasModal}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            >
+                                Cerrar
                             </button>
                         </div>
                     </DialogPanel>
@@ -164,22 +258,30 @@ export default function PacientesIndex({ auth, pacientes }) {
                                                             href={route('pacientes.show', paciente.id)}
                                                             className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                         >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M12 9a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5a5 5 0 0 1 5-5a5 5 0 0 1 5 5a5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"></path></svg>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M12 9a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5a5 5 0 0 1 5-5a5 5 0 0 1 5 5a5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"/></svg>
                                                         </Link>
                                                         <Link
                                                             href={route('pacientes.edit', paciente.id)}
                                                             className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                                         >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"/></svg>
                                                         </Link>
+                                                        
+                                                        {/* Botón para ver historial de consultas */}
+                                                        <button
+                                                            onClick={() => openConsultasModal(paciente)}
+                                                            className="px-3 py-1 text-white bg-purple-500 rounded hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                            title="Ver historial de consultas"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/><path fill="#fff" d="M7 12h2v5H7zm4-7h2v12h-2zm4 5h2v7h-2z"/></svg>
+                                                        </button>
 
-                                                        {/* Modifica solo el botón de eliminar para usar el nuevo modal */}
                                                         {(auth.user.role === 'admin' || auth.user.role === 'root') && (
                                                             <button
                                                                 onClick={() => openDeleteModal(paciente)}
                                                                 className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                                                             >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zM9 17h2V8H9zm4 0h2V8h-2zM7 6v13z"></path></svg>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zM9 17h2V8H9zm4 0h2V8h-2zM7 6v13z"/></svg>
                                                             </button>
                                                         )}
                                                     </div>

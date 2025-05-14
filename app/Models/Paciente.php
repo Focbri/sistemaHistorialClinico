@@ -11,13 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class Paciente extends Model
 {
-    //use SoftDeletes;
 
-    /**
-     * Los campos que se pueden asignar masivamente.
-     *
-     * @var array
-     */
     protected $fillable = [
         'user_id',
         'apellido_paterno',
@@ -61,11 +55,6 @@ class Paciente extends Model
         return $this->hasMany(Consulta::class)->orderBy('created_at', 'desc');
     }
 
-    /**
-     * Accesores: Para obtener el nombre completo del paciente.
-     *
-     * @return string
-     */
     public function getNombreCompletoAttribute(): string 
     {
         return "{$this->nombres} {$this->apellido_paterno} {$this->apellido_materno}";
@@ -91,11 +80,6 @@ class Paciente extends Model
         $this->attributes['apellido'] = $value ? ucfirst(strtolower($value)) : null;
     }
 
-    /**
-     * Reglas de validación para crear o actualizar un paciente.
-     *
-     * @return array
-     */
     public static function rules(): array
     {
         return [
@@ -111,14 +95,10 @@ class Paciente extends Model
 
     protected $casts = [
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
+        'fecha_nacimiento' => 'date:Y-m-d',
     ];
 
-    /**
-     * Mensajes personalizados para las reglas de validación.
-     *
-     * @return array
-     */
     public static function messages(): array
     {
         return [
