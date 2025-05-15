@@ -38,44 +38,46 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
   });
 
   // Carga de datos optimizada
- const loadMonthData = async (date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const monthKey = `${year}-${month}`;
+const loadMonthData = async (date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const monthKey = `${year}-${month}`;
 
-    if (!loadedMonths.has(monthKey)) {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const response = await router.get('/citas', { year, month }, {
-          preserveState: true,
-          only: ['calendarData'],
-          onSuccess: (props) => {
-            if (props?.calendarData) {
-              setCalendarData(prev => {
-                const filtered = prev.filter(item => {
-                  const itemDate = new Date(item.date);
-                  return itemDate.getFullYear() !== year || itemDate.getMonth() + 1 !== month;
-                });
-                return [...filtered, ...props.calendarData];
+  if (!loadedMonths.has(monthKey)) {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await router.get('/citas', { year, month }, {
+        preserveState: true,
+        only: ['calendarData'],
+        onSuccess: (props) => {
+          if (props?.calendarData) {
+            setCalendarData(prev => {
+              // Filtrar datos antiguos del mismo mes
+              const filtered = prev.filter(item => {
+                if (!item?.date) return false;
+                const itemDate = typeof item.date === 'string' ? parseISO(item.date) : item.date;
+                return !(
+                  itemDate.getFullYear() === year && 
+                  itemDate.getMonth() + 1 === month
+                );
               });
-              setLoadedMonths(prev => new Set(prev).add(monthKey));
-            }
-          },
-          onError: (errors) => {
-            console.error('Error loading month data:', errors);
-            setError('Error al cargar los datos del mes');
+              return [...filtered, ...props.calendarData];
+            });
+            setLoadedMonths(prev => new Set(prev).add(monthKey));
           }
-        });
-      } catch (err) {
-        console.error('Error loading month data:', err);
-        setError('Error al cargar los datos del mes');
-      } finally {
-        setLoading(false);
-      }
+        },
+      });
+    } catch (err) {
+      console.error('Error loading month data:', err);
+      setError('Error al cargar los datos del mes');
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+};
+
   // Precarga de datos
   useEffect(() => {
     const loadInitialData = async () => {
@@ -103,32 +105,51 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
     return 'green';
   };
 
-  const getDayData = useMemo(() => {
-    return (date) => {
-      try {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        return calendarData.find(d => 
-          d?.date && format(parseISO(d.date), 'yyyy-MM-dd') === dateStr
-        ) || { citas_count: 0 };
-      } catch (err) {
-        console.error('Error processing day data:', err);
-        return { citas_count: 0 };
+const getDayData = useMemo(() => {
+  return (date) => {
+    try {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayData = calendarData.find(d => {
+        if (!d?.date) return false;
+        const itemDate = typeof d.date === 'string' ? parseISO(d.date) : d.date;
+        return format(itemDate, 'yyyy-MM-dd') === dateStr;
+      });
+      
+      // Si no encontramos datos, buscar en las citas existentes
+      if (!dayData || dayData.citas_count === 0) {
+        const citasDelDia = citas.filter(cita => {
+          const citaDate = new Date(cita.fecha_hora);
+          return format(citaDate, 'yyyy-MM-dd') === dateStr;
+        });
+        
+        if (citasDelDia.length > 0) {
+          return { citas_count: citasDelDia.length, citas: citasDelDia };
+        }
       }
-    };
-  }, [calendarData]);
+      
+      return dayData || { citas_count: 0, citas: [] };
+    } catch (err) {
+      console.error('Error processing day data:', err);
+      return { citas_count: 0, citas: [] };
+    }
+  };
+}, [calendarData, citas]);
 
   // Contenido de los días
-  const tileContent = useMemo(() => ({ date, view }) => {
-    if (view === 'month') {
-      const dayData = getDayData(date);
-      return (
-        <div className="text-xs mt-1 text-center">
-          {dayData.citas_count}/16 citas
-        </div>
-      );
-    }
-    return null;
-  }, [getDayData]);
+const tileContent = useMemo(() => ({ date, view }) => {
+  if (view === 'month') {
+    const dayData = getDayData(date);
+    const count = dayData.citas_count || 0;
+    const isFull = count >= 16;
+    
+    return (
+      <div className={`text-xs mt-1 text-center ${isFull ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+        {count}/16
+      </div>
+    );
+  }
+  return null;
+}, [getDayData]);
 
   // Clases CSS para los días
   const tileClassName = useMemo(() => ({ date, view }) => {
@@ -155,16 +176,19 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
       ...data,
       fecha_hora: format(date, "yyyy-MM-dd'T'09:00") // Hora por defecto a las 9:00 AM
     });
+    setPacienteEncontrado(false);
+    setPacienteInfo(null);
+    setErrorMessage('');
     setShowModal(true);
   };
 
   // Función para buscar paciente por DNI
   const [buscandoPaciente, setBuscandoPaciente] = useState(false);
 
-const buscarPaciente = async () => {
-  if (!data.dni || data.dni.length !== 8) {
-    setErrorMessage('El DNI debe tener exactamente 8 dígitos');
-    return;
+  const buscarPaciente = async () => {
+    if (!data.dni || data.dni.length !== 8) {
+      setErrorMessage('El DNI debe tener exactamente 8 dígitos');
+      return;
   }
 
   setBuscandoPaciente(true);
@@ -199,36 +223,133 @@ const buscarPaciente = async () => {
   }
 };
   // Verificar disponibilidad de cita
-  const verificarDisponibilidad = () => {
-    if (!data.fecha_hora) return true;
-    
-    // Verificar que sea en intervalos de 20 minutos
-    const fechaHora = new Date(data.fecha_hora);
-    const minutes = fechaHora.getMinutes();
-    if (minutes % 20 !== 0) {
-      setErrorMessage('Las citas deben programarse en intervalos de 20 minutos (ej: 08:00, 08:20, 08:40)');
-      return false;
-    }
-    
-    // Verificar disponibilidad en ±20 minutos
-    const horaInicio = new Date(fechaHora.getTime() - 20 * 60 * 1000);
-    const horaFin = new Date(fechaHora.getTime() + 20 * 60 * 1000);
-    
-    const citasEnRango = citas.filter(cita => {
+const verificarDisponibilidad = () => {
+  setErrorMessage('');
+  
+  // Validaciones básicas de fecha
+  const now = new Date();
+  const selectedDate = new Date(data.fecha_hora);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const selectedDateOnly = new Date(
+    selectedDate.getFullYear(), 
+    selectedDate.getMonth(), 
+    selectedDate.getDate()
+  );
+
+  if (selectedDateOnly < today) {
+    return {
+      isValid: false,
+      adjustedTime: null,
+      message: 'No se pueden programar citas para fechas pasadas'
+    };
+  }
+
+  if (selectedDateOnly > tomorrow) {
+    return {
+      isValid: false,
+      adjustedTime: null,
+      message: 'Solo se pueden programar citas para hoy y mañana'
+    };
+  }
+
+  if (selectedDateOnly.getTime() === today.getTime() && selectedDate < now) {
+    return {
+      isValid: false,
+      adjustedTime: null,
+      message: 'Para citas de hoy, la hora debe ser mayor a la hora actual'
+    };
+  }
+
+  if (!data.fecha_hora || !data.medico_id) {
+    return { isValid: true, adjustedTime: null, message: '' };
+  }
+
+  // Validar médico seleccionado
+  if (!data.medico_id) {
+    return { isValid: true, adjustedTime: null, message: '' };
+  }
+
+  // Filtrar citas del mismo médico en el mismo día
+  const citasMismoDiaMismoMedico = citas.filter(cita => {
+    try {
       const citaFechaHora = new Date(cita.fecha_hora);
-      return citaFechaHora > horaInicio && 
-             citaFechaHora < horaFin && 
-             cita.id !== (selectedCita?.id || data.id);
-    });
-    
-    if (citasEnRango.length > 0) {
-      setErrorMessage('Debe haber al menos 20 minutos de diferencia entre citas');
+      if (isNaN(citaFechaHora.getTime())) return false;
+      
+      return (
+        cita.medico_id === data.medico_id &&
+        format(citaFechaHora, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') &&
+        cita.id !== (selectedCita?.id || data.id)
+      );
+    } catch (err) {
+      console.error('Error procesando fecha de cita:', err);
       return false;
     }
+  });
+
+  // Validar límite de citas por día
+  if (citasMismoDiaMismoMedico.length >= 16) {
+    return { 
+      isValid: false, 
+      adjustedTime: null,
+      message: 'Se ha alcanzado el límite de 16 citas para este médico en el día seleccionado'
+    };
+  }
+
+  // Validar diferencia de 20 minutos (sin importar el minuto exacto)
+  const citasCercanas = citasMismoDiaMismoMedico.filter(cita => {
+    try {
+      const citaFechaHora = new Date(cita.fecha_hora);
+      const diferenciaMinutos = Math.abs((selectedDate - citaFechaHora) / (1000 * 60));
+      return diferenciaMinutos < 20;
+    } catch (err) {
+      console.error('Error calculando diferencia:', err);
+      return false;
+    }
+  });
+
+  if (citasCercanas.length > 0) {
+    // Ordenar citas cercanas por proximidad
+    citasCercanas.sort((a, b) => {
+      const diffA = Math.abs(new Date(a.fecha_hora) - selectedDate);
+      const diffB = Math.abs(new Date(b.fecha_hora) - selectedDate);
+      return diffA - diffB;
+    });
+
+    const citaMasCercana = citasCercanas[0];
+    const citaFechaHora = new Date(citaMasCercana.fecha_hora);
+    const diferencia = Math.abs((selectedDate - citaFechaHora) / (1000 * 60));
     
-    setErrorMessage('');
-    return true;
-  };
+    // Calcular próximo horario disponible (20 minutos después de la cita más cercana)
+    let nextAvailableTime = new Date(citaFechaHora);
+    nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + 20);
+    
+    return { 
+      isValid: false, 
+      adjustedTime: format(nextAvailableTime, "yyyy-MM-dd'T'HH:mm"),
+      message: `Debe haber al menos 20 minutos entre citas. La cita más cercana es a ${format(citaFechaHora, 'HH:mm')} (faltan ${Math.floor(20 - diferencia)} minutos). ¿Quieres cambiar a ${format(nextAvailableTime, 'HH:mm')}?`
+    };
+  }
+  
+  return { isValid: true, adjustedTime: null, message: '' };
+};
+
+const formatDateTimeWithoutSeconds = (dateTimeString) => {
+  if (!dateTimeString) return '';
+  
+  const date = new Date(dateTimeString);
+  if (isNaN(date.getTime())) return dateTimeString;
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
 
   // Handlers para los modales
   const openViewModal = (cita) => {
@@ -257,20 +378,49 @@ const buscarPaciente = async () => {
     setShowDeleteModal(true);
   };
 
-  // Handlers para los formularios
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!pacienteEncontrado) {
-      setErrorMessage('Debe buscar y seleccionar un paciente válido');
-      return;
-    }
-    
-    if (!verificarDisponibilidad()) {
-      return;
-    }
+  useEffect(() => {
+  if (!showModal && !showEditModal) {
+    setErrorMessage('');
+  }
+  }, [showModal, showEditModal]);
 
-    post(route('citas.store'), {
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!pacienteEncontrado) {
+    setErrorMessage('Debe buscar y seleccionar un paciente válido');
+    return;
+  }
+  
+  // Primero obtener el resultado de la validación
+  const validation = verificarDisponibilidad();
+  
+  // Luego usar este resultado
+  if (!validation.isValid) {
+    if (validation.adjustedTime) {
+      setErrorMessage(
+        <div>
+          {validation.message}
+          <button 
+            onClick={() => {
+              setData('fecha_hora', validation.adjustedTime);
+              setErrorMessage('');
+            }}
+            className="ml-2 text-blue-600 underline"
+          >
+            Ajustar automáticamente
+          </button>
+        </div>
+      );
+    } else {
+      setErrorMessage(validation.message);
+    }
+    return;
+  }
+
+  try {
+    await post(route('citas.store'), {
       onSuccess: () => {
         reset();
         setShowModal(false);
@@ -278,13 +428,48 @@ const buscarPaciente = async () => {
         setPacienteInfo(null);
         setErrorMessage('');
       },
+      onError: (errors) => {
+        if (errors.fecha_hora) {
+          setErrorMessage(errors.fecha_hora);
+        } else if (errors.limite) {
+          setErrorMessage(errors.limite);
+        } else {
+          setErrorMessage('Error al crear la cita. Por favor verifique los datos.');
+        }
+      }
     });
-  };
+  } catch (err) {
+    console.error('Error al enviar formulario:', err);
+    setErrorMessage('Error de conexión con el servidor');
+  }
+};
 
   const handleUpdate = (e) => {
     e.preventDefault();
     
-    if (!verificarDisponibilidad()) {
+    // Validar disponibilidad
+    const validation = verificarDisponibilidad();
+    
+    if (!validation.isValid) {
+      if (validation.adjustedTime) {
+        // Mostrar mensaje con opción de ajustar automáticamente
+        setErrorMessage(
+          <div>
+            {validation.message}
+            <button 
+              onClick={() => {
+                setData('fecha_hora', validation.adjustedTime);
+                setErrorMessage(''); // Limpiar el mensaje después de ajustar
+              }}
+              className="ml-2 text-blue-600 underline"
+            >
+              Ajustar automáticamente
+            </button>
+          </div>
+        );
+      } else {
+        setErrorMessage(validation.message || 'Error en la validación');
+      }
       return;
     }
 
@@ -293,6 +478,11 @@ const buscarPaciente = async () => {
         reset();
         setShowEditModal(false);
         setSelectedCita(null);
+        
+        // Forzar recarga del mes actual
+        const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
+        setLoadedMonths(prev => new Set(prev).delete(monthKey));
+        loadMonthData(currentDate);
       },
     });
   };
@@ -302,6 +492,11 @@ const buscarPaciente = async () => {
       onSuccess: () => {
         setShowDeleteModal(false);
         setSelectedCita(null);
+        
+        // Forzar recarga del mes actual
+        const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
+        setLoadedMonths(prev => new Set(prev).delete(monthKey));
+        loadMonthData(currentDate);
       },
     });
   };
@@ -368,7 +563,9 @@ const buscarPaciente = async () => {
                 tileClassName={tileClassName}
                 className="border-none w-full"
                 showNeighboringMonth={false}
-                />
+                minDate={new Date()} // No permite seleccionar fechas anteriores a hoy
+                maxDate={new Date(new Date().setDate(new Date().getDate() + 1))} // Solo permite hoy y mañana
+              />
           </div>
         ) : (
           <div className="overflow-x-auto bg-white rounded-lg shadow">
@@ -437,13 +634,39 @@ const buscarPaciente = async () => {
         {/* Modal para nueva cita */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg relative">
               <div className="p-6">
                 <h2 className="text-xl font-bold mb-4">Nueva Cita</h2>
                 
                 {errorMessage && (
-                  <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
-                    {errorMessage}
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-start">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-6 w-6 text-red-600 mr-2 flex-shrink-0" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <h4 className="font-medium text-red-800">No se puede programar la cita</h4>
+                        <div className="mt-1 text-red-700">
+                          {typeof errorMessage === 'string' ? (
+                            <p>{errorMessage}</p>
+                          ) : (
+                            errorMessage
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setErrorMessage('')}
+                      className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                    >
+                      Entendido
+                    </button>
                   </div>
                 )}
                 
@@ -532,36 +755,73 @@ const buscarPaciente = async () => {
                     </div>
                   )}
 
-                  <div className="mb-4">
-                    <label className="block text-gray-700 mb-2">Médico</label>
-                    <select
-                      value={data.medico_id}
-                      onChange={(e) => setData('medico_id', e.target.value)}
-                      className="w-full p-2 border rounded"
-                      required
-                    >
-                      <option value="">Seleccione un médico</option>
-                      {medicos.map(medico => (
-                        <option key={medico.id} value={medico.id}>
-                          {medico.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <div className='flex justify-center gap-2'>
+                    <div className="mb-4 w-1/2">
+                      <label className="block text-gray-700 mb-2">Médico</label>
+                      <select
+                        value={data.medico_id}
+                        onChange={(e) => setData('medico_id', e.target.value)}
+                        className="w-full p-2 border rounded"
+                        required
+                      >
+                        <option value="">Seleccione un médico</option>
+                        {medicos.map(medico => (
+                          <option key={medico.id} value={medico.id}>
+                            {medico.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="mb-4">
-                    <label className="block text-gray-700 mb-2">Fecha y Hora</label>
-                    <input
-                      type="datetime-local"
-                      value={data.fecha_hora}
-                      onChange={(e) => {
-                        setData('fecha_hora', e.target.value);
-                        verificarDisponibilidad();
-                      }}
-                      className="w-full p-2 border rounded"
-                      required
-                      step="1200" // 20 minutos en segundos
-                    />
+                    <div className="mb-4 w-1/2">
+                      <label className="block text-gray-700 mb-2">Fecha y Hora</label>
+                      <input
+                        type="datetime-local"
+                        value={formatDateTimeWithoutSeconds(data.fecha_hora)}
+                        onChange={(e) => {
+                          const newDate = e.target.value;
+                          setData('fecha_hora', newDate);
+                          
+                          // Validación en tiempo real
+                          const now = new Date();
+                          const selectedDate = new Date(newDate);
+                          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                          const tomorrow = new Date(today);
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          
+                          const selectedDateOnly = new Date(
+                            selectedDate.getFullYear(), 
+                            selectedDate.getMonth(), 
+                            selectedDate.getDate()
+                          );
+
+                          if (selectedDateOnly < today) {
+                            setErrorMessage('No se pueden programar citas para fechas pasadas');
+                            return;
+                          }
+
+                          if (selectedDateOnly > tomorrow) {
+                            setErrorMessage('Solo se pueden programar citas para hoy y mañana');
+                            return;
+                          }
+
+                          // Validación de disponibilidad con médico
+                          if (data.medico_id) {
+                            const validation = verificarDisponibilidad();
+                            if (!validation.isValid) {
+                              setErrorMessage(validation.message);
+                            } else {
+                              setErrorMessage('');
+                            }
+                          }
+                        }}
+                         className="w-full p-2 border rounded"
+                          required
+                          step="60" // Esto asegura incrementos de 1 minuto
+                          min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                          max={format(new Date(new Date().setDate(new Date().getDate() + 1)), "yyyy-MM-dd'T'23:59")}
+                      />
+                    </div>
                   </div>
 
                   <div className="mb-4">
@@ -682,7 +942,15 @@ const buscarPaciente = async () => {
                     <label className="block text-gray-700 mb-2">Médico</label>
                     <select
                       value={data.medico_id}
-                      onChange={(e) => setData('medico_id', e.target.value)}
+                      onChange={(e) => {
+                        setData('medico_id', e.target.value);
+                        // Limpiar error al cambiar
+                        setErrorMessage('');
+                        // Validar solo si hay fecha seleccionada
+                        if (data.fecha_hora) {
+                          verificarDisponibilidad();
+                        }
+                      }}
                       className="w-full p-2 border rounded"
                       required
                     >
@@ -695,18 +963,27 @@ const buscarPaciente = async () => {
                     </select>
                   </div>
 
-                  <div className="mb-4">
+                  <div className="mb-4 w-1/2">
                     <label className="block text-gray-700 mb-2">Fecha y Hora</label>
                     <input
                       type="datetime-local"
-                      value={data.fecha_hora}
+                      value={formatDateTimeWithoutSeconds(data.fecha_hora)}
                       onChange={(e) => {
                         setData('fecha_hora', e.target.value);
-                        verificarDisponibilidad();
+                                            
+                        // Validación en tiempo real si hay médico seleccionado
+                        if (data.medico_id) {
+                          const validation = verificarDisponibilidad();
+                          if (!validation.isValid) {
+                            setErrorMessage(validation.message);
+                          } else {
+                            setErrorMessage('');
+                          }
+                        }
                       }}
                       className="w-full p-2 border rounded"
                       required
-                      step="1200" // 20 minutos en segundos
+                      step="60"
                     />
                   </div>
 
