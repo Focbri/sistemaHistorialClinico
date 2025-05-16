@@ -58,6 +58,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->middleware(['auth', 'verified']);
     
     // Consultas
+    Route::get('consultas/create', [ConsultaController::class, 'create'])
+    ->name('consultas.create');
     Route::resource('consultas', ConsultaController::class);
     Route::prefix('consultas')->group(function () {
         Route::get('verificar-inicio/{pacienteId}', [ConsultaController::class, 'verificarConsultaInicio'])
@@ -74,12 +76,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Cirugías
     Route::prefix('cirugias')->group(function () {
         Route::get('/', [CirugiaController::class, 'index'])->name('cirugias.index');
-        Route::get('/create', [CirugiaController::class, 'create'])->name('cirugias.create');
-        Route::post('/', [CirugiaController::class, 'store'])->name('cirugias.store');
+        Route::get('/create', [CirugiaController::class, 'create'])
+        ->name('cirugias.create')
+        ->middleware(['auth', 'verified']);
+        Route::post('/', [CirugiaController::class, 'store'])
+        ->name('cirugias.store')
+        ->middleware(['auth', 'verified']);
         Route::get('/{cirugia}', [CirugiaController::class, 'show'])->name('cirugias.show');
         Route::get('/{cirugia}/edit', [CirugiaController::class, 'edit'])->name('cirugias.edit');
         Route::put('/{cirugia}', [CirugiaController::class, 'update'])->name('cirugias.update');
         Route::delete('/{cirugia}', [CirugiaController::class, 'destroy'])->name('cirugias.destroy');
+
         
         // Ruta para generar PDF
         Route::get('/cirugias/{cirugia}/pdf', [CirugiaController::class, 'generarPDF'])
@@ -139,6 +146,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('citas', CitaController::class)->except(['show']);
     Route::get('/citas/buscar-paciente', [PacienteController::class, 'buscarPacienteParaCita'])
     ->name('citas.buscar-paciente');
+    Route::get('/citas/asignadas', [CitaController::class, 'asignadas'])
+    ->middleware(['auth', 'verified'])
+    ->name('citas.asignadas');
+    Route::put('/citas/{cita}/status', [CitaController::class, 'updateStatus'])
+    ->name('citas.update-status')
+    ->middleware(['auth', 'verified']);
 
     // Recetas
     Route::prefix('recetas')->group(function () {

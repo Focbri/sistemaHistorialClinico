@@ -9,13 +9,21 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class CirugiaController extends Controller
 {
-    public function create()
+    public function create(Request $request)
     {
-        return inertia('Consultas/CreateCirugia', [
-            'pacientes' => Paciente::all()
+        $paciente_id = $request->input('paciente_id');
+        $cita_id = $request->input('cita_id');
+        
+        $paciente = Paciente::find($paciente_id);
+
+        return Inertia::render('Consultas/CreateCirugia', [
+            'paciente' => $paciente,
+            'pacientes' => $paciente ? [$paciente] : [], // Asegura que pacientes sea un array
+            'cita_id' => $cita_id
         ]);
     }
 

@@ -104,21 +104,15 @@ class ConsultaController extends Controller
 }
 public function create(Request $request)
 {
-    // Obtener la consulta (si es necesario)
-    $pacientes = Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno','edad')
-        ->orderBy('nombres')
-        ->get();
-
-    // Determinar el tipo de consulta (inicio o evolución)
-    $tipoConsulta = $request->query('tipo', 'inicio'); // Por defecto es 'inicio'
-    // Obtener la edad del paciente si se selecciona uno
-    $edad = null;
+    $paciente = null;
+    $tipoConsulta = $request->input('tipo', 'inicio');
+    $cita_id = $request->input('cita_id');
     $historialDiagnosticos = [];
+    
     if ($request->has('paciente_id')) {
-        $paciente = Paciente::find($request->query('paciente_id'));
+        $paciente = Paciente::find($request->input('paciente_id'));
+        
         if ($paciente) {
-            $edad = $paciente->edad;
-            
             // Cargar historial solo si es evolución
             if ($tipoConsulta === 'evolucion') {
                 $historialDiagnosticos = Consulta::where('paciente_id', $paciente->id)
@@ -137,10 +131,13 @@ public function create(Request $request)
     }
 
     return Inertia::render('Consultas/Create', [
-        'pacientes' => $pacientes,
-        'tipoConsulta' => $tipoConsulta, // Pasar el tipo de consulta a la vista
-        'edad' => $edad, // Pasar la edad del paciente
-        'historialDiagnosticos' => $historialDiagnosticos
+        'paciente' => $paciente, // Envía el objeto paciente completo
+        'cita_id' => $request->input('cita_id'),
+        'tipoConsulta' => $request->input('tipo', 'inicio'),
+        'historialDiagnosticos' => $historialDiagnosticos,
+        'pacientes' => Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno','edad')
+            ->orderBy('nombres')
+            ->get()
     ]);
 }
 public function show($id)

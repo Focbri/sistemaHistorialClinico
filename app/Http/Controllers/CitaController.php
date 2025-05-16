@@ -321,4 +321,39 @@ protected function findNextAvailableSlot($medicoId, $startTime)
         $cita->delete();
         return redirect()->back()->with('success', 'Cita eliminada correctamente');
     }
+
+public function asignadas()
+{
+    $citasProgramadas = Cita::with(['paciente'])
+        ->where('medico_id', Auth::id())
+        ->where('estado', 'programada')
+        ->orderBy('fecha_hora')
+        ->get();
+
+    $citasAtendidas = Cita::with(['paciente'])
+        ->where('medico_id', Auth::id())
+        ->where('estado', 'completada')
+        ->orderBy('fecha_hora', 'desc')
+        ->get();
+    
+    return Inertia::render('Citas/Asignadas', [
+        'citas' => $citasProgramadas,
+        'citasAtendidas' => $citasAtendidas
+    ]);
+}
+
+public function updateStatus(Request $request, Cita $cita)
+{
+    $request->validate([
+        'estado' => 'required|in:programada,completada,cancelada'
+    ]);
+
+    $cita->update([
+        'estado' => $request->estado,
+        'atendida_por' => Auth::id(),
+        'fecha_atencion' => now()
+    ]);
+
+    return back()->with('success', 'Estado de la cita actualizado correctamente');
+}
 }

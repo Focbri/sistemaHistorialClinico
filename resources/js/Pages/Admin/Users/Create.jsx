@@ -8,6 +8,7 @@ import TextInput from '@/Components/TextInput';
 export default function Create({ auth }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
+        apellido: '',
         email: '',
         password: '',
         password_confirmation: '',
@@ -55,6 +56,20 @@ export default function Create({ auth }) {
                                         required
                                     />
                                     <InputError message={errors.name} className="mt-2" />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="apellido" value="Apellido" />
+                                    <TextInput
+                                        id="apellido"
+                                        name="apellido"
+                                        value={data.apellido}
+                                        className="mt-1 block w-full"
+                                        autoComplete="apellido"
+                                        onChange={(e) => setData('apellido', e.target.value)}
+                                        required
+                                    />
+                                    <InputError message={errors.apellido} className="mt-2" />
                                 </div>
 
                                 <div className="mt-4">

@@ -5,20 +5,24 @@ import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 
-export default function CreateCirugia({ auth, pacientes }) {
-    const { data, setData, post, errors, processing } = useForm({
-        paciente_id: '',
+export default function CreateCirugia({ auth, paciente, pacientes = [], cita_id   }) {
+
+    const pacienteInicial = paciente || (pacientes.length > 0 ? pacientes[0] : null);
+
+    const { data, setData, post, errors, processing } = useForm({ 
+        paciente_id: pacienteInicial?.id || '',
+        cita_id: cita_id || '',
         diagnostico_preoperatorio: '',
-        diagnostico_postoperatorio: '', // Añadido
+        diagnostico_postoperatorio: '',
         cirugia: '',
-        cirujano_principal: '',
+        cirujano_principal: auth.user.name,
         cirujano_ayudante: '',
         anestesiologo: '',
         tipo_anestesia: '', // Cambiado a texto libre
         personal_enfermeria: [],
         hallazgos: '',
         procedimiento: '',
-        fecha_cirugia: '',
+        fecha_cirugia: new Date().toISOString().split('T')[0],
         hora_inicio: '',
         hora_fin: ''
     });

@@ -2,6 +2,9 @@ import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function Inicio({auth}) {
+    // Determinar si el usuario es médico o médico_externo usando el campo role
+    const isMedico = ['medico', 'medico_externo'].includes(auth.user.role);
+    
     return (
         <AuthenticatedLayout
             user={auth.user} 
@@ -65,7 +68,19 @@ export default function Inicio({auth}) {
                                     <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Configuración de tu cuenta</p>
                                 </Link>
                                 
-                                {/* Calendario de Citas (opcional) */}
+                                {/* Citas Asignadas - Solo para médicos */}
+                                {isMedico && (
+                                    <Link 
+                                        href={route('citas.asignadas')} 
+                                        className="bg-indigo-100 hover:bg-indigo-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
+                                    >
+                                        <div className="text-5xl mb-4 2xl:text-8xl">📝</div>
+                                        <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Mis Citas</h2>
+                                        <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Citas asignadas pendientes</p>
+                                    </Link>
+                                )}
+                                
+                                {/* Calendario de Citas */}
                                 <Link 
                                     href={route('citas.index')} 
                                     className="bg-teal-100 hover:bg-teal-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
@@ -74,10 +89,11 @@ export default function Inicio({auth}) {
                                     <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Calendario de Citas</h2>
                                     <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Agendar Citas</p>
                                 </Link>
+                                
                                 {/* Fármacos */}
                                 <Link 
                                     href={route('farmacos.index')} 
-                                    className="bg-teal-100 hover:bg-teal-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
+                                    className="bg-orange-100 hover:bg-orange-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
                                 >
                                     <div className="text-5xl mb-4 2xl:text-8xl">💊</div>
                                     <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Farmacia</h2>

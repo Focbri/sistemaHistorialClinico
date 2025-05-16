@@ -48,6 +48,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
             'role' => 'required|in:'.implode(',', array_keys(User::ROLES)),
@@ -55,6 +56,7 @@ class UserController extends Controller
 
         User::create([
             'name' => $validated['name'],
+            'apellido' => $validated['apellido'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
@@ -104,6 +106,7 @@ class UserController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'role' => 'required|in:'.implode(',', array_keys(User::ROLES)),
