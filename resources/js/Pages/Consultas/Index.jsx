@@ -4,11 +4,9 @@ import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 import Pagination from '@/Components/Pagination';
 
-export default function ConsultasIndex({ auth, consultas, links }) {
-    console.log('Consultas recibidas:', consultas); // Depuración
-    console.log('Enlaces de paginación:', links); // Depuración
+export default function ConsultasIndex({ auth, consultas, links, filters }) {
 
-    const [searchDni, setSearchDni] = useState('');
+    const [searchDni, setSearchDni] = useState(filters.dni || '');
 
     const [showPdfNotification, setShowPdfNotification] = useState(false);
     const [pdfNotificationMessage, setPdfNotificationMessage] = useState('');
@@ -16,7 +14,14 @@ export default function ConsultasIndex({ auth, consultas, links }) {
     // Función para buscar consultas por DNI del paciente
     const handleSearch = (e) => {
         e.preventDefault();
-        router.get(route('consultas.index'), { dni: searchDni || undefined });
+        router.get(route('consultas.index'), 
+            { dni: searchDni || undefined }, 
+            {
+                preserveState: true,
+                replace: true,
+                only: ['consultas', 'filters'] // Asegúrate de incluir filters
+            }
+        );
     };
 
     // Función para eliminar una consulta (con modal de confirmación)
@@ -412,10 +417,10 @@ const descargarPDFConsulta = async (consultaId) => {
                             {/* Paginación */}
                             <div className="mt-4">
                             <Pagination 
-    links={consultas.links} 
-    preserveState
-    only={['consultas', 'filters']}
-/>
+                                links={consultas.links} 
+                                preserveState
+                                only={['consultas', 'filters']}
+                            />
                     </div>
                         </div>
                     </div>

@@ -28,10 +28,12 @@ class PacienteController extends Controller
         return inertia('Pacientes/Index', ['pacientes' => $pacientes]);
     }
 
-    public function create()
-    {
-        return inertia('Pacientes/Create');
-    }
+    public function create(Request $request)
+{
+    return Inertia::render('Pacientes/Create', [
+        'dni' => $request->query('dni', '') // Pasa el DNI como prop
+    ]);
+}
 
     public function store(Request $request)
     {

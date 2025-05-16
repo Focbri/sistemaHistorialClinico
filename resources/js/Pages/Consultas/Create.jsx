@@ -12,10 +12,10 @@ import RecetaMedica from '@/Components/RecetaMedica';
 import TerminoBiomicroscopiaSearch from '@/Components/TerminoBiomicroscopiaSearch';
 import TerminoMotivoConsultaSearch from '@/Components/TerminoMotivoConsultaSearch';
 
-export default function ConsultasCreate({ auth }) {
+export default function ConsultasCreate({ auth, dni: dniProp, paciente: pacienteProp }) {
     const { data, setData, post, errors, processing } = useForm({
-        paciente_id: '',
-        dni: '',
+        paciente_id: pacienteProp?.id || '',
+        dni: dniProp || '',
         identificacion: '',
         nombres: '',
         apellido_paterno: '',
@@ -133,6 +133,26 @@ export default function ConsultasCreate({ auth }) {
         comentario: '',
         receta: null,
     });
+
+    useEffect(() => {
+    if (dniProp && !pacienteEncontrado) {
+        setData('dni', dniProp);
+        buscarPaciente();
+    }
+    
+    if (pacienteProp && !pacienteEncontrado) {
+        setData(prev => ({
+            ...prev,
+            ...Object.fromEntries(
+                Object.entries(pacienteProp)
+                    .filter(([key]) => key in prev)
+                    .map(([key, value]) => [key, value || ''])
+            )
+        }));
+        setPacienteEncontrado(true);
+        verificarTipoConsulta(pacienteProp.id);
+    }
+}, [dniProp, pacienteProp]);
 
     // Estado para controlar qué secciones están expandidas
     const [expandedSections, setExpandedSections] = useState({
@@ -325,9 +345,7 @@ export default function ConsultasCreate({ auth }) {
         setData('tipo_consulta', tipoConsulta);
     }, [tipoConsulta]);
 
-     // Efecto para verificar consulta inicial cuando cambia el paciente_id
-     useEffect(() => {
-        const verificarTipoConsulta = async () => {
+    const verificarTipoConsulta = async () => {
             if (data.paciente_id) {
                 try {
                     const response = await fetch(`/consultas/verificar-inicio/${data.paciente_id}`);
@@ -342,9 +360,6 @@ export default function ConsultasCreate({ auth }) {
                 }
             }
         };
-        
-        verificarTipoConsulta();
-    }, [data.paciente_id]);
 
     // Agrega este efecto para cargar el historial cuando el paciente cambia o el tipo de consulta es evolución
     useEffect(() => {
@@ -354,69 +369,69 @@ export default function ConsultasCreate({ auth }) {
     }, [data.paciente_id]);
     
     const buscarPaciente = async () => {
-        if (!data.dni) return;
-        
-        try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-            if (!csrfToken) throw new Error('CSRF token no disponible');
+    if (!data.dni) return;
+    
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrfToken) throw new Error('CSRF token no disponible');
 
-            const response = await fetch('/consultas/buscar-paciente', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify({ dni: data.dni.trim() }),
-            });
-    
-            if (!response.ok) throw new Error('Paciente no encontrado');
-    
-            const result = await response.json();
+        const response = await fetch('/consultas/buscar-paciente', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({ dni: data.dni.trim() }),
+        });
+
+        if (!response.ok) throw new Error('Paciente no encontrado');
+
+        const result = await response.json();
+        
+        if (result.success && result.paciente) {
+            setData(prev => ({
+                ...prev,
+                paciente_id: result.paciente.id,
+                nombres: result.paciente.nombres || '',
+                apellido_paterno: result.paciente.apellido_paterno || '',
+                apellido_materno: result.paciente.apellido_materno || '',
+                telefono: result.paciente.telefono || '',
+                email: result.paciente.email || '',
+                fecha_nacimiento: result.paciente.fecha_nacimiento || '',
+                edad: result.paciente.edad || '',
+                sexo: result.paciente.sexo || '',
+                peso: result.paciente.peso || '',
+                estado_civil: result.paciente.estado_civil || '',
+                ocupacion: result.paciente.ocupacion || '',
+                direccion: result.paciente.direccion || '',
+                procedencia: result.paciente.procedencia || '',
+                acompañante: result.paciente.acompañante || '',
+                referido: result.paciente.referido || '',
+                foto_perfil: result.paciente.foto_perfil || '',
+            }));
             
-            if (result.success && result.paciente) {
-                setData(prev => ({
-                    ...prev,
-                    paciente_id: result.paciente.id,
-                    nombres: result.paciente.nombres || '',
-                    apellido_paterno: result.paciente.apellido_paterno || '',
-                    apellido_materno: result.paciente.apellido_materno || '',
-                    telefono: result.paciente.telefono || '',
-                    email: result.paciente.email || '',
-                    fecha_nacimiento: result.paciente.fecha_nacimiento || '',
-                    edad: result.paciente.edad || '',
-                    sexo: result.paciente.sexo || '',
-                    peso: result.paciente.peso || '',
-                    estado_civil: result.paciente.estado_civil || '',
-                    ocupacion: result.paciente.ocupacion || '',
-                    direccion: result.paciente.direccion || '',
-                    procedencia: result.paciente.procedencia || '',
-                    acompañante: result.paciente.acompañante || '',
-                    referido: result.paciente.referido || '',
-                    foto_perfil: result.paciente.foto_perfil || '',
-                }));
-                
-                setPacienteEncontrado(true);
-                
-                // Determinar tipo de consulta basado en si tiene consulta inicial
-                setData('tipo_consulta', result.tieneConsultaInicial ? 'evolucion' : 'inicio');
-                
-                // Si tiene consulta inicial, cargar historial
-                if (result.tieneConsultaInicial) {
-                    const histResponse = await fetch(`/consultas/historial-diagnosticos/${result.paciente.id}`);
-                    if (histResponse.ok) {
-                        const histData = await histResponse.json();
-                        setHistorialDiagnosticos(histData.diagnosticos || []);
-                    }
+            setPacienteEncontrado(true);
+            
+            // Determinar tipo de consulta basado en si tiene consulta inicial
+            setData('tipo_consulta', result.tieneConsultaInicial ? 'evolucion' : 'inicio');
+            
+            // Si tiene consulta inicial, cargar historial
+            if (result.tieneConsultaInicial) {
+                const histResponse = await fetch(`/consultas/historial-diagnosticos/${result.paciente.id}`);
+                if (histResponse.ok) {
+                    const histData = await histResponse.json();
+                    setHistorialDiagnosticos(histData.diagnosticos || []);
                 }
-            } else {
-                throw new Error(result.message || 'Datos del paciente incompletos');
             }
-        } catch (error) {
-            console.error('Error al buscar paciente:', error);
-            alert(error.message);
-            setPacienteEncontrado(false);
+        } else {
+            throw new Error(result.message || 'Datos del paciente incompletos');
         }
-    };
+    } catch (error) {
+        console.error('Error al buscar paciente:', error);
+        alert(error.message);
+        setPacienteEncontrado(false);
+    }
+};
 
     const cargarHistorialDiagnosticos = async () => {
         if (!data.paciente_id) return;

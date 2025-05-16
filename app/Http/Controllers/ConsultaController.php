@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Validator;
 
 class ConsultaController extends Controller
 {
-    public function index(Request $request) 
+public function index(Request $request) 
 {
     // Consultas médicas
     $queryConsultas = Consulta::with(['paciente', 'receta', 'user', 'refraccion'])
@@ -49,7 +49,6 @@ class ConsultaController extends Controller
         ->merge($queryCirugias->get())
         ->sortByDesc('created_at');
 
-    // Paginación manual
     $page = LengthAwarePaginator::resolveCurrentPage();
     $perPage = 10;
     $results = $resultadosCombinados->slice(($page - 1) * $perPage, $perPage)->values();
@@ -62,82 +61,55 @@ class ConsultaController extends Controller
         [
             'path' => LengthAwarePaginator::resolveCurrentPath(),
             'pageName' => 'page',
+            'query' => $request->query()
         ]
     );
 
-    // Convertir a array y ajustar estructura para Inertia
-    $consultas = $paginatedResults->toArray();
-    $consultas['data'] = $results->toArray();
-    
-    // Construir links en el formato que espera tu componente
-    $links = [];
-    
-    // Previous page
-    $links[] = [
-        'url' => $paginatedResults->previousPageUrl(),
-        'label' => '&laquo; Anterior',
-        'active' => false
-    ];
-    
-    // Numbered pages
-    foreach ($paginatedResults->getUrlRange(1, $paginatedResults->lastPage()) as $page => $url) {
-        $links[] = [
-            'url' => $url,
-            'label' => (string)$page,
-            'active' => $page == $paginatedResults->currentPage()
-        ];
-    }
-    
-    // Next page
-    $links[] = [
-        'url' => $paginatedResults->nextPageUrl(),
-        'label' => 'Siguiente &raquo;',
-        'active' => false
-    ];
-
-    $consultas['links'] = $links;
+    // Asegúrate de incluir el parámetro 'dni' en los links
+    $paginatedResults->appends(['dni' => $request->dni]);
 
     return Inertia::render('Consultas/Index', [
-        'consultas' => $consultas,
+        'consultas' => $paginatedResults,
         'filters' => $request->only(['dni'])
     ]);
 }
 public function create(Request $request)
 {
-    $paciente = null;
+    $request->validate([
+        'tipo' => 'nullable|in:inicio,evolucion',
+        'paciente_id' => 'nullable|exists:pacientes,id',
+        'cita_id' => 'nullable|exists:citas,id',
+        'dni' => 'nullable|string|max:20'
+    ]);
+
     $tipoConsulta = $request->input('tipo', 'inicio');
-    $cita_id = $request->input('cita_id');
+    $paciente = null;
     $historialDiagnosticos = [];
-    
+
     if ($request->has('paciente_id')) {
-        $paciente = Paciente::find($request->input('paciente_id'));
-        
-        if ($paciente) {
-            // Cargar historial solo si es evolución
-            if ($tipoConsulta === 'evolucion') {
-                $historialDiagnosticos = Consulta::where('paciente_id', $paciente->id)
-                    ->whereNotNull('impresion_diagnostica')
-                    ->orderBy('created_at', 'desc')
-                    ->get(['impresion_diagnostica', 'created_at', 'tipo_consulta'])
-                    ->map(function ($consulta) {
-                        return [
-                            'fecha' => $consulta->created_at->format('d/m/Y'),
-                            'diagnostico' => $consulta->impresion_diagnostica,
-                            'tipo' => $consulta->tipo_consulta
-                        ];
-                    });
-            }
+        $paciente = Paciente::with(['consultas' => function($query) {
+            $query->whereNotNull('impresion_diagnostica')
+                  ->orderBy('created_at', 'desc')
+                  ->select('id', 'paciente_id', 'impresion_diagnostica', 'created_at', 'tipo_consulta');
+        }])->find($request->input('paciente_id'));
+
+        if ($paciente && $tipoConsulta === 'evolucion') {
+            $historialDiagnosticos = $paciente->consultas->map(function ($consulta) {
+                return [
+                    'fecha' => $consulta->created_at->format('d/m/Y'),
+                    'diagnostico' => $consulta->impresion_diagnostica,
+                    'tipo' => $consulta->tipo_consulta
+                ];
+            });
         }
     }
 
     return Inertia::render('Consultas/Create', [
-        'paciente' => $paciente, // Envía el objeto paciente completo
+        'paciente' => $paciente,
         'cita_id' => $request->input('cita_id'),
-        'tipoConsulta' => $request->input('tipo', 'inicio'),
+        'dni' => $request->input('dni', ''),
+        'tipoConsulta' => $tipoConsulta,
         'historialDiagnosticos' => $historialDiagnosticos,
-        'pacientes' => Paciente::select('id', 'dni', 'nombres', 'apellido_paterno', 'apellido_materno','edad')
-            ->orderBy('nombres')
-            ->get()
     ]);
 }
 public function show($id)
@@ -1332,6 +1304,45 @@ public function buscarPaciente(Request $request)
             'message' => 'Error en el servidor al buscar paciente'
         ], 500);
     }
+}
+
+public function buscarPacienteCompleto($dni)
+{
+    $paciente = Paciente::where('dni', $dni)
+        ->orWhere('carnet_extranjeria', $dni)
+        ->first();
+
+    if (!$paciente) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Paciente no encontrado'
+        ], 404);
+    }
+
+    $tieneConsultaInicial = $paciente->consultas()
+        ->where('tipo_consulta', 'inicio')
+        ->exists();
+
+    $historial = $tieneConsultaInicial 
+        ? $paciente->consultas()
+            ->whereNotNull('impresion_diagnostica')
+            ->orderBy('created_at', 'desc')
+            ->get(['impresion_diagnostica', 'created_at', 'tipo_consulta'])
+            ->map(function ($consulta) {
+                return [
+                    'fecha' => $consulta->created_at->format('d/m/Y'),
+                    'diagnostico' => $consulta->impresion_diagnostica,
+                    'tipo' => $consulta->tipo_consulta
+                ];
+            })
+        : [];
+
+    return response()->json([
+        'success' => true,
+        'paciente' => $paciente,
+        'tieneConsultaInicial' => $tieneConsultaInicial,
+        'historial' => $historial
+    ]);
 }
 //Metodo para generar historial de diagnosticos
 public function historialDiagnosticos($pacienteId)

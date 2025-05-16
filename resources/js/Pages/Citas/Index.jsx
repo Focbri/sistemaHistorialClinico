@@ -182,17 +182,19 @@ const tileContent = useMemo(() => ({ date, view }) => {
     setShowModal(true);
   };
 
+  const [busquedaRealizada, setBusquedaRealizada] = useState(false);
   // Función para buscar paciente por DNI
   const [buscandoPaciente, setBuscandoPaciente] = useState(false);
 
-  const buscarPaciente = async () => {
-    if (!data.dni || data.dni.length !== 8) {
-      setErrorMessage('El DNI debe tener exactamente 8 dígitos');
-      return;
+const buscarPaciente = async () => {
+  if (!data.dni || data.dni.length !== 8) {
+    setErrorMessage('El DNI debe tener exactamente 8 dígitos');
+    return;
   }
 
   setBuscandoPaciente(true);
   setErrorMessage('');
+  setBusquedaRealizada(true); // <-- Añade esta línea
   
   try {
     const response = await axios.get(route('citas.buscar-paciente'), {
@@ -211,7 +213,7 @@ const tileContent = useMemo(() => ({ date, view }) => {
     } else {
       setPacienteEncontrado(false);
       setPacienteInfo(null);
-      setErrorMessage(response?.data?.message || 'Paciente no encontrado');
+      setErrorMessage('Paciente no encontrado');
     }
   } catch (err) {
     console.error('Error al buscar paciente:', err);
@@ -714,7 +716,7 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
                     )}
                   </div>
 
-                  {pacienteEncontrado && pacienteInfo && (
+                  {pacienteEncontrado && pacienteInfo ? (
                     <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex justify-between items-start">
                         <div>
@@ -753,6 +755,27 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
                         </button>
                       </div>
                     </div>
+                  ) : (
+                    busquedaRealizada && data.dni && data.dni.length === 8 && !pacienteEncontrado && !buscandoPaciente && (
+                      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold text-yellow-800">Paciente no encontrado</h4>
+                            <p className="text-gray-800 mt-2">
+                              No se encontró un paciente con DNI {data.dni} en el sistema.
+                            </p>
+                            <div className="mt-4">
+                              <a
+                                href={route('pacientes.create', { dni: data.dni })}
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block"
+                              >
+                                Registrar Nuevo Paciente
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
                   )}
 
                   <div className='flex justify-center gap-2'>

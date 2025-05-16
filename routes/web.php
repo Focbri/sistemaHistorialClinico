@@ -49,6 +49,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     
     // Pacientes
+    Route::get('pacientes/create', [PacienteController::class, 'create'])
+    ->name('pacientes.create');
     Route::resource('pacientes', PacienteController::class);
     Route::post('pacientes/buscar-por-dni', [PacienteController::class, 'buscarPacientePorDNI'])
         ->name('pacientes.buscar-por-dni');
@@ -64,6 +66,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('consultas')->group(function () {
         Route::get('verificar-inicio/{pacienteId}', [ConsultaController::class, 'verificarConsultaInicio'])
              ->name('consultas.verificar-inicio');
+        Route::get('buscar-paciente-completo/{dni}', [ConsultaController::class, 'buscarPacienteCompleto'])
+            ->name('consultas.buscar-paciente-completo');
         Route::match(['get', 'post'], 'buscar-paciente', [ConsultaController::class, 'buscarPaciente'])
              ->name('consultas.buscar-paciente');
              //PDF PARA CONSULTA

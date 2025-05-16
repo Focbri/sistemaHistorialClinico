@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useRef, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function PacientesCreate({ auth }) {
+export default function PacientesCreate({ auth, dni }) {
     const fileInputRef = useRef(null);
     const [previewImage, setPreviewImage] = useState(null);
     const [documentos, setDocumentos] = useState([]);
@@ -18,7 +18,7 @@ export default function PacientesCreate({ auth }) {
         edad: '',
         peso: '',
         tipo_documento: 'dni', // Nuevo campo para tipo de documento
-        dni: '',
+        dni: dni || '',
         sexo: '',
         estado_civil: '',
         ocupacion: '',

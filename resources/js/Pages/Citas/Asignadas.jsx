@@ -213,7 +213,8 @@ export default function CitasAsignadas({ auth, citas, citasAtendidas }) {
                                             href={route('consultas.create', { 
                                                 paciente_id: selectedCita.paciente_id, 
                                                 cita_id: selectedCita.id,
-                                                tipo: 'inicio'
+                                                tipo: 'inicio',
+                                                dni: selectedCita.paciente?.dni || selectedCita.paciente?.carnet_extranjeria // Añade esta línea
                                             })}
                                             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-center"
                                         >
@@ -224,7 +225,8 @@ export default function CitasAsignadas({ auth, citas, citasAtendidas }) {
                                             href={route('consultas.create', { 
                                                 paciente_id: selectedCita.paciente_id, 
                                                 cita_id: selectedCita.id,
-                                                tipo: 'evolucion'
+                                                tipo: 'evolucion',
+                                                dni: selectedCita.paciente?.dni || selectedCita.paciente?.carnet_extranjeria // Añade esta línea
                                             })}
                                             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-center"
                                         >
