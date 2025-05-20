@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AdvancedFilters from '@/Components/AdvancedFilters';
 import { Head } from '@inertiajs/react';
 import { utils, writeFile } from 'xlsx';
 
@@ -8,44 +9,39 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
     const [loading, setLoading] = useState(false);
     const [lastUpdated, setLastUpdated] = useState('');
     const [error, setError] = useState(null);
-    const [filters, setFilters] = useState({
-        sex: '',
-        minAge: '',
-        maxAge: '',
-        filterType: 'general',
-        searchTerm: '',
-        selectedTerms: []
-    });
-    const [searchResults, setSearchResults] = useState([]);
-    const [searchLoading, setSearchLoading] = useState(false);
 
-    const fetchTopCie10 = async () => {
+    const fetchTopCie10 = async (filters) => {
         try {
             setLoading(true);
             setError(null);
             
             const queryParams = new URLSearchParams();
             
-            if (filters.filterType === 'sex' && filters.sex) {
+            if (filters.activeFilters.sex && filters.sex) {
                 queryParams.append('sex', filters.sex);
             }
             
-            if (filters.filterType === 'age') {
+            if (filters.activeFilters.age) {
                 if (filters.minAge) queryParams.append('min_age', filters.minAge);
                 if (filters.maxAge) queryParams.append('max_age', filters.maxAge);
             }
             
-            // Agregar términos seleccionados al filtro
-            if (filters.selectedTerms.length > 0) {
+            if (filters.activeFilters.dateRange) {
+                if (filters.startDate) queryParams.append('start_date', filters.startDate);
+                if (filters.endDate) queryParams.append('end_date', filters.endDate);
+            }
+            
+            if (filters.activeFilters.procedencia && filters.procedencia) {
+                queryParams.append('procedencia', filters.procedencia);
+            }
+            
+            if (filters.activeFilters.terms && filters.selectedTerms.length > 0) {
                 filters.selectedTerms.forEach(term => {
                     queryParams.append('terms[]', term);
                 });
             }
             
-            queryParams.append('filter_type', filters.filterType);
-            
             const url = `/dashboard/top-cie10?${queryParams.toString()}`;
-            
             const response = await fetch(url, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -64,114 +60,46 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
         } catch (error) {
             console.error('Error fetching CIE10 data:', error);
             setError('Error al cargar los datos. Por favor intente nuevamente.');
+            throw error;
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSearchTermChange = (e) => {
-        setFilters(prev => ({
-            ...prev,
-            searchTerm: e.target.value
-        }));
-    };
-
-    const handleSearch = useCallback(async () => {
-        if (!filters.searchTerm) {
-            setSearchResults([]);
-            return;
-        }
-
-        try {
-            setSearchLoading(true);
-            const response = await fetch(`/cie10/search?query=${encodeURIComponent(filters.searchTerm)}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setSearchResults(data);
-        } catch (error) {
-            console.error('Error searching CIE10:', error);
-            setError('Error al buscar términos CIE10');
-        } finally {
-            setSearchLoading(false);
-        }
-    }, [filters.searchTerm]);
-
-    const handleSelectTerm = (term) => {
-        if (!filters.selectedTerms.includes(term)) {
-            setFilters(prev => ({
-                ...prev,
-                selectedTerms: [...prev.selectedTerms, term],
-                searchTerm: '',
-                searchResults: []
-            }));
-        }
-    };
-
-    const handleRemoveTerm = (termToRemove) => {
-        setFilters(prev => ({
-            ...prev,
-            selectedTerms: prev.selectedTerms.filter(term => term !== termToRemove)
-        }));
-    };
-
-    useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            if (filters.searchTerm) {
-                handleSearch();
-            } else {
-                setSearchResults([]);
-            }
-        }, 300);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [filters.searchTerm, handleSearch]);
-
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const resetFilters = () => {
-        setFilters({
-            sex: '',
-            minAge: '',
-            maxAge: '',
-            filterType: 'general',
-            searchTerm: '',
-            selectedTerms: []
-        });
-        setTimeout(fetchTopCie10, 100);
-    };
-
     const exportToExcel = () => {
         const fechaActual = new Date().toISOString().split('T')[0];
-        
         let title = "CIE10_mas_usados";
         
-        if (filters.filterType === 'sex' && filters.sex) {
-            title = `CIE10_mas_usados_${filters.sex === 'M' ? 'Masculino' : 'Femenino'}`;
-        } else if (filters.filterType === 'age') {
-            const min = filters.minAge || '0';
-            const max = filters.maxAge || '∞';
-            title = `CIE10_mas_usados_Edad_${min}_a_${max}`;
-        } else if (filters.selectedTerms.length > 0) {
-            title = `CIE10_mas_usados_Seleccionados`;
+        const activeFilters = [];
+        
+        if (filters?.activeFilters?.sex && filters?.sex) {
+            activeFilters.push(`Sexo_${filters.sex === 'M' ? 'Masculino' : 'Femenino'}`);
+        }
+        
+        if (filters?.activeFilters?.age) {
+            const min = filters?.minAge || '0';
+            const max = filters?.maxAge || '∞';
+            activeFilters.push(`Edad_${min}_a_${max}`);
+        }
+        
+        if (filters?.activeFilters?.dateRange) {
+            activeFilters.push(`Desde_${filters?.startDate}_Hasta_${filters?.endDate}`);
+        }
+        
+        if (filters?.activeFilters?.procedencia && filters?.procedencia) {
+            activeFilters.push(`Procedencia_${filters.procedencia}`);
+        }
+        
+        if (filters?.activeFilters?.terms && filters?.selectedTerms?.length > 0) {
+            activeFilters.push(`${filters.selectedTerms.length}_terminos`);
+        }
+        
+        if (activeFilters.length > 0) { 
+            title = `CIE10_mas_usados_${activeFilters.join('_')}`;
         }
         
         title = `${title}_${fechaActual}`;
-        
+            
         const data = Object.entries(topCie10).map(([code, count]) => ({
             'Código CIE10': code,
             'Veces usado': count
@@ -185,29 +113,85 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
         writeFile(wb, `${title}.xlsx`);
     };
 
-    const applyFilters = () => {
-        if (filters.filterType === 'age') {
-            if (!filters.minAge || !filters.maxAge) {
-                setError('Por favor complete ambos campos de edad');
+    const handleApplyFilters = async (filters) => {
+        try {
+            // Validación de edad
+            if (filters.activeFilters.age) {
+                if (!filters.minAge || !filters.maxAge) {
+                    setError('Por favor complete ambos campos de edad');
+                    return;
+                }
+                
+                if (parseInt(filters.maxAge) < parseInt(filters.minAge)) {
+                    setError('La edad máxima no puede ser menor que la edad mínima');
+                    return;
+                }
+            }
+            
+            // Validación de rango de fechas
+            if (filters.activeFilters.dateRange) {
+                if (!filters.startDate || !filters.endDate) {
+                    setError('Por favor complete ambas fechas');
+                    return;
+                }
+                
+                if (new Date(filters.endDate) < new Date(filters.startDate)) {
+                    setError('La fecha final no puede ser anterior a la fecha inicial');
+                    return;
+                }
+            }
+            
+            // Validación de sexo
+            if (filters.activeFilters.sex && !filters.sex) {
+                setError('Por favor seleccione un sexo');
                 return;
             }
             
-            if (parseInt(filters.maxAge) < parseInt(filters.minAge)) {
-                setError('La edad máxima no puede ser menor que la edad mínima');
+            // Validación de términos
+            if (filters.activeFilters.terms && filters.selectedTerms.length === 0) {
+                setError('Por favor seleccione al menos un término CIE10');
                 return;
             }
+            
+            setError(null);
+            await fetchTopCie10(filters);
+        } catch (error) {
+            console.error('Error applying filters:', error);
         }
-        
-        setError(null);
-        fetchTopCie10();
     };
 
-    const isFormValid = filters.filterType !== 'age' || 
-                   (filters.minAge && filters.maxAge && parseInt(filters.maxAge) >= parseInt(filters.minAge));
+    const handleResetFilters = async () => {
+        const defaultFilters = {
+            sex: '',
+            minAge: '',
+            maxAge: '',
+            startDate: '',
+            endDate: '',
+            procedencia: '',
+            searchTerm: '',
+            selectedTerms: [],
+            activeFilters: {
+                sex: false,
+                age: false,
+                dateRange: false,
+                procedencia: false,
+                terms: false
+            }
+        };
+        
+        setError(null);
+        await fetchTopCie10(defaultFilters);
+    };
 
     useEffect(() => {
-        fetchTopCie10();
-        const interval = setInterval(fetchTopCie10, 300000);
+        // Carga inicial con filtros por defecto
+        handleResetFilters();
+        
+        // Actualización periódica cada 5 minutos
+        const interval = setInterval(() => {
+            handleResetFilters();
+        }, 300000);
+        
         return () => clearInterval(interval);
     }, []);
 
@@ -223,181 +207,20 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
-                    {/* Tarjeta de Filtros */}
-                    <div className="bg-white shadow rounded-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-200">
-                            <h3 className="text-lg font-medium text-gray-900">Filtros Avanzados</h3>
-                        </div>
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                {/* Tipo de filtro */}
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700">Tipo de filtro</label>
-                                    <select
-                                        name="filterType"
-                                        value={filters.filterType}
-                                        onChange={handleFilterChange}
-                                        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                    >
-                                        <option value="general">General (todos)</option>
-                                        <option value="sex">Por sexo</option>
-                                        <option value="age">Por edad</option>
-                                        <option value="terms">Por términos específicos</option>
-                                    </select>
-                                </div>
-                                
-                                {/* Filtro por sexo */}
-                                {filters.filterType === 'sex' && (
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-gray-700">Sexo</label>
-                                        <select
-                                            name="sex"
-                                            value={filters.sex}
-                                            onChange={handleFilterChange}
-                                            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                        >
-                                            <option value="">Seleccionar</option>
-                                            <option value="M">Masculino</option>
-                                            <option value="F">Femenino</option>
-                                        </select>
-                                    </div>
-                                )}
-                                
-                                {/* Filtro por edad */}
-                                {filters.filterType === 'age' && (
-                                    <>
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-700">Edad mínima</label>
-                                            <input
-                                                type="number"
-                                                name="minAge"
-                                                value={filters.minAge}
-                                                onChange={handleFilterChange}
-                                                placeholder="Mínimo"
-                                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                                min="0"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-700">Edad máxima</label>
-                                            <input
-                                                type="number"
-                                                name="maxAge"
-                                                value={filters.maxAge}
-                                                onChange={handleFilterChange}
-                                                placeholder="Máximo"
-                                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                                min="0"
-                                            />
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* Filtro por términos CIE10 */}
-                                {filters.filterType === 'terms' && (
-                                    <div className="col-span-2 space-y-2">
-                                        <label className="block text-sm font-medium text-gray-700">Buscar términos CIE10</label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                name="searchTerm"
-                                                value={filters.searchTerm}
-                                                onChange={handleSearchTermChange}
-                                                placeholder="Buscar código o descripción CIE10..."
-                                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                            />
-                                            {searchLoading && (
-                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                                    <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Resultados de búsqueda */}
-                                        {searchResults.length > 0 && (
-                                            <div className="mt-1 border border-gray-200 rounded-md max-h-40 overflow-y-auto">
-                                                <ul className="divide-y divide-gray-200">
-                                                    {searchResults.map((result, index) => (
-                                                        <li 
-                                                            key={index} 
-                                                            className="px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                                                            onClick={() => handleSelectTerm(result)}
-                                                        >
-                                                            <div className="text-sm text-gray-800">{result}</div>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-
-                                        {/* Términos seleccionados */}
-                                        {filters.selectedTerms.length > 0 && (
-                                            <div className="mt-2">
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Términos seleccionados</label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {filters.selectedTerms.map((term, index) => (
-                                                        <span 
-                                                            key={index}
-                                                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
-                                                        >
-                                                            {term}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleRemoveTerm(term)}
-                                                                className="ml-1.5 inline-flex text-indigo-600 hover:text-indigo-900 focus:outline-none"
-                                                            >
-                                                                ×
-                                                            </button>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            
-                            {/* Mensajes de error y acciones */}
-                            <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                {error && (
-                                    <div className="text-sm text-red-600 flex items-center">
-                                        <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                        </svg>
-                                        {error}
-                                    </div>
-                                )}
-                                
-                                <div className="flex space-x-3">
-                                    <button
-                                        onClick={resetFilters}
-                                        disabled={loading}
-                                        className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Limpiar
-                                    </button>
-                                    <button
-                                        onClick={applyFilters}
-                                        disabled={loading || !isFormValid}
-                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Aplicando...
-                                            </>
-                                        ) : 'Aplicar Filtros'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Componente de filtros reutilizable */}
+                    <AdvancedFilters 
+                        onApplyFilters={handleApplyFilters}
+                        onResetFilters={handleResetFilters}
+                        onExport={exportToExcel}
+                        disabledSections={{
+                            // Puedes deshabilitar secciones específicas si no las necesitas
+                            // dateRange: true,
+                            // procedencia: true
+                        }}
+                        initialFilters={{
+                            // Puedes establecer valores iniciales si es necesario
+                        }}
+                    />
 
                     {/* Tarjeta de Resultados */}
                     <div className="bg-white shadow rounded-lg overflow-hidden">

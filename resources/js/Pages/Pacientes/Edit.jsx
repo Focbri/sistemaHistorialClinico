@@ -394,14 +394,13 @@ export default function PacientesEdit({ auth, paciente }) {
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
                                             <label className="block text-sm uppercase font-medium text-gray-700">Teléfono</label>
-                                            <input 
+                                            <input
                                                 type="number"                                                
                                                 value={data.telefono}
-                                                min={0}
-                                                max={999999999}
+                                                max={9999999999}
                                                 maxLength={9}
                                                 onChange={(e) => {
-                                                    if (e.target.value.length <= 9) {
+                                                    if (e.target.value.length <= 10) {
                                                         setData('telefono', e.target.value);
                                                     }
                                                 }}

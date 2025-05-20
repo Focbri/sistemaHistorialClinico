@@ -22,29 +22,85 @@ use Inertia\Inertia;
 use phpDocumentor\Reflection\DocBlock\Tags\Var_;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 
 class ConsultaController extends Controller
 {
-public function index(Request $request) 
+public function index(Request $request)
 {
-    // Consultas médicas
+    // Consultas médicas con relaciones
     $queryConsultas = Consulta::with(['paciente', 'receta', 'user', 'refraccion'])
         ->when($request->filled('dni'), function($q) use ($request) {
             $q->whereHas('paciente', function($q) use ($request) {
                 $q->where('dni', 'like', '%'.$request->dni.'%');
             });
+        })
+        ->when($request->filled('startDate'), function($q) use ($request) {
+            $q->whereDate('created_at', '>=', $request->startDate);
+        })
+        ->when($request->filled('endDate'), function($q) use ($request) {
+            $q->whereDate('created_at', '<=', $request->endDate);
+        })
+        ->when($request->filled('sex'), function($q) use ($request) {
+            $q->whereHas('paciente', function($q) use ($request) {
+                $q->where('sexo', $request->sex);
+            });
+        })
+        ->when($request->filled('minAge') && $request->filled('maxAge'), function($q) use ($request) {
+            $minDate = now()->subYears($request->maxAge)->format('Y-m-d');
+            $maxDate = now()->subYears($request->minAge)->format('Y-m-d');
+            $q->whereHas('paciente', function($q) use ($minDate, $maxDate) {
+                $q->whereBetween('fecha_nacimiento', [$minDate, $maxDate]);
+            });
+        })
+        ->when($request->filled('procedencia'), function($q) use ($request) {
+            $q->whereHas('paciente', function($q) use ($request) {
+                $q->where('distrito', $request->procedencia);
+            });
+        })
+        ->when($request->filled('tipo_consulta'), function($q) use ($request) {
+            $q->where('tipo_consulta', $request->tipo_consulta);
+        })
+        ->when($request->filled('medico_id'), function($q) use ($request) {
+            $q->where('user_id', $request->medico_id);
         });
 
-    // Cirugías
-    $queryCirugias = Cirugia::with(['paciente'])
+    // Cirugías con relaciones (mantener los mismos filtros)
+    $queryCirugias = Cirugia::with(['paciente', 'user'])
         ->when($request->filled('dni'), function($q) use ($request) {
             $q->whereHas('paciente', function($q) use ($request) {
                 $q->where('dni', 'like', '%'.$request->dni.'%');
             });
+        })
+        ->when($request->filled('startDate'), function($q) use ($request) {
+            $q->whereDate('created_at', '>=', $request->startDate);
+        })
+        ->when($request->filled('endDate'), function($q) use ($request) {
+            $q->whereDate('created_at', '<=', $request->endDate);
+        })
+        ->when($request->filled('sex'), function($q) use ($request) {
+            $q->whereHas('paciente', function($q) use ($request) {
+                $q->where('sexo', $request->sex);
+            });
+        })
+        ->when($request->filled('minAge') && $request->filled('maxAge'), function($q) use ($request) {
+            $minDate = now()->subYears($request->maxAge)->format('Y-m-d');
+            $maxDate = now()->subYears($request->minAge)->format('Y-m-d');
+            $q->whereHas('paciente', function($q) use ($minDate, $maxDate) {
+                $q->whereBetween('fecha_nacimiento', [$minDate, $maxDate]);
+            });
+        })
+        ->when($request->filled('procedencia'), function($q) use ($request) {
+            $q->whereHas('paciente', function($q) use ($request) {
+                $q->where('distrito', $request->procedencia);
+            });
+        })
+        ->when($request->filled('medico_id'), function($q) use ($request) {
+            $q->where('user_id', $request->medico_id);
         });
 
-    // Combinar resultados
+    // Combinar y paginar resultados
     $resultadosCombinados = $queryConsultas->get()
         ->merge($queryCirugias->get())
         ->sortByDesc('created_at');
@@ -65,12 +121,19 @@ public function index(Request $request)
         ]
     );
 
-    // Asegúrate de incluir el parámetro 'dni' en los links
-    $paginatedResults->appends(['dni' => $request->dni]);
-
     return Inertia::render('Consultas/Index', [
         'consultas' => $paginatedResults,
-        'filters' => $request->only(['dni'])
+        'filters' => $request->only([
+            'dni', 
+            'startDate', 
+            'endDate', 
+            'sex',
+            'minAge',
+            'maxAge',
+            'procedencia',
+            'tipo_consulta',
+            'medico_id'
+        ]),
     ]);
 }
 public function create(Request $request)
@@ -317,6 +380,8 @@ public function store(Request $request)
             //
             'comentario' => 'nullable|array',
             'comentario.*' => 'string',
+            'ciit_archivos' => 'nullable|array',
+            'ciit_archivos.*' => 'file|mimes:pdf,doc,docx,xls,xlsx|max:51200',
         ]);        
 
         // Verificar si ya existe una consulta de inicio para este paciente
@@ -363,10 +428,11 @@ public function store(Request $request)
             }
         }
 
-        // Configurar rutas
+        // IMPORTANTE Configurar rutas 
         $carpetaBase = 'pacientes/'.$paciente->dni;
         $carpetaImagenes = $carpetaBase.'/imagenes';
         $carpetaArchivos = $carpetaBase.'/archivos';
+        $carpetaArchivosCiit = $carpetaBase.'/archivos_ciit';
 
         // Crear las carpetas si no existen
         if (!Storage::disk('public')->exists($carpetaImagenes)) {
@@ -375,6 +441,10 @@ public function store(Request $request)
         if (!Storage::disk('public')->exists($carpetaArchivos)) {
             Storage::disk('public')->makeDirectory($carpetaArchivos);
         }    
+
+        if (!Storage::disk('public')->exists($carpetaArchivosCiit)) {
+            Storage::disk('public')->makeDirectory($carpetaArchivosCiit);
+        }
 
         // Procesar imágenes
         $imagenes = [];
@@ -419,6 +489,25 @@ public function store(Request $request)
             $paciente->codigo_historial = 'HCL-' . $paciente->dni;
             $paciente->save();
         }
+
+        $ciitArchivos = [];
+        if ($request->hasFile('ciit_archivos')) {
+            foreach ($request->file('ciit_archivos') as $file) {
+                $nombreOriginal = $file->getClientOriginalName();
+                $path = $file->storeAs(
+                    $carpetaArchivosCiit, // Puedes usar la misma carpeta o crear una específica para CIIT
+                    $nombreOriginal,
+                    'public'
+                );
+                
+                $ciitArchivos[] = [
+                    'ruta' => $path,
+                    'nombre_original' => $nombreOriginal,
+                    'tipo' => 'file'
+                ];
+            }
+        }
+
         
         // Crear la consulta
         $consulta = Consulta::create([
@@ -477,6 +566,7 @@ public function store(Request $request)
             'f_o_conclusion' => $request->f_o_conclusion,
             'f_o_plan' => $request->f_o_plan,
             'comentario' => $request->comentario,
+            'ciit_archivos' => json_encode($ciitArchivos),
         ]);
 
         // Crear el registro de refracción si hay datos
@@ -1389,7 +1479,6 @@ protected function parseFondoOjoPosiciones($data)
     return []; // Valor por defecto si está vacío o es inválido
 }
 // Método para generar el PDF
-// ConsultaController.php
 public function generarPDF(Consulta $consulta)
 {
     try {
@@ -1414,108 +1503,85 @@ public function generarPDF(Consulta $consulta)
         abort(500, "Error al generar el documento. Por favor intente nuevamente.");
     }
 }
-private function filtrarDatosParaPDF(Consulta $consulta)
-{
-    // Obtener datos del examen si existe
-    $examenData = $consulta->examen ? $consulta->examen->toArray() : [];
-
-    return [
-        'paciente' => [
-            'nombres' => $consulta->paciente->nombres,
-            'apellido_paterno' => $consulta->paciente->apellido_paterno,
-            'apellido_materno' => $consulta->paciente->apellido_materno,
-            'dni' => $consulta->paciente->dni,
-            'edad' => $consulta->paciente->edad,
-            'sexo' => $consulta->paciente->sexo,
-            'telefono' => $consulta->paciente->telefono,
-            'email' => $consulta->paciente->email,
-            'direccion' => $consulta->paciente->direccion,
-            'fecha_nacimiento' => $consulta->paciente->fecha_nacimiento,
-        ],
-        'consulta' => array_merge(
-            $consulta->only([
-                'antecedentes_personales_hta',
-                'antecedentes_personales_dm',
-                'antecedentes_personales_alergias',
-                'antecedentes_personales_otros',
-                'antecedentes_patologicos_familiares',
-                'cirugias_previas',
-                'motivo_consulta_inicio',
-                'motivo_consulta_signos',
-                'motivo_consulta_enfermedad',
-                'motivo_consulta_otros',
-                'biomicroscopia_movoculares_od',
-                'biomicroscopia_parpados_od',
-                'biomicroscopia_cornea_od',
-                'biomicroscopia_corneaconj_od',
-                'biomicroscopia_ca_od',
-                'biomicroscopia_iris_od',
-                'biomicroscopia_cristalino_od',
-                'biomicroscopia_movoculares_oi',
-                'biomicroscopia_parpados_oi',
-                'biomicroscopia_cornea_oi',
-                'biomicroscopia_corneaconj_oi',
-                'biomicroscopia_ca_oi',
-                'biomicroscopia_iris_oi',
-                'biomicroscopia_cristalino_oi',
-                'fondo_ojo_posiciones',
-                'fondo_ojo_retina_p_od',
-                'fondo_ojo_macula_od',
-                'fondo_ojo_vitreo_od',
-                'fondo_ojo_disco_o_od',
-                'fondo_ojo_vasos_od',
-                'fondo_ojo_macula_oi',
-                'fondo_ojo_vitreo_oi',
-                'fondo_ojo_disco_o_oi',
-                'fondo_ojo_vasos_oi',
-                'fondo_ojo_retina_p_oi',
-                'f_o_dilat_pup_od',
-                'f_o_dilat_pup_oi',
-                'f_o_locs_tres_od',
-                'f_o_locs_tres_oi',
-                'f_o_fundoscopia_od',
-                'f_o_fundoscopia_oi',
-                'f_o_conclusion',
-                'f_o_plan',
-                'impresion_diagnostica',
-                'tratamiento',
-                'plan',
-                'comentario',
-                'evoluciones',
-                'tipo_consulta',
-            ]),
-            ['examen' => $examenData] // Incluye todos los datos del examen con sus nombres reales
-        ),
-        'medico' => [
-            'name' => $consulta->medico->name ?? 'Médico no asignado',
-            'numero_colegiatura' => $consulta->medico->numero_colegiatura ?? 'N/A'
-        ]
-    ];
-}
-// Método auxiliar para convertir imágenes a base64 para PDF
-private function imageToBase64($path)
-{
-    if (!file_exists($path)) {
-        throw new \Exception("Imagen no encontrada: $path");
-    }
-    $type = pathinfo($path, PATHINFO_EXTENSION);
-    $data = file_get_contents($path);
-    return 'data:image/' . $type . ';base64,' . base64_encode($data);
-}
-    // Método auxiliar para guardar el PDF
-    private function guardarPDF($consulta, $pdf)
+    private function filtrarDatosParaPDF(Consulta $consulta)
     {
-        $directory = 'pacientes/' . $consulta->paciente->dni . '/historial_clinico';
-        $filename = 'consulta_' . $consulta->id . '_' . now()->format('YmdHis') . '.pdf';
-        
-        if (!Storage::disk('public')->exists($directory)) {
-            Storage::disk('public')->makeDirectory($directory);
-        }
-        
-        Storage::disk('public')->put($directory . '/' . $filename, $pdf->output());
-        
-        return $directory . '/' . $filename;
+        // Obtener datos del examen si existe
+        $examenData = $consulta->examen ? $consulta->examen->toArray() : [];
+
+        return [
+            'paciente' => [
+                'nombres' => $consulta->paciente->nombres,
+                'apellido_paterno' => $consulta->paciente->apellido_paterno,
+                'apellido_materno' => $consulta->paciente->apellido_materno,
+                'dni' => $consulta->paciente->dni,
+                'edad' => $consulta->paciente->edad,
+                'sexo' => $consulta->paciente->sexo,
+                'telefono' => $consulta->paciente->telefono,
+                'email' => $consulta->paciente->email,
+                'direccion' => $consulta->paciente->direccion,
+                'fecha_nacimiento' => $consulta->paciente->fecha_nacimiento,
+            ],
+            'consulta' => array_merge(
+                $consulta->only([
+                    'antecedentes_personales_hta',
+                    'antecedentes_personales_dm',
+                    'antecedentes_personales_alergias',
+                    'antecedentes_personales_otros',
+                    'antecedentes_patologicos_familiares',
+                    'cirugias_previas',
+                    'motivo_consulta_inicio',
+                    'motivo_consulta_signos',
+                    'motivo_consulta_enfermedad',
+                    'motivo_consulta_otros',
+                    'biomicroscopia_movoculares_od',
+                    'biomicroscopia_parpados_od',
+                    'biomicroscopia_cornea_od',
+                    'biomicroscopia_corneaconj_od',
+                    'biomicroscopia_ca_od',
+                    'biomicroscopia_iris_od',
+                    'biomicroscopia_cristalino_od',
+                    'biomicroscopia_movoculares_oi',
+                    'biomicroscopia_parpados_oi',
+                    'biomicroscopia_cornea_oi',
+                    'biomicroscopia_corneaconj_oi',
+                    'biomicroscopia_ca_oi',
+                    'biomicroscopia_iris_oi',
+                    'biomicroscopia_cristalino_oi',
+                    'fondo_ojo_posiciones',
+                    'fondo_ojo_retina_p_od',
+                    'fondo_ojo_macula_od',
+                    'fondo_ojo_vitreo_od',
+                    'fondo_ojo_disco_o_od',
+                    'fondo_ojo_vasos_od',
+                    'fondo_ojo_macula_oi',
+                    'fondo_ojo_vitreo_oi',
+                    'fondo_ojo_disco_o_oi',
+                    'fondo_ojo_vasos_oi',
+                    'fondo_ojo_retina_p_oi',
+                    'f_o_dilat_pup_od',
+                    'f_o_dilat_pup_oi',
+                    'f_o_locs_tres_od',
+                    'f_o_locs_tres_oi',
+                    'f_o_fundoscopia_od',
+                    'f_o_fundoscopia_oi',
+                    'f_o_conclusion',
+                    'f_o_plan',
+                    'impresion_diagnostica',
+                    'tratamiento',
+                    'plan',
+                    'comentario',
+                    'evoluciones',
+                    'tipo_consulta',
+                ]),
+                ['examen' => $examenData] // Incluye todos los datos del examen con sus nombres reales
+            ),
+            'medico' => [
+                'name' => $consulta->medico->name ?? 'Médico no asignado',
+                'numero_colegiatura' => $consulta->medico->numero_colegiatura ?? 'N/A'
+            ]
+        ];
     }
+// Método auxiliar para convertir imágenes a base64 para PDF
     // Verificar si existe una consulta de inicio para el paciente
     public function verificarConsultaInicio($pacienteId)
     {

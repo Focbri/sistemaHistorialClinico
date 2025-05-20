@@ -5,6 +5,7 @@ import { format, parseISO, isSameDay, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import 'react-calendar/dist/Calendar.css';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AdvancedFilters from '@/Components/AdvancedFilters';
 import axios from 'axios';
 
 export default function CitasIndex({ calendarData: initialCalendarData = [], medicos = [], citas = [] }) {
@@ -36,6 +37,116 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
     dni: '',
     estado: 'programada'
   });
+
+//FILTRO
+  const [filters, setFilters] = useState({
+  sex: '',
+  minAge: '',
+  maxAge: '',
+  startDate: '',
+  endDate: '',
+  procedencia: '',
+  searchTerm: '',
+  selectedTerms: [],
+  activeFilters: {
+    sex: false,
+    age: false,
+    dateRange: false,
+    procedencia: false,
+    terms: false
+  }
+});
+
+const handleApplyFilters = async (appliedFilters) => {
+  try {
+    setLoading(true);
+    setFilters(appliedFilters);
+    
+    // Construye los parámetros para la API
+    const params = {};
+    
+    if (appliedFilters.activeFilters.sex && appliedFilters.sex) {
+      params.sex = appliedFilters.sex;
+    }
+    
+    if (appliedFilters.activeFilters.age) {
+      if (appliedFilters.minAge) params.min_age = appliedFilters.minAge;
+      if (appliedFilters.maxAge) params.max_age = appliedFilters.maxAge;
+    }
+    
+    if (appliedFilters.activeFilters.dateRange) {
+      if (appliedFilters.startDate) params.start_date = appliedFilters.startDate;
+      if (appliedFilters.endDate) params.end_date = appliedFilters.endDate;
+    }
+    
+    if (appliedFilters.activeFilters.procedencia && appliedFilters.procedencia) {
+      params.procedencia = appliedFilters.procedencia;
+    }
+    
+    if (appliedFilters.activeFilters.terms && appliedFilters.selectedTerms.length > 0) {
+      params.terms = appliedFilters.selectedTerms.join(',');
+    }
+    
+    // Hacer la petición al backend
+    const response = await router.get('/citas', params, {
+      preserveState: true,
+      onSuccess: (props) => {
+        if (props?.citas) {
+          // Actualiza las citas con los resultados filtrados
+          // Esto depende de cómo manejes los datos en tu backend
+        }
+      },
+      onError: (errors) => {
+        setError('Error al aplicar los filtros');
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error al aplicar filtros:', error);
+    setError('Error al aplicar los filtros');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleResetFilters = async () => {
+  try {
+    setLoading(true);
+    setFilters({
+      sex: '',
+      minAge: '',
+      maxAge: '',
+      startDate: '',
+      endDate: '',
+      procedencia: '',
+      searchTerm: '',
+      selectedTerms: [],
+      activeFilters: {
+        sex: false,
+        age: false,
+        dateRange: false,
+        procedencia: false,
+        terms: false
+      }
+    });
+    
+    // Recargar todas las citas sin filtros
+    await router.get('/citas', {}, {
+      preserveState: true,
+      onSuccess: (props) => {
+        if (props?.citas) {
+          // Actualiza las citas con todos los resultados
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error al resetear filtros:', error);
+    setError('Error al resetear los filtros');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Carga de datos optimizada
 const loadMonthData = async (date) => {
@@ -571,6 +682,19 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
           </div>
         ) : (
           <div className="overflow-x-auto bg-white rounded-lg shadow">
+            <div className="mb-6">
+              <AdvancedFilters
+                initialFilters={filters}
+                onApplyFilters={handleApplyFilters}
+                onResetFilters={handleResetFilters}
+                disabledSections={{
+                  all: activeTab === 'calendario',
+                  terms: true // Deshabilitar en vista de calendario
+                }}
+                exportEnabled={activeTab === 'lista'}
+                showActiveFilters={true}
+              />
+            </div>
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

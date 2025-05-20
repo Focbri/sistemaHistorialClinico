@@ -129,6 +129,7 @@ class Consulta extends Model
         'exam_old_cerca_eje_oi' ,
         'exam_old_cerca_dip' ,
         'comentario',
+        'ciit',
     ];
 
     /**
@@ -248,6 +249,7 @@ class Consulta extends Model
             'exam_old_cerca_eje_oi' ,
             'exam_old_cerca_dip' ,
             'comentario' => 'nullable|string',
+            'ciit' => 'nullable|string',
         ];
     }
 

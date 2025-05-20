@@ -13,13 +13,58 @@ use Illuminate\Support\Facades\DB;
 class CitaController extends Controller
 {
 public function index(Request $request)
-    {
+{
+    $query = Cita::with(['paciente', 'medico']);
+
+    // Aplicar filtros si existen
+    if ($request->filled('sex')) {
+        $query->whereHas('paciente', function($q) use ($request) {
+            $q->where('sexo', $request->sex);
+        });
+    }
+    
+    if ($request->filled('min_age') || $request->filled('max_age')) {
+        $query->whereHas('paciente', function($q) use ($request) {
+            if ($request->filled('min_age')) {
+                $q->where('edad', '>=', $request->min_age);
+            }
+            if ($request->filled('max_age')) {
+                $q->where('edad', '<=', $request->max_age);
+            }
+        });
+    }
+    
+    if ($request->filled('start_date') && $request->filled('end_date')) {
+        $query->whereBetween('fecha_hora', [
+            $request->start_date,
+            $request->end_date
+        ]);
+    }
+    
+    if ($request->filled('procedencia')) {
+        $query->whereHas('paciente', function($q) use ($request) {
+            $q->where('procedencia', $request->procedencia);
+        });
+    }
+    
+    if ($request->filled('terms')) {
+        $terms = explode(',', $request->terms);
+        $query->where(function($q) use ($terms) {
+            foreach ($terms as $term) {
+                $q->orWhere('motivo', 'LIKE', "%{$term}%");
+            }
+        });
+    }
+
+    // Obtener citas filtradas
+    $citas = $query->orderBy('fecha_hora', 'desc')->get();
+
+    // Generar datos del calendario (solo si no hay filtros de fecha)
+    $calendarData = [];
+    if (!$request->filled('start_date') && !$request->filled('end_date')) {
         $year = $request->input('year', date('Y'));
         $month = $request->input('month', date('m'));
-
-        // Obtener días del mes con conteo de citas
         $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
-        $calendarData = [];
 
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
@@ -34,20 +79,17 @@ public function index(Request $request)
                 'citas_count' => $citasCount,
             ];
         }
-
-        // Obtener todas las citas con relaciones
-        $citas = Cita::with(['paciente', 'medico'])
-                    ->orderBy('fecha_hora', 'desc')
-                    ->get();
-
-        return Inertia::render('Citas/Index', [
-            'calendarData' => $calendarData,
-            'currentMonth' => $month,
-            'currentYear' => $year,
-            'medicos' => User::where('role', 'medico')->get(),
-            'citas' => $citas,
-        ]);
     }
+
+    return Inertia::render('Citas/Index', [
+        'calendarData' => $calendarData,
+        'currentMonth' => $request->input('month', date('m')),
+        'currentYear' => $request->input('year', date('Y')),
+        'medicos' => User::where('role', 'medico')->get(),
+        'citas' => $citas,
+        'filters' => $request->only(['sex', 'min_age', 'max_age', 'start_date', 'end_date', 'procedencia', 'terms'])
+    ]);
+}
 
 public function store(Request $request)
 {
@@ -355,5 +397,55 @@ public function updateStatus(Request $request, Cita $cita)
     ]);
 
     return back()->with('success', 'Estado de la cita actualizado correctamente');
+}
+
+public function filtrar(Request $request)
+{
+    $query = Cita::with(['paciente', 'medico']);
+    
+    // Filtro por sexo
+    if ($request->filled('sex')) {
+        $query->whereHas('paciente', function($q) use ($request) {
+            $q->where('sexo', $request->sex);
+        });
+    }
+    
+    // Filtro por edad
+    if ($request->filled('minAge') || $request->filled('maxAge')) {
+        $query->whereHas('paciente', function($q) use ($request) {
+            if ($request->filled('minAge')) {
+                $q->where('edad', '>=', $request->minAge);
+            }
+            if ($request->filled('maxAge')) {
+                $q->where('edad', '<=', $request->maxAge);
+            }
+        });
+    }
+    
+    // Filtro por rango de fechas
+    if ($request->filled('startDate') && $request->filled('endDate')) {
+        $query->whereBetween('fecha_hora', [
+            $request->startDate,
+            $request->endDate
+        ]);
+    }
+    
+    // Filtro por procedencia
+    if ($request->filled('procedencia')) {
+        $query->whereHas('paciente', function($q) use ($request) {
+            $q->where('procedencia', $request->procedencia);
+        });
+    }
+    
+    // Filtro por términos CIE10
+    if ($request->filled('terms') && is_array($request->terms)) {
+        $query->where(function($q) use ($request) {
+            foreach ($request->terms as $term) {
+                $q->orWhere('motivo', 'LIKE', "%{$term}%");
+            }
+        });
+    }
+    
+    return response()->json($query->get());
 }
 }

@@ -146,13 +146,6 @@ export default function PacientesCreate({ auth, dni }) {
             formData.append('foto_perfil', data.foto_perfil);
         }
 
-        // Agregar documentos si existen
-        if (data.documentos && data.documentos.length > 0) {
-            data.documentos.forEach((file, index) => {
-                formData.append(`documentos[${index}]`, file);
-            });
-        }
-
         post(route('pacientes.store'), {
             data: formData,
             preserveScroll: true,
@@ -265,8 +258,8 @@ useEffect(() => {
                                 <div className='grid grid-cols-2 gap-12'>
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Apellido Paterno</label>
-                                            <input
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Apellido Paterno*</label>
+                                            <input required
                                                 type="text"
                                                 value={data.apellido_paterno}
                                                 onChange={(e) => setData('apellido_paterno', e.target.value)}
@@ -275,8 +268,8 @@ useEffect(() => {
                                             {errors.apellido_paterno && <p className="text-sm text-red-500">{errors.apellido_paterno}</p>}
                                         </div>                                           
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Apellido Materno</label>
-                                            <input
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Apellido Materno*</label>
+                                            <input required
                                                 type="text"
                                                 value={data.apellido_materno}
                                                 onChange={(e) => setData('apellido_materno', e.target.value)}
@@ -285,8 +278,8 @@ useEffect(() => {
                                             {errors.apellido_materno && <p className="text-sm text-red-500">{errors.apellido_materno}</p>}
                                         </div>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Nombres</label>
-                                            <input
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Nombres*</label>
+                                            <input required
                                                 type="text"
                                                 value={data.nombres}
                                                 onChange={(e) => setData('nombres', e.target.value)}
@@ -299,8 +292,8 @@ useEffect(() => {
                                     
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Fecha Nacimiento</label>
-                                            <input 
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Fecha Nacimiento*</label>
+                                            <input required
                                                 type="date"
                                                 value={data.fecha_nacimiento || ''}
                                                 onChange={(e) => setData('fecha_nacimiento', e.target.value)}
@@ -312,7 +305,7 @@ useEffect(() => {
                                         <div className='grid grid-cols-2'>
                                             <div className="mb-4 mr-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">Edad</label>
-                                                <input 
+                                                <input required
                                                     type="number"
                                                     min={0}
                                                     max={999}
@@ -343,7 +336,7 @@ useEffect(() => {
                                                     step="0.01"
                                                 />
                                                 {errors.peso && <p className="text-sm text-red-500">{errors.peso}</p>}
-                                            </div>
+                                            </div> 
 
                                             <div className="mr-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">Género</label>
@@ -360,7 +353,7 @@ useEffect(() => {
                                             </div>
 
                                             <div className="mb-4">
-                                                <label className="block text-sm uppercase font-medium text-gray-700">Tipo de Documento</label>
+                                                <label className="block text-sm uppercase font-medium text-gray-700">Tipo de Documento*</label>
                                                 <select 
                                                     value={tipoDocumento}
                                                     onChange={handleTipoDocumentoChange}
@@ -372,9 +365,9 @@ useEffect(() => {
                                             </div>
                                             <div className="mb-4">
                                                 <label className="block text-sm uppercase font-medium text-gray-700">
-                                                    {tipoDocumento === 'dni' ? 'DNI' : 'Carnet de Extranjería'}
+                                                    {tipoDocumento === 'dni' ? 'DNI*' : 'Carnet de Extranjería*'}
                                                 </label>
-                                                <input 
+                                                <input required
                                                     type="text"
                                                     value={data.dni}
                                                     onChange={handleDocumentoChange}
@@ -475,8 +468,8 @@ useEffect(() => {
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Domicilio</label>
-                                            <input 
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Domicilio*</label>
+                                            <input required
                                                 type="text"
                                                 value={data.direccion}
                                                 onChange={(e) => setData('direccion', e.target.value)}
@@ -488,8 +481,8 @@ useEffect(() => {
 
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Teléfono/Celular</label>
-                                            <input 
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Teléfono/Celular*</label>
+                                            <input required
                                                 type="number"                                                
                                                 value={data.telefono}
                                                 max={9999999999}
@@ -540,8 +533,8 @@ useEffect(() => {
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Correo</label>
-                                            <input 
+                                            <label className="block text-sm uppercase font-medium text-gray-700">Correo*</label>
+                                            <input required
                                                 type="email"
                                                 value={data.email}
                                                 onChange={(e) => setData('email', e.target.value)}

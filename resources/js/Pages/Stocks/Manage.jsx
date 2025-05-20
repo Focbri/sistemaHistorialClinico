@@ -20,7 +20,7 @@ export default function ManageStock({ auth, farmaco, stock, almacenes }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        put(route('stocks.update', farmaco.id));
+        put(route('farmacos.stock.update', farmaco.id), data);
     };
 
     return (

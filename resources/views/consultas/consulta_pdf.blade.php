@@ -45,7 +45,7 @@
         </div>
     </div>
 
-    @if($consulta['tipo_consulta'] == 'Inicio')
+    @if($consulta['tipo_consulta'] == 'inicio')
         <!-- Antecedentes SOLO INICIO -->
         <div class="section">
             <div class="section-title">ANTECEDENTES PERSONALES</div>

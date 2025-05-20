@@ -5,117 +5,140 @@
     <title>Reporte de Cirugía</title>
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .title { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
-        .patient-info { margin-bottom: 20px; }
+        .header { text-align: center; margin-bottom: 5px; }
+        .title { font-size: 20px; font-weight: bold; }
         .section { margin-bottom: 15px; }
-        .section-title { 
-            font-weight: bold; 
-            margin-bottom: 5px; 
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-        }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .footer { margin-top: 40px; text-align: right; }
+        th, td { border: 1px solid #ddd; padding: 4px; text-align: left; }
+        .footer { margin-top: 20px; text-align: right; }
+        .vertical-center { vertical-align: middle; }
     </style>
 </head>
 <body>
+    <img src="{{ public_path('img/logoVisualOsf.png') }}" alt="Logo" style="width: 100px; height: auto;">
     <div class="header">
-        <div class="title">REPORTE QUIRÚRGICO</div>
-        <div>Código: {{ $cirugia->codigo_historial }}</div>
+        <div class="title">INFORME OPERATORIO</div>
     </div>
-
-    <div class="patient-info">
-        <div><strong>Paciente:</strong> {{ $cirugia->paciente->nombres }} {{ $cirugia->paciente->apellido_paterno }}</div>
-        <div><strong>DNI:</strong> {{ $cirugia->paciente->dni }}</div>
-        <div><strong>Fecha de Cirugía:</strong> {{ date('d/m/Y', strtotime($cirugia->fecha_cirugia)) }}</div>
-    </div>
-
     <div class="section">
-        <div class="section-title">DATOS DE LA INTERVENCIÓN</div>
         <table>
+            <!--REPORTE OPERATORIO - 3 columnas como solicitado -->
             <tr>
-                <td width="30%"><strong>Cirugía:</strong></td>
-                <td>{{ $cirugia->cirugia }}</td>
+                <td width="25%" style="vertical-align: middle; text-align: center;" rowspan="4">
+                    <strong>REPORTE OPERATORIO</strong>
+                </td>
+                <td width="25%" style="vertical-align: top;">
+                    <strong>NUMERO DE HCL</strong>
+                </td>
+                <td width="50%" style="vertical-align: top;">
+                    {{ $cirugia->codigo_historial }}
+                </td>
             </tr>
             <tr>
-                <td><strong>Diagnóstico Preoperatorio:</strong></td>
-                <td>{{ $cirugia->diagnostico_preoperatorio }}</td>
+                <td style="vertical-align: top;">
+                    <strong>FECHA</strong>
+                </td>
+                <td style="vertical-align: top;">
+                    {{ date('d/m/Y', strtotime($cirugia->fecha_cirugia)) }}
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;">
+                    <strong>HORA INICIO</strong>
+                </td>
+                <td style="vertical-align: top;">
+                    {{ date('H:i', strtotime($cirugia->hora_inicio)) }}
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;">
+                    <strong>HORA DE TERMINO</strong>
+                </td>
+                <td style="vertical-align: top;">
+                    {{ date('H:i', strtotime($cirugia->hora_fin)) }}
+                </td>
+            </tr>
+            
+            <!--INFO. PACIENTE-->
+            <tr>
+                <td><strong>APELLIDOS:</strong> {{ $cirugia->paciente->apellido_paterno }} {{ $cirugia->paciente->apellido_materno }}</td>
+                <td colspan="2"><strong>NOMBRES:</strong> {{ $cirugia->paciente->nombres }}</td>
+            </tr>
+            
+            <!--CIRUGIA-->
+            <tr>
+                <td><strong>DIAGNÓSTICO PRE-OPERATORIO</strong></td>
+                <td colspan="2">{{ $cirugia->diagnostico_preoperatorio }}</td>
             </tr>
             @if($cirugia->diagnostico_postoperatorio)
             <tr>
-                <td><strong>Diagnóstico Postoperatorio:</strong></td>
-                <td>{{ $cirugia->diagnostico_postoperatorio }}</td>
+                <td><strong>DIAGNÓSTICO POST-OPERATORIO</strong></td>
+                <td colspan="2">{{ $cirugia->diagnostico_postoperatorio }}</td>
             </tr>
             @endif
             <tr>
-                <td><strong>Descripción del Procedimiento:</strong></td>
-                <td>{{ $cirugia->procedimiento }}</td>
+                <td width="25%"><strong>CIRUGÍA</strong></td>
+                <td colspan="2">{{ $cirugia->cirugia }}</td>
             </tr>
-            @if($cirugia->hallazgos)
+            
+            <!--EQUIPO QUIRÚRGICO - CORREGIDO PARA COLUMNAS DE IGUAL ANCHO -->
             <tr>
-                <td><strong>Hallazgos:</strong></td>
-                <td>{{ $cirugia->hallazgos }}</td>
-            </tr>
-            @endif
-        </table>
-    </div>
-
-    <div class="section">
-        <div class="section-title">EQUIPO QUIRÚRGICO</div>
-        <table>
-            <tr>
-                <td width="30%"><strong>Cirujano Principal:</strong></td>
-                <td>{{ $cirugia->cirujano_principal }}</td>
-            </tr>
-            @if($cirugia->cirujano_ayudante)
-            <tr>
-                <td><strong>Cirujano Ayudante:</strong></td>
-                <td>{{ $cirugia->cirujano_ayudante }}</td>
-            </tr>
-            @endif
-            <tr>
-                <td><strong>Anestesiológo:</strong></td>
-                <td>{{ $cirugia->anestesiologo }}</td>
-            </tr>
-            <tr>
-                <td><strong>Tipo de Anestesia:</strong></td>
-                <td>{{ $cirugia->tipo_anestesia }}</td>
-            </tr>
-            @if(!empty($personalEnfermeria))
-            <tr>
-                <td><strong>Personal de Enfermería:</strong></td>
-                <td>
-                    @foreach($personalEnfermeria as $enfermero)
-                        • {{ $enfermero }}<br>
-                    @endforeach
+                <td style="vertical-align: middle; text-align: center;">
+                    <strong>CIRUJANOS</strong>
+                </td>            
+                <td style="vertical-align: top; width: 37.5%;">
+                    <strong>CIRUJANO PRINCIPAL</strong><br>
+                    {{ $cirugia->cirujano_principal }}
+                </td>            
+                <td style="vertical-align: top; width: 37.5%;">
+                    @if($cirugia->cirujano_ayudante)
+                    <strong>CIRUJANO AYUDANTE</strong><br>
+                    {{ $cirugia->cirujano_ayudante }}
+                    @endif
                 </td>
             </tr>
-            @endif
-        </table>
-    </div>
-
-    <div class="section">
-        <div class="section-title">TIEMPOS QUIRÚRGICOS</div>
-        <table>
             <tr>
-                <td width="30%"><strong>Hora de Inicio:</strong></td>
-                <td>{{ date('H:i', strtotime($cirugia->hora_inicio)) }}</td>
+                <td style="vertical-align: middle; text-align: center;">
+                    <strong>ANESTESISTA</strong>
+                </td>
+                <td style="vertical-align: top;">
+                    <strong>ANESTESIOLOGO</strong><br>
+                    {{ $cirugia->anestesiologo }}
+                </td>            
+                <td style="vertical-align: top;">
+                    @if($cirugia->tipo_anestesia)
+                    <strong>TIPO DE ANESTESIA</strong><br>
+                    {{ $cirugia->tipo_anestesia }}
+                    @endif
+                </td>
             </tr>
-            @if($cirugia->hora_fin)
             <tr>
-                <td><strong>Hora de Finalización:</strong></td>
-                <td>{{ date('H:i', strtotime($cirugia->hora_fin)) }}</td>
+                <td style="vertical-align: middle; text-align: center;">
+                    <strong>PERSONAL DE ENFERMERÍA</strong>
+                </td>
+                <td colspan="2" style="vertical-align: top;">
+                    @if(!empty($personalEnfermeria))
+                        @foreach($personalEnfermeria as $enfermero)
+                            • {{ $enfermero }}<br>
+                        @endforeach
+                    @endif
+                </td>
             </tr>
-            @endif
+            
+            <!--HALLAZOS Y PROCEDIMIENTO-->
+            <tr>
+                <td>
+                    <strong>HALLAZGOS</strong>
+                </td>
+                <td colspan="2">{{ $cirugia->hallazgos }}</td>
+            </tr>
+            <tr>
+                <td><strong>PROCEDIMIENTO</strong></td>
+                <td colspan="2">{{ $cirugia->procedimiento }}</td>
+            </tr>       
         </table>
     </div>
 
     <div class="footer">
-        <div style="margin-top: 50px;">
-            <strong>Fecha de Emisión:</strong> {{ $fechaActual }}
-        </div>
         <div style="margin-top: 30px;">
             __________________________<br>
             {{ $cirugia->user->name ?? 'Médico Responsable' }}<br>

@@ -3,10 +3,14 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 import Pagination from '@/Components/Pagination';
+import AdvancedFilters from '@/Components/AdvancedFilters';
 
 export default function ConsultasIndex({ auth, consultas, links, filters }) {
 
     const [searchDni, setSearchDni] = useState(filters.dni || '');
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const [showPdfNotification, setShowPdfNotification] = useState(false);
     const [pdfNotificationMessage, setPdfNotificationMessage] = useState('');
@@ -42,6 +46,61 @@ export default function ConsultasIndex({ auth, consultas, links, filters }) {
             });
         }
     };
+    //FILTRO
+
+const handleApplyFilters = async (appliedFilters) => {
+    try {
+        setLoading(true);
+        setError(null);
+        
+        // Mapear los filtros al formato esperado por el backend
+        const params = {
+            dni: searchDni || undefined,
+            startDate: appliedFilters.startDate || undefined,
+            endDate: appliedFilters.endDate || undefined,
+            sex: appliedFilters.sex || undefined,
+            minAge: appliedFilters.minAge || undefined,
+            maxAge: appliedFilters.maxAge || undefined,
+            procedencia: appliedFilters.procedencia || undefined,
+            // Puedes agregar más filtros aquí si es necesario
+        };
+        
+        router.get(route('consultas.index'), params, {
+            preserveState: true,
+            replace: true,
+            only: ['consultas', 'filters']
+        });
+        
+    } catch (error) {
+        console.error('Error al aplicar filtros:', error);
+        setError('Error al aplicar los filtros');
+    } finally {
+        setLoading(false);
+    }
+};
+    // Función para manejar el reset de filtros
+const handleResetFilters = async () => {
+    try {
+        setLoading(true);
+        setError(null);
+        
+        // Solo mantener el DNI si estaba en la búsqueda
+        await router.get(route('consultas.index'), 
+            { dni: searchDni || undefined }, 
+            {
+                preserveState: true,
+                replace: true,
+                only: ['consultas', 'filters']
+            }
+        );
+        
+    } catch (error) {
+        console.error('Error al resetear filtros:', error);
+        setError('Error al resetear los filtros');
+    } finally {
+        setLoading(false);
+    }
+};
 
 const descargarPDFConsulta = async (consultaId) => {
     try {
@@ -265,6 +324,29 @@ const descargarPDFConsulta = async (consultaId) => {
                                     </Link>
                                 </div>
                             </div>
+                            <AdvancedFilters
+                                initialFilters={{
+                                    sex: filters.sex || '',
+                                    minAge: filters.minAge || '',
+                                    maxAge: filters.maxAge || '',
+                                    startDate: filters.startDate || '',
+                                    endDate: filters.endDate || '',
+                                    procedencia: filters.procedencia || '',
+                                    activeFilters: {
+                                        sex: !!filters.sex,
+                                        age: !!(filters.minAge || filters.maxAge),
+                                        dateRange: !!(filters.startDate || filters.endDate),
+                                        procedencia: !!filters.procedencia,
+                                        terms: false
+                                    }
+                                }}
+                                onApplyFilters={handleApplyFilters}
+                                onResetFilters={handleResetFilters}
+                                disabledSections={{ 
+                                    terms: true // Deshabilitar la sección de términos si no la usas
+                                }}
+                                showActiveFilters={true}
+                            />
 
                             {/* Tabla de consultas */}
                             <div className="overflow-x-auto">

@@ -10,24 +10,25 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\FarmacoResource;
 
+
 class FarmacoController extends Controller
 {
     public function index(Request $request)
-    {
-        $search = $request->input('search');
-        
-        $farmacos = Farmaco::when($search, function ($query, $search) {
+{
+    $search = $request->input('search');
+    
+    $farmacos = Farmaco::with('stock')
+        ->when($search, function ($query, $search) {
             return $query->where('nombre_comercial', 'like', "%{$search}%")
                         ->orWhere('componente_activo', 'like', "%{$search}%");
         })
-        ->paginate(10)
-        ->withQueryString(); // Esto mantiene los parámetros en los links de paginación
+        ->paginate(10); // Elimina ->withQueryString()
 
-        return Inertia::render('Farmacos/Index', [
-            'farmacos' => $farmacos,
-            'filters' => $request->only(['search']),
-        ]);
-    }
+    return Inertia::render('Farmacos/Index', [
+        'farmacos' => $farmacos,
+        'filters' => $request->only(['search']),
+    ]);
+}
     public function create()
     {
         $presentaciones = [

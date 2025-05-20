@@ -83,8 +83,9 @@ class Paciente extends Model
     public static function rules(): array
     {
         return [
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
+            'nombres' => 'required|string|max:255',
+            'apellido_paterno' => 'required|string|max:255',
+            'apellido_materno' => 'required|string|max:255',
             'dni' => 'required|string|unique:pacientes,dni|max:20',
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email|unique:pacientes,email|max:255',

@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 import Pagination from '@/Components/Pagination';
+import AdvancedFilters from '@/Components/AdvancedFilters';
 import axios from 'axios'; // Asegúrate de importar axios
 
 export default function PacientesIndex({ auth, pacientes }) {
@@ -10,12 +11,15 @@ export default function PacientesIndex({ auth, pacientes }) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [pacienteToDelete, setPacienteToDelete] = useState(null);
     const [showConsultasModal, setShowConsultasModal] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
     const [pacienteConsultas, setPacienteConsultas] = useState({
-    nombres: '',
-    apellido_paterno: '',
-    dni: '',
-    consultas: []
-});
+        nombres: '',
+        apellido_paterno: '',
+        dni: '',
+        consultas: []
+    });
     
     const [loadingConsultas, setLoadingConsultas] = useState(false);
 
@@ -41,6 +45,108 @@ export default function PacientesIndex({ auth, pacientes }) {
                 onError: () => closeDeleteModal(),
             });
         }
+    };
+
+      const [filters, setFilters] = useState({
+      sex: '',
+      minAge: '',
+      maxAge: '',
+      startDate: '',
+      endDate: '',
+      procedencia: '',
+      searchTerm: '',
+      selectedTerms: [],
+      activeFilters: {
+        sex: false,
+        age: false,
+        dateRange: false,
+        procedencia: false,
+        terms: false
+      }
+    });
+    
+    const handleApplyFilters = async (appliedFilters) => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    // Construye los parámetros para la API
+    const params = { dni: searchDni }; // Mantén la búsqueda por DNI si existe
+    
+    if (appliedFilters.activeFilters.sex && appliedFilters.sex) {
+      params.sex = appliedFilters.sex;
+    }
+    
+    if (appliedFilters.activeFilters.age) {
+      if (appliedFilters.minAge) params.min_age = appliedFilters.minAge;
+      if (appliedFilters.maxAge) params.max_age = appliedFilters.maxAge;
+    }
+    
+    if (appliedFilters.activeFilters.dateRange) {
+      if (appliedFilters.startDate) params.start_date = appliedFilters.startDate;
+      if (appliedFilters.endDate) params.end_date = appliedFilters.endDate;
+    }
+    
+    if (appliedFilters.activeFilters.procedencia && appliedFilters.procedencia) {
+      params.procedencia = appliedFilters.procedencia;
+    }
+    
+    // Hacer la petición al backend para filtrar pacientes
+    router.get(route('pacientes.index'), params, {
+      preserveState: true,
+      onSuccess: () => {
+        // Los pacientes filtrados vendrán en las props
+      },
+      onError: (errors) => {
+        setError('Error al aplicar los filtros');
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error al aplicar filtros:', error);
+    setError('Error al aplicar los filtros');
+  } finally {
+    setLoading(false);
+  }
+};
+    
+    const handleResetFilters = async () => {
+      try {
+        setLoading(true);
+        setFilters({
+          sex: '',
+          minAge: '',
+          maxAge: '',
+          startDate: '',
+          endDate: '',
+          procedencia: '',
+          searchTerm: '',
+          selectedTerms: [],
+          activeFilters: {
+            sex: false,
+            age: false,
+            dateRange: false,
+            procedencia: false,
+            terms: false
+          }
+        });
+
+        // Recargar todos los pacientes sin filtros
+        await router.get('/pacientes', {}, {
+          preserveState: true,
+          onSuccess: (props) => {
+            if (props?.citas) {
+              // Actualiza las citas con todos los resultados
+            }
+          }
+        });
+        
+      } catch (error) {
+        console.error('Error al resetear filtros:', error);
+        setError('Error al resetear los filtros');
+      } finally {
+        setLoading(false);
+      }
     };
 
     const openConsultasModal = async (paciente) => {
@@ -216,8 +322,7 @@ export default function PacientesIndex({ auth, pacientes }) {
                                     >
                                         Buscar
                                     </button>
-                                </form>
-
+                                </form>               
                                 <Link
                                     href={route('pacientes.create')}
                                     className="px-4 py-2 flex justify-center items-center gap-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -227,6 +332,17 @@ export default function PacientesIndex({ auth, pacientes }) {
                                     </span>
                                     <span>Paciente</span>
                                 </Link>
+                            </div>
+                            <div className='mb-4'>
+                                <AdvancedFilters
+                                initialFilters={filters}
+                                onApplyFilters={handleApplyFilters}
+                                onResetFilters={handleResetFilters}
+                                disabledSections={{                                        
+                                    terms: true // Deshabilitar en vista de calendario
+                                }}
+                                showActiveFilters={true}
+                            />
                             </div>
 
                             {/* Tabla de pacientes */}

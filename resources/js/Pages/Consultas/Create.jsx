@@ -40,6 +40,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         plan: '',
         examenes_indicados_img: [], // Array para almacenar las imágenes
         examenes_indicados_archivos: [], // Array para almacenar las imágenes
+        ciit_archivos: [], // Array para almacenar los archivos CIIT
         evoluciones: '',
         tipo_consulta: 'inicio', // Asegúrate de incluir este campo
         //
@@ -169,7 +170,8 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         refraccion: false,
         plan: false,
         examenesIndicados: false,
-        evoluciones: false
+        evoluciones: false,
+        ciit: false
     });
 
     const [datosReceta, setDatosReceta] = useState(null);
@@ -194,7 +196,6 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
     const [showHTAText, setShowHTAText] = useState(false);
     const [showDMText, setShowDMText] = useState(false);
     const [showAlergiasText, setShowAlergiasText] = useState(false); 
-    const [showPlanText, setShowPlanText] = useState(false);
     const [showOtrosText, setShowOtrosText] = useState(false);
 
     const [historialDiagnosticos, setHistorialDiagnosticos] = useState([]);
@@ -205,12 +206,6 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
     const [isFirstConsulta, setIsFirstConsulta] = useState(false);
     const [pacienteEncontrado, setPacienteEncontrado] = useState(false);
 
-    const [opcionesPlan, setOpcionesPlan] = useState([
-        { id: 1, nombre: 'Plan A', seleccionado: false },
-        { id: 2, nombre: 'Plan B', seleccionado: false },
-        { id: 3, nombre: 'Plan C', seleccionado: false },
-    ]);
-
     const [selectedResults, setSelectedResults] = useState([]); // Inicializado como array vacío
     // Manejar la selección de resultados
     const handleSelectResult = useCallback((results) => {
@@ -220,18 +215,6 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         setSelectedResults(results); // Actualizar el estado de resultados seleccionados
         setData('impresion_diagnostica', results.join('; ')); // Combinar las opciones en una cadena
     }, [setData]);
-
-    const handleSeleccionPlan = (id) => {
-        const nuevasOpciones = opcionesPlan.map(opcion => ({
-            ...opcion,
-            seleccionado: opcion.id === id, // Solo la opción seleccionada será true
-        }));
-        setOpcionesPlan(nuevasOpciones);
-    
-        // Guardar el nombre del plan seleccionado en el estado `data.plan`
-        const planSeleccionado = nuevasOpciones.find(opcion => opcion.seleccionado)?.nombre || '';
-        setData('plan', planSeleccionado);
-    };
 
      // Estado para controlar el marcador activo
      const [marcadorActivo, setMarcadorActivo] = useState(null);
@@ -314,8 +297,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
      // Manejar clic en el marcador OJO IZQUIERDO
      const handleMarkerClickOI = (marcadorOI) => {
         setMarcadorActivoOI(marcadorOI.id === marcadorActivoOI ? null : marcadorOI.id);
-    };
-    
+    };    
 
     // Cerrar el contenedor de opciones al hacer clic fuera
     useEffect(() => {
@@ -543,6 +525,30 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
 
     const [previewImages, setPreviewImages] = useState([]); // Para previsualizar imágenes
     const [previewArchivos, setPreviewArchivos] = useState([]); // Para mostrar nombres de archivos
+    const [previewCiitArchivos, setPreviewCiitArchivos] = useState([]);
+
+    const handleFileChangeCiit = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length + (data.ciit_archivos ? data.ciit_archivos.length : 0) > 4) {
+            alert('Solo puedes subir un máximo de 4 archivos para CIIT.');
+            return;
+        }
+
+        setData('ciit_archivos', [...(data.ciit_archivos || []), ...files]);
+        setPreviewCiitArchivos([...previewCiitArchivos, ...files]);
+    };
+
+    // Eliminar archivo CIIT
+    const handleRemoveCiitArchivo = (index) => {
+        const updatedArchivos = [...data.ciit_archivos];
+        updatedArchivos.splice(index, 1);
+
+        const updatedPreviews = [...previewCiitArchivos];
+        updatedPreviews.splice(index, 1);
+
+        setData('ciit_archivos', updatedArchivos);
+        setPreviewCiitArchivos(updatedPreviews);
+    };
 
     // Manejar subida de imágenes
     const handleFileChangeImages = (e) => {
@@ -615,36 +621,6 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         }
     };
 
-    const generarPDFReceta = async (recetaData) => {
-        try {
-            const response = await fetch('/api/generar-receta-pdf', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify(recetaData)
-            });
-    
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Receta_${recetaData.paciente.nombres}_${recetaData.paciente.apellido_paterno}_${new Date().toISOString().split('T')[0]}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            } else {
-                throw new Error('Error al generar el PDF');
-            }
-        } catch (error) {
-            console.error('Error generando PDF:', error);
-            alert('Error al generar la receta en PDF');
-        }
-    };
-
       const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -698,6 +674,11 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
               formData.append(`examenes_indicados_archivos[${index}]`, file);
             });
           }
+          if (data.ciit_archivos && data.ciit_archivos.length > 0) {
+            data.ciit_archivos.forEach((file, index) => {
+                formData.append(`ciit_archivos[${index}]`, file);
+            });
+         }
     
         // Enviar el formulario
         post(route('consultas.store'), formData, {
@@ -1005,6 +986,13 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                     </button>
                                                     <button
                                                         type="button"
+                                                        onClick={() => toggleSection('ciit')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.ciit ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        CIIT
+                                                    </button>
+                                                    <button
+                                                        type="button"
                                                         onClick={() => toggleSection('examenesIndicados')}
                                                         className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenesIndicados ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
@@ -1082,6 +1070,13 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                         className={`w-full text-left px-4 py-2 rounded ${expandedSections.plan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
                                                         Plan
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('ciit')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.ciit ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        CIIT
                                                     </button>
                                                     <button
                                                         type="button"
@@ -1408,6 +1403,41 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                         </div>
                                                     </div>
                                                 )}
+                                                {/* 10. CIIT */}
+                                                {expandedSections.ciit && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <h3 className="text-lg font-medium mb-4">Documentos CIIT</h3>
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Adjunte documentos relacionados con el CIIT (máximo 4 archivos).
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Archivos CIIT</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeCiit}
+                                                                    multiple
+                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewCiitArchivos.map((archivo, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveCiitArchivo(index)}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 {/* 11. Exámenes Indicados */}
                                                 {expandedSections.examenesIndicados && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -1717,6 +1747,41 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                                 setData={setData}
                                                                 className="tu-clase-personalizada" // Opcional
                                                             />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 10. CIIT */}
+                                                {expandedSections.ciit && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <h3 className="text-lg font-medium mb-4">Documentos CIIT</h3>
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Adjunte documentos relacionados con el CIIT (máximo 4 archivos).
+                                                            </p>
+                                                            <div className="mb-4">
+                                                                <label className="block text-sm font-medium text-gray-700">Archivos CIIT</label>
+                                                                <input
+                                                                    type="file"
+                                                                    onChange={handleFileChangeCiit}
+                                                                    multiple
+                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                                />
+                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                    {previewCiitArchivos.map((archivo, index) => (
+                                                                        <div key={index} className="relative">
+                                                                            <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveCiitArchivo(index)}
+                                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                                            >
+                                                                                &times;
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )}

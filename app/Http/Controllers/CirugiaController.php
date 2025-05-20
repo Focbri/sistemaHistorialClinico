@@ -14,18 +14,22 @@ use Inertia\Inertia;
 class CirugiaController extends Controller
 {
     public function create(Request $request)
-    {
-        $paciente_id = $request->input('paciente_id');
-        $cita_id = $request->input('cita_id');
-        
-        $paciente = Paciente::find($paciente_id);
+{
+    $paciente_id = $request->input('paciente_id');
+    $cita_id = $request->input('cita_id');
+    
+    // Obtener todos los pacientes activos
+    $pacientes = Paciente::all(); 
+    
+    // Si viene con paciente_id específico, cargar ese paciente
+    $paciente = $paciente_id ? Paciente::find($paciente_id) : null;
 
-        return Inertia::render('Consultas/CreateCirugia', [
-            'paciente' => $paciente,
-            'pacientes' => $paciente ? [$paciente] : [], // Asegura que pacientes sea un array
-            'cita_id' => $cita_id
-        ]);
-    }
+    return Inertia::render('Consultas/CreateCirugia', [
+        'paciente' => $paciente,
+        'pacientes' => $pacientes, // Pasar todos los pacientes
+        'cita_id' => $cita_id
+    ]);
+}
 
     public function store(Request $request)
     {
