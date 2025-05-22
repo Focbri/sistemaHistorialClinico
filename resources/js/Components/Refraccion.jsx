@@ -1,11 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-const Refraccion = ({ data, setData, readOnly = false, edadPaciente }) => {
+const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData = {} }) => {
     const handleChange = (field, value) => {
         if (!readOnly && setData) {
             setData(field, value);
         }
     };
+
+    useEffect(() => {
+  if (initialData) {
+    // Actualizar todos los campos del examen con los datos iniciales
+    Object.keys(initialData).forEach(key => {
+      if (key.startsWith('exam_')) {
+        setData(key, initialData[key]);
+      }
+    });
+  }
+}, [initialData]);
 
     return (
         <div className="mb-8">

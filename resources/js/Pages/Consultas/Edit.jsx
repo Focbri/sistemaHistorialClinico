@@ -13,6 +13,7 @@ import TerminoBiomicroscopiaSearch from '@/Components/TerminoBiomicroscopiaSearc
 import TerminoMotivoConsultaSearch from '@/Components/TerminoMotivoConsultaSearch';
 
 export default function ConsultasEdit({ auth, consulta }) {
+    console.log('Receta recibida:', consulta.receta);
     // Parse initial file data
     const parseFileData = (fileData) => {
         if (!fileData) return [];
@@ -158,6 +159,8 @@ export default function ConsultasEdit({ auth, consulta }) {
         exam_old_cerca_eje_od: consulta?.examen?.exam_old_cerca_eje_od || '',
         exam_old_cerca_eje_oi: consulta?.examen?.exam_old_cerca_eje_oi || '',
         exam_old_cerca_dip: consulta?.examen?.exam_old_cerca_dip || '',
+        instrucciones: consulta?.refraccion?.instrucciones || '',
+        adiciones: consulta?.refraccion?.adiciones || '',
         
         // Receta fields
         receta: consulta?.receta || null,
@@ -180,13 +183,12 @@ export default function ConsultasEdit({ auth, consulta }) {
         examenesIndicados: false,
         evoluciones: false,
         ciitArchivos: false,
-    });
+    }); 
 
     // UI state
     const [showHTAText, setShowHTAText] = useState(false);
     const [showDMText, setShowDMText] = useState(false);
     const [showAlergiasText, setShowAlergiasText] = useState(false);
-    const [showPlanText, setShowPlanText] = useState(false);
     const [showOtrosText, setShowOtrosText] = useState(false);
     const [historialDiagnosticos, setHistorialDiagnosticos] = useState([]);
     const [pacienteEncontrado, setPacienteEncontrado] = useState(true); // Starts as true since we're editing
@@ -244,13 +246,6 @@ export default function ConsultasEdit({ auth, consulta }) {
     const [selectedResults, setSelectedResults] = useState(
         consulta?.impresion_diagnostica ? consulta.impresion_diagnostica.split('; ').filter(Boolean) : []
     );
-
-    // Plan options
-    const [opcionesPlan, setOpcionesPlan] = useState([
-        { id: 1, nombre: 'Plan A', seleccionado: data.plan === 'Plan A' },
-        { id: 2, nombre: 'Plan B', seleccionado: data.plan === 'Plan B' },
-        { id: 3, nombre: 'Plan C', seleccionado: data.plan === 'Plan C' },
-    ]);
 
     // Markers configuration (same as create.jsx)
     const marcadores = [
@@ -628,6 +623,16 @@ useEffect(() => {
     setPreviewCiitFiles(existingFiles);
   }
 }, [consulta]);
+
+const normalizedReceta = consulta.receta ? {
+  ...consulta.receta,
+  cie10_codes: Array.isArray(consulta.receta.cie10_codes) ? 
+    consulta.receta.cie10_codes : 
+    (consulta.receta.cie10_codes ? [consulta.receta.cie10_codes] : []),
+  medicamentos: Array.isArray(consulta.receta.medicamentos) ?
+    consulta.receta.medicamentos :
+    []
+} : null;
 
     // Validate receta function (same as create.jsx)
     const validarReceta = (receta) => {
@@ -1131,8 +1136,7 @@ useEffect(() => {
                                                         setData={setData}
                                                         edadPaciente={parseInt(data.edad) || 0}
                                                         readOnly={false}
-                                                        consultaId={consulta.id} // Pasa el ID de la consulta
-                                                        initialData={consulta.examen} // Pasa los datos existentes del examen
+                                                        initialData={consulta.refraccion || {}}
                                                     />
                                                     </div>
                                                 </div>
@@ -1289,27 +1293,17 @@ useEffect(() => {
                                                 )}
                                                 {/* 10. Receta Médica */}
                                                 {expandedSections.recetas && (
-                                                    <RecetaMedica 
-                                                        consultaId={consulta.id}
-                                                        pacienteId={data.paciente_id}
-                                                        medicoId={auth.user.id}
-                                                        initialReceta={consulta.receta} // Pasa la receta existente
-                                                        onRecetaChange={(recetaData) => {
-                                                        console.log('Receta actualizada:', recetaData);
-                                                        setData('receta', {
-                                                            ...recetaData,
-                                                            medicamentos: recetaData.medicamentos.map(med => ({
-                                                            farmaco_id: med.farmaco_id,
-                                                            nombre_comercial: med.nombre_comercial,
-                                                            cantidad: med.cantidad,
-                                                            dosis: med.dosis,
-                                                            frecuencia: med.frecuencia,
-                                                            duracion: med.duracion
-                                                            }))
-                                                        });
-                                                        }}
-                                                    />
-                                                )}
+<RecetaMedica
+  consultaId={consulta.id}
+  pacienteId={consulta.paciente_id}
+  medicoId={consulta.user_id}
+  recetaData={consulta.receta ? {
+    ...consulta.receta,
+    medicamentos: consulta.receta.all_medicamentos || [], // Usar all_medicamentos aquí
+    cie10_codes: consulta.receta.cie10_codes || []
+  } : null}
+/>
+)}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -1327,101 +1321,101 @@ useEffect(() => {
                                                         </div>
                                                     </div>
                                                 )}
-{/* 11. Archivos CIIT */}
-{expandedSections.ciitArchivos && (
-  <div className="mb-6 p-4 border border-gray-200 rounded-md">
-    <div className="p-4">
-      <p className="text-sm text-gray-500 mb-4">
-        Adjunte archivos CIIT (imágenes, documentos o archivos comprimidos - máximo 4 archivos).
-      </p>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Archivos CIIT</label>
-        <input
-          type="file"
-          onChange={handleFileChangeCiitFiles}
-          multiple
-          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-        />
-        
-        {/* Archivos existentes y nuevos en una sola lista */}
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Archivos</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {/* Combinar archivos existentes y nuevos para mostrar */}
-            {[...previewCiitFiles, ...(data.ciit_archivos || [])].map((file, index) => (
-              <div key={`file-${index}`} className="border rounded-md p-3 relative group hover:shadow-md transition-shadow">
-                {/* Contenido del archivo */}
-                {file.type === 'image' ? (
-                  <>
-                    <img
-                      src={file.url || `/storage/${file.path}` || URL.createObjectURL(file.file)}
-                      alt={`Archivo CIIT ${index + 1}`}
-                      className="w-full h-32 object-contain rounded-md mb-2"
-                    />
-                  </>
-                ) : (
-                  <div className="flex flex-col h-full">
-                    <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-md mb-2">
-                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Botones de acción - siempre visibles */}
-                <div className="absolute top-2 right-2 flex space-x-1">
-                  {/* Botón de descarga/visualización */}
-                  {file.url || file.path ? (
-                    <a
-                      href={file.url || `/storage/${file.path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download={!file.type?.startsWith('image/')}
-                      className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 transition-colors"
-                      title={file.type?.startsWith('image/') ? "Ver" : "Descargar"}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {file.type?.startsWith('image/') ? (
-                          <>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </>
-                        ) : (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        )}
-                      </svg>
-                    </a>
-                  ) : null}
-                  
-                  {/* Botón de eliminación */}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveCiitFile(index)}
-                    className="bg-red-500 text-white p-1 rounded hover:bg-red-600 transition-colors"
-                    title="Eliminar"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-                
-                {/* Información del archivo */}
-                <div className="text-sm truncate mt-1">{file.original_name || file.name}</div>
-                <div className="text-xs text-gray-500">
-                  {file.type === 'image' ? 'Imagen' : 
-                   file.type === 'compressed' ? 'Archivo comprimido' : 'Documento'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+                                                {/* 11. Archivos CIIT */}
+                                                {expandedSections.ciitArchivos && (
+                                                <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                    <div className="p-4">
+                                                    <p className="text-sm text-gray-500 mb-4">
+                                                        Adjunte archivos CIIT (imágenes, documentos o archivos comprimidos - máximo 4 archivos).
+                                                    </p>
+                                                    <div className="mb-4">
+                                                        <label className="block text-sm font-medium text-gray-700">Archivos CIIT</label>
+                                                        <input
+                                                        type="file"
+                                                        onChange={handleFileChangeCiitFiles}
+                                                        multiple
+                                                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                        />
+                                                        
+                                                        {/* Archivos existentes y nuevos en una sola lista */}
+                                                        <div className="mt-4">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Archivos</label>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                                            {/* Combinar archivos existentes y nuevos para mostrar */}
+                                                            {[...previewCiitFiles, ...(data.ciit_archivos || [])].map((file, index) => (
+                                                            <div key={`file-${index}`} className="border rounded-md p-3 relative group hover:shadow-md transition-shadow">
+                                                                {/* Contenido del archivo */}
+                                                                {file.type === 'image' ? (
+                                                                <>
+                                                                    <img
+                                                                    src={file.url || `/storage/${file.path}` || URL.createObjectURL(file.file)}
+                                                                    alt={`Archivo CIIT ${index + 1}`}
+                                                                    className="w-full h-32 object-contain rounded-md mb-2"
+                                                                    />
+                                                                </>
+                                                                ) : (
+                                                                <div className="flex flex-col h-full">
+                                                                    <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-md mb-2">
+                                                                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                                    </svg>
+                                                                    </div>
+                                                                </div>
+                                                                )}
+                                                                
+                                                                {/* Botones de acción - siempre visibles */}
+                                                                <div className="absolute top-2 right-2 flex space-x-1">
+                                                                {/* Botón de descarga/visualización */}
+                                                                {file.url || file.path ? (
+                                                                    <a
+                                                                    href={file.url || `/storage/${file.path}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    download={!file.type?.startsWith('image/')}
+                                                                    className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 transition-colors"
+                                                                    title={file.type?.startsWith('image/') ? "Ver" : "Descargar"}
+                                                                    >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        {file.type?.startsWith('image/') ? (
+                                                                        <>
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                        </>
+                                                                        ) : (
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                                        )}
+                                                                    </svg>
+                                                                    </a>
+                                                                ) : null}
+                                                                
+                                                                {/* Botón de eliminación */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveCiitFile(index)}
+                                                                    className="bg-red-500 text-white p-1 rounded hover:bg-red-600 transition-colors"
+                                                                    title="Eliminar"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                </button>
+                                                                </div>
+                                                                
+                                                                {/* Información del archivo */}
+                                                                <div className="text-sm truncate mt-1">{file.original_name || file.name}</div>
+                                                                <div className="text-xs text-gray-500">
+                                                                {file.type === 'image' ? 'Imagen' : 
+                                                                file.type === 'compressed' ? 'Archivo comprimido' : 'Documento'}
+                                                                </div>
+                                                            </div>
+                                                            ))}
+                                                        </div>
+                                                        </div>
+                                                    </div>
+                                                    </div>
+                                                </div>
+                                                )}
                                                 {/* 11. Exámenes Indicados */}
                                                 {expandedSections.examenesIndicados && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -1545,8 +1539,7 @@ useEffect(() => {
                                                         setData={setData}
                                                         edadPaciente={parseInt(data.edad) || 0}
                                                         readOnly={false}
-                                                        consultaId={consulta.id} // Pasa el ID de la consulta
-                                                        initialData={consulta.examen} // Pasa los datos existentes del examen
+                                                        initialData={consulta.refraccion || {}}
                                                     />
                                                     </div>
                                                 </div>
@@ -1703,27 +1696,17 @@ useEffect(() => {
                                                 )}
                                                 {/* 10. Receta Médica */}
                                                 {expandedSections.recetas && (
-                                                    <RecetaMedica 
-                                                        consultaId={consulta.id}
-                                                        pacienteId={data.paciente_id}
-                                                        medicoId={auth.user.id}
-                                                        initialReceta={consulta.receta} // Pasa la receta existente
-                                                        onRecetaChange={(recetaData) => {
-                                                        console.log('Receta actualizada:', recetaData);
-                                                        setData('receta', {
-                                                            ...recetaData,
-                                                            medicamentos: recetaData.medicamentos.map(med => ({
-                                                            farmaco_id: med.farmaco_id,
-                                                            nombre_comercial: med.nombre_comercial,
-                                                            cantidad: med.cantidad,
-                                                            dosis: med.dosis,
-                                                            frecuencia: med.frecuencia,
-                                                            duracion: med.duracion
-                                                            }))
-                                                        });
-                                                        }}
-                                                    />
-                                                    )}
+<RecetaMedica
+  consultaId={consulta.id}
+  pacienteId={consulta.paciente_id}
+  medicoId={consulta.user_id}
+  recetaData={consulta.receta ? {
+    ...consulta.receta,
+    medicamentos: consulta.receta.all_medicamentos || [], // Usar all_medicamentos aquí
+    cie10_codes: consulta.receta.cie10_codes || []
+  } : null}
+/>
+                                                )}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">

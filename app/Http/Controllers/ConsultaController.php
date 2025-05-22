@@ -191,44 +191,66 @@ class ConsultaController extends Controller
         // Redirigir a la lista de consultas con un mensaje de éxito
         return redirect()->route('consultas.index')->with('success', 'Consulta eliminada correctamente.');
     }
-    public function edit($id)
-    {
-        $consulta = Consulta::with(['paciente', 'examen', 'receta.medicamentos'])->findOrFail($id);
-        
-        // Función mejorada para parsear archivos
-        $parseFiles = function ($jsonData) {
-            if (empty($jsonData)) return [];
+    public function edit($id)    {
+        $consulta = Consulta::with(['paciente', 'examen', 'refraccion', 'receta'])->findOrFail($id);
+    
+        // Procesar receta si existe
+        if ($consulta->receta) {
+            // Asegurar que cie10_codes sea un array
+            $consulta->receta->cie10_codes = is_array($consulta->receta->cie10_codes) 
+                ? $consulta->receta->cie10_codes 
+                : json_decode($consulta->receta->cie10_codes, true) ?? [];
             
-            try {
-                $parsed = is_array($jsonData) ? $jsonData : json_decode($jsonData, true);
+            // Asegurar que medicamentos y medicamentos_manuales sean arrays
+            $consulta->receta->medicamentos = is_array($consulta->receta->medicamentos)
+                ? $consulta->receta->medicamentos
+                : json_decode($consulta->receta->medicamentos, true) ?? [];
                 
-                return array_map(function ($item) {
-                    $path = $item['ruta'] ?? $item['path'] ?? $item;
-                    $name = $item['nombre_original'] ?? $item['name'] ?? basename($path);
+            $consulta->receta->medicamentos_manuales = is_array($consulta->receta->medicamentos_manuales)
+                ? $consulta->receta->medicamentos_manuales
+                : json_decode($consulta->receta->medicamentos_manuales, true) ?? [];
+                
+            // Combinar medicamentos registrados y manuales para el frontend
+            $consulta->receta->all_medicamentos = array_merge(
+                $consulta->receta->medicamentos,
+                $consulta->receta->medicamentos_manuales
+            );
+        }
+            // Función mejorada para parsear archivos
+            $parseFiles = function ($jsonData) {
+                if (empty($jsonData)) return [];
+                
+                try {
+                    $parsed = is_array($jsonData) ? $jsonData : json_decode($jsonData, true);
                     
-                    return [
-                        'path' => str_replace('public/', '', $path), // Asegurar ruta correcta
-                        'original_name' => $name,
-                        'type' => $item['tipo'] ?? (preg_match('/\.(jpg|jpeg|png|gif)$/i', $path) ? 'image' : 'file'),
-                        'url' => Storage::url($path) // URL pública del archivo
-                    ];
-                }, is_array($parsed) ? $parsed : [$parsed]);
-            } catch (\Exception $e) {
-                return [];
-            }
-        };
+                    return array_map(function ($item) {
+                        $path = $item['ruta'] ?? $item['path'] ?? $item;
+                        $name = $item['nombre_original'] ?? $item['name'] ?? basename($path);
+                        
+                        return [
+                            'path' => str_replace('public/', '', $path), // Asegurar ruta correcta
+                            'original_name' => $name,
+                            'type' => $item['tipo'] ?? (preg_match('/\.(jpg|jpeg|png|gif)$/i', $path) ? 'image' : 'file'),
+                            'url' => Storage::url($path) // URL pública del archivo
+                        ];
+                    }, is_array($parsed) ? $parsed : [$parsed]);
+                } catch (\Exception $e) {
+                    return [];
+                }
+            };
+                Log::debug('Datos de refracción:', $consulta->refraccion ? $consulta->refraccion->toArray() : []);
 
-        // Parsear archivos manteniendo estructura consistente
-        $consulta->examenes_indicados_img = $parseFiles($consulta->examenes_indicados_img);
-        $consulta->examenes_indicados_archivos = $parseFiles($consulta->examenes_indicados_archivos);
-        $consulta->ciit_archivos = $parseFiles($consulta->ciit_archivos);
-        
-        return Inertia::render('Consultas/Edit', [
-            'consulta' => $consulta,
-            'auth' => [
-                'user' => Auth::user()
-            ]
-        ]);
+            // Parsear archivos manteniendo estructura consistente
+            $consulta->examenes_indicados_img = $parseFiles($consulta->examenes_indicados_img);
+            $consulta->examenes_indicados_archivos = $parseFiles($consulta->examenes_indicados_archivos);
+            $consulta->ciit_archivos = $parseFiles($consulta->ciit_archivos);
+            
+            return Inertia::render('Consultas/Edit', [
+                'consulta' => $consulta,
+                'auth' => [
+                    'user' => Auth::user()
+                ]
+            ]);
     }
     // Guardar la consulta de inicio
     public function store(Request $request){
@@ -811,65 +833,65 @@ class ConsultaController extends Controller
         }
     }
     protected function procesarReceta($recetaData, $consultaId) {
-    // Validar datos de receta
-    $validated = validator($recetaData, [
-        'paciente_id' => 'required|exists:pacientes,id',
-        'medico_id' => 'required|exists:users,id',
-        'cie10_codes' => 'required|array',
-        'medicamentos' => 'required|array',
-        'medicamentos.*.nombre_comercial' => 'required|string',
-        'medicamentos.*.componente_activo' =>'required|string',
-        'medicamentos.*.cantidad' => 'required|integer|min:1',
-        'medicamentos.*.dosis' => 'required|string',
-        'medicamentos.*.frecuencia' => 'required|string',
-        'medicamentos.*.duracion' => 'required|string', 
-        'medicamentos.*.farmaco_id' => 'nullable|exists:farmacos,id',
-        'medicamentos.*.es_manual' => 'nullable|boolean',
-        'indicaciones_generales' => 'nullable|string',
-        'fecha' => 'required|date',
-    ])->validate();
+        // Validar datos de receta
+        $validated = validator($recetaData, [
+            'paciente_id' => 'required|exists:pacientes,id',
+            'medico_id' => 'required|exists:users,id',
+            'cie10_codes' => 'required|array',
+            'medicamentos' => 'required|array',
+            'medicamentos.*.nombre_comercial' => 'required|string',
+            'medicamentos.*.componente_activo' =>'required|string',
+            'medicamentos.*.cantidad' => 'required|integer|min:1',
+            'medicamentos.*.dosis' => 'required|string',
+            'medicamentos.*.frecuencia' => 'required|string',
+            'medicamentos.*.duracion' => 'required|string', 
+            'medicamentos.*.farmaco_id' => 'nullable|exists:farmacos,id',
+            'medicamentos.*.es_manual' => 'nullable|boolean',
+            'indicaciones_generales' => 'nullable|string',
+            'fecha' => 'required|date',
+        ])->validate();
 
-    // Separar medicamentos manuales de los registrados
-    $medicamentosRegistrados = [];
-    $medicamentosManuales = [];
+        // Separar medicamentos manuales de los registrados
+        $medicamentosRegistrados = [];
+        $medicamentosManuales = [];
 
-    foreach ($validated['medicamentos'] as $medicamento) {
-        if ($medicamento['es_manual'] ?? false) {
-            // Eliminar campos de stock para manuales
-            unset($medicamento['stock_total']);
-            unset($medicamento['stock_disponible']);
-            unset($medicamento['stock_detalle']);
-            $medicamentosManuales[] = $medicamento;
-        } else {
-            $medicamentosRegistrados[] = $medicamento;
+        foreach ($validated['medicamentos'] as $medicamento) {
+            if ($medicamento['es_manual'] ?? false) {
+                // Eliminar campos de stock para manuales
+                unset($medicamento['stock_total']);
+                unset($medicamento['stock_disponible']);
+                unset($medicamento['stock_detalle']);
+                $medicamentosManuales[] = $medicamento;
+            } else {
+                $medicamentosRegistrados[] = $medicamento;
+            }
         }
+        // Crear receta
+        $receta = Receta::create([
+            'consulta_id' => $consultaId,
+            'paciente_id' => $validated['paciente_id'],
+            'medico_id' => $validated['medico_id'],
+            'cie10_codes' => json_encode($validated['cie10_codes']),
+            'medicamentos' => json_encode($medicamentosRegistrados),
+            'medicamentos_manuales' => json_encode($medicamentosManuales),
+            'indicaciones_generales' => $validated['indicaciones_generales'] ?? null,
+            'fecha' => $validated['fecha']
+        ]);
+        // Procesar solo medicamentos registrados (para actualizar stock)
+        foreach ($validated['medicamentos'] as $medicamento) {
+                $receta->medicamentos()->create([
+                    'farmaco_id' => $medicamento['farmaco_id'] ?? null,
+                    'nombre_comercial' => $medicamento['nombre_comercial'],
+                    'cantidad' => $medicamento['cantidad'],
+                    'dosis' => $medicamento['dosis'],
+                    'frecuencia' => $medicamento['frecuencia'],
+                    'duracion' => $medicamento['duracion'],
+                    'es_manual' => empty($medicamento['farmaco_id']),
+                ]);
+            }
+
+        return $receta;
     }
-    // Crear receta
-    $receta = Receta::create([
-        'consulta_id' => $consultaId,
-        'paciente_id' => $validated['paciente_id'],
-        'medico_id' => $validated['medico_id'],
-        'cie10_codes' => json_encode($validated['cie10_codes']),
-        'medicamentos' => json_encode($medicamentosRegistrados),
-        'medicamentos_manuales' => json_encode($medicamentosManuales),
-        'indicaciones_generales' => $validated['indicaciones_generales'] ?? null,
-        'fecha' => $validated['fecha']
-    ]);
-    // Procesar solo medicamentos registrados (para actualizar stock)
-    foreach ($validated['medicamentos'] as $medicamento) {
-            $receta->medicamentos()->create([
-                'farmaco_id' => $medicamento['farmaco_id'] ?? null,
-                'nombre_comercial' => $medicamento['nombre_comercial'],
-                'cantidad' => $medicamento['cantidad'],
-                'dosis' => $medicamento['dosis'],
-                'frecuencia' => $medicamento['frecuencia'],
-                'duracion' => $medicamento['duracion'],
-                'es_manual' => empty($medicamento['farmaco_id']),
-            ]);
-        }
-
-    return $receta;
-}
     // Método para actualizar una consulta
     public function update(Request $request, $id){
         Log::info('Datos recibidos en update:', $request->all());

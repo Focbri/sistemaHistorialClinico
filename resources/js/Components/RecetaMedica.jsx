@@ -11,7 +11,7 @@ const RecetaMedica = ({
 }) => {
 
   const [cie10Codes, setCie10Codes] = useState(recetaData?.cie10_codes || []);
-  const [medicamentos, setMedicamentos] = useState(recetaData?.medicamentos || []);
+  const [medicamentos, setMedicamentos] = useState(recetaData?.all_medicamentos || recetaData?.medicamentos || []);
   const [indicacionesGenerales, setIndicacionesGenerales] = useState(recetaData?.indicaciones_generales || '');
   // Estados para CIE-10
   const [cie10SearchTerm, setCie10SearchTerm] = useState('');
@@ -37,13 +37,13 @@ const RecetaMedica = ({
 
 const [showManualFarmacoForm, setShowManualFarmacoForm] = useState(false);
 
-   useEffect(() => {
-    if (recetaData) {
-      setCie10Codes(recetaData.cie10_codes || []);
-      setMedicamentos(recetaData.medicamentos || []);
-      setIndicacionesGenerales(recetaData.indicaciones_generales || '');
-    }
-  }, [recetaData]);
+useEffect(() => {
+  if (recetaData) {
+    setCie10Codes(recetaData.cie10_codes || []);
+    setMedicamentos(recetaData.all_medicamentos || recetaData.medicamentos || []);
+    setIndicacionesGenerales(recetaData.indicaciones_generales || '');
+  }
+}, [recetaData]);
 
   // Formatear término CIE-10
   const formatCie10Term = (code, description) => {
@@ -308,41 +308,6 @@ const handleUpdateMedicamento = (index, field, value) => {
     updateReceta({ indicaciones_generales: value });
   };
 
-  const verificarDisponibilidadStock = useCallback(async (farmacoId, cantidadRequerida) => {
-    try {
-      const response = await axios.get(`/farmacos/${farmacoId}/stock`);
-      const stockTotal = response.data.visual + response.data.insamed + response.data.s_p;
-      return stockTotal >= cantidadRequerida;
-    } catch (error) {
-      console.error('Error al verificar stock:', error);
-      return false;
-    }
-  }, []);
-
-  // Función para actualizar stock en el backend
-  const actualizarStock = async () => {
-    try {
-      if (medicamentos.length === 0) return true;
-  
-      const response = await axios.post('/farmacos/stock/actualizar-por-receta', {
-        medicamentos: medicamentos.map(m => ({
-          farmaco_id: m.farmaco_id,
-          cantidad: m.cantidad
-        }))
-      });
-  
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Error al actualizar stock');
-      }
-  
-      return true;
-    } catch (err) {
-      console.error('Error al actualizar stock:', err);
-      setFarmacoError(err.response?.data?.message || 'Error al actualizar stock. Intente nuevamente.');
-      return false;
-    }
-  };
-
   // En RecetaMedica.jsx
 const updateReceta = useCallback((partialData = {}) => {
   const newRecetaData = {
@@ -351,21 +316,11 @@ const updateReceta = useCallback((partialData = {}) => {
     consulta_id: consultaId,
     cie10_codes: partialData.cie10_codes !== undefined ? partialData.cie10_codes : cie10Codes,
     medicamentos: partialData.medicamentos !== undefined ? 
-      partialData.medicamentos : 
-      medicamentos.map(m => ({
-        farmaco_id: m.farmaco_id,
-        nombre_comercial: m.nombre_comercial,
-        componente_activo: m.componente_activo || null,
-        presentacion: m.presentacion || null,
-        concentracion: m.concentracion || null,
-        cantidad: m.cantidad,
-        dosis: m.dosis,
-        frecuencia: m.frecuencia,
-        duracion: m.duracion,
-        stock_total: m.stock_total || 0,
-        stock_disponible: m.stock_disponible || 0,
-        es_manual: m.es_manual || false
-      })),
+      partialData.medicamentos.filter(m => !m.es_manual) : 
+      medicamentos.filter(m => !m.es_manual),
+    medicamentos_manuales: partialData.medicamentos !== undefined ? 
+      partialData.medicamentos.filter(m => m.es_manual) : 
+      medicamentos.filter(m => m.es_manual),
     indicaciones_generales: partialData.indicaciones_generales !== undefined ? 
       partialData.indicaciones_generales : indicacionesGenerales,
     fecha: new Date().toISOString().split('T')[0]
@@ -634,56 +589,43 @@ useEffect(() => {
             {medicamentos.length > 0 ? (
               <div className="space-y-4">
                 {medicamentos.map((med, index) => (
-  <div key={`med-${index}`} className="border p-3 rounded-lg">
-    <div className="flex justify-between items-start">
-      <div>
-        <h4 className="font-medium">{med.nombre_comercial}</h4>
-        {med.es_manual && (
-          <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-            Manual
-          </span>
-        )}
-        <p className="text-sm text-gray-600">
-          {med.componente_activo} - {med.presentacion} {med.concentracion}
-        </p>
-        {/* Mostrar stock solo para no manuales */}
-        {!med.es_manual && (
-          <p className="text-xs mt-1">
-            Stock total: {med.stock_original} | 
-            <span className={med.cantidad > med.stock_disponible ? 'text-red-600 font-bold' : 'text-green-600'}>
-              Disponible después de receta: {med.stock_disponible}
-            </span>
-          </p>
-        )}
-      </div>
-      <button
-        onClick={() => handleRemoveMedicamento(index)}
-        className="text-red-500 hover:text-red-700"
-      >
-        ×
-      </button>
-    </div>
+                  <div key={`med-${index}`} className="border p-3 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{med.nombre_comercial}</h4>
+                        <p className="text-sm text-gray-600">
+                          {med.componente_activo} - {med.presentacion} {med.concentracion}
+                        </p>
+                        <p className="text-xs mt-1">
+                          Stock total: {med.stock_original} | 
+                          <span className={med.cantidad > med.stock_disponible ? 'text-red-600 font-bold' : 'text-green-600'}>
+                            Disponible después de receta: {med.stock_disponible}
+                          </span>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveMedicamento(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    </div>
 
-    <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Cantidad</label>
-        <input
-          type="number"
-          min="1"
-          value={med.cantidad}
-          onChange={(e) => {
-            const value = Math.max(1, parseInt(e.target.value) || 1);
-            e.target.value = value;
-            // Solo validar stock para no manuales
-            if (!med.es_manual) {
-              handleUpdateCantidad(index, e);
-            } else {
-              handleUpdateMedicamento(index, 'cantidad', value);
-            }
-          }}
-          className="w-full p-2 border rounded"
-        />
-      </div>
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Cantidad</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={med.cantidad}
+                          onChange={(e) => {
+                            const value = Math.max(1, parseInt(e.target.value) || 1);
+                            e.target.value = value;
+                            handleUpdateCantidad(index, e);
+                          }}
+                          className="w-full p-2 border rounded"
+                        />
+                      </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">Dosis</label>
                         <input
@@ -747,5 +689,4 @@ useEffect(() => {
     </div>
   );
 };
-
 export default React.memo(RecetaMedica);
