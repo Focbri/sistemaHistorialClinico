@@ -423,7 +423,7 @@ const descargarPDFConsulta = async (consultaId) => {
                                     Editar
                                 </button>
                             )}
-                            {(auth.user.role === 'admin' || auth.user.role === 'root') && (
+                            {(auth.user.role === 'admin' || auth.user.role === 'medico') && (
                                 <button
                                     onClick={() => openDeleteModal(item.id)}
                                     className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"

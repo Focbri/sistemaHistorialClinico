@@ -19,12 +19,14 @@ class Receta extends Model
         'cie10_codes',
         'indicaciones_generales',
         'fecha',
-        'pdf_path'
+        'pdf_path',
+        'medicamentos_manuales'
     ];
 
     protected $casts = [
         'fecha' => 'datetime',  // Cambiado de 'date' a 'datetime'
         'cie10_codes' => 'array',
+        'medicamentos_manuales' => 'array',
     ];
 
     public function consulta(): BelongsTo

@@ -40,7 +40,6 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         plan: '',
         examenes_indicados_img: [], // Array para almacenar las imágenes
         examenes_indicados_archivos: [], // Array para almacenar las imágenes
-        ciit_archivos: [], // Array para almacenar los archivos CIIT
         evoluciones: '',
         tipo_consulta: 'inicio', // Asegúrate de incluir este campo
         //
@@ -133,7 +132,17 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         //
         comentario: '',
         receta: null,
+        ciit_archivos: [], 
     });
+
+    const [recetaData, setRecetaData] = useState(null);
+    const [previewCiitFiles, setPreviewCiitFiles] = useState([]);
+
+    useEffect(() => {
+    if (recetaData) {
+        setData('receta', recetaData);
+    }
+    }, [recetaData]);
 
     useEffect(() => {
     if (dniProp && !pacienteEncontrado) {
@@ -171,7 +180,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         plan: false,
         examenesIndicados: false,
         evoluciones: false,
-        ciit: false
+        ciitArchivos: false,
     });
 
     const [datosReceta, setDatosReceta] = useState(null);
@@ -196,6 +205,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
     const [showHTAText, setShowHTAText] = useState(false);
     const [showDMText, setShowDMText] = useState(false);
     const [showAlergiasText, setShowAlergiasText] = useState(false); 
+    const [showPlanText, setShowPlanText] = useState(false);
     const [showOtrosText, setShowOtrosText] = useState(false);
 
     const [historialDiagnosticos, setHistorialDiagnosticos] = useState([]);
@@ -215,7 +225,6 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         setSelectedResults(results); // Actualizar el estado de resultados seleccionados
         setData('impresion_diagnostica', results.join('; ')); // Combinar las opciones en una cadena
     }, [setData]);
-
      // Estado para controlar el marcador activo
      const [marcadorActivo, setMarcadorActivo] = useState(null);
      // Estado para controlar el marcador activo OJO IZQUIERDO
@@ -297,7 +306,8 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
      // Manejar clic en el marcador OJO IZQUIERDO
      const handleMarkerClickOI = (marcadorOI) => {
         setMarcadorActivoOI(marcadorOI.id === marcadorActivoOI ? null : marcadorOI.id);
-    };    
+    };
+    
 
     // Cerrar el contenedor de opciones al hacer clic fuera
     useEffect(() => {
@@ -525,30 +535,6 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
 
     const [previewImages, setPreviewImages] = useState([]); // Para previsualizar imágenes
     const [previewArchivos, setPreviewArchivos] = useState([]); // Para mostrar nombres de archivos
-    const [previewCiitArchivos, setPreviewCiitArchivos] = useState([]);
-
-    const handleFileChangeCiit = (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length + (data.ciit_archivos ? data.ciit_archivos.length : 0) > 4) {
-            alert('Solo puedes subir un máximo de 4 archivos para CIIT.');
-            return;
-        }
-
-        setData('ciit_archivos', [...(data.ciit_archivos || []), ...files]);
-        setPreviewCiitArchivos([...previewCiitArchivos, ...files]);
-    };
-
-    // Eliminar archivo CIIT
-    const handleRemoveCiitArchivo = (index) => {
-        const updatedArchivos = [...data.ciit_archivos];
-        updatedArchivos.splice(index, 1);
-
-        const updatedPreviews = [...previewCiitArchivos];
-        updatedPreviews.splice(index, 1);
-
-        setData('ciit_archivos', updatedArchivos);
-        setPreviewCiitArchivos(updatedPreviews);
-    };
 
     // Manejar subida de imágenes
     const handleFileChangeImages = (e) => {
@@ -575,6 +561,35 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         // Guardar los archivos en el estado
         setData('examenes_indicados_archivos', [...data.examenes_indicados_archivos, ...files]);
         setPreviewArchivos([...previewArchivos, ...files]);
+    };
+
+     const handleFileChangeCiitFiles = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length + (data.ciit_archivos ? data.ciit_archivos.length : 0) > 4) {
+            alert('Solo puedes subir un máximo de 4 archivos CIIT.');
+            return;
+        }
+
+        const newFiles = files.map((file) => ({
+            file,
+            name: file.name,
+            type: file.type.startsWith('image/') ? 'image' : 
+                file.type === 'application/zip' || file.type === 'application/x-rar-compressed' ? 'compressed' : 'file'
+        }));
+
+        setData('ciit_archivos', [...(data.ciit_archivos || []), ...files]);
+        setPreviewCiitFiles([...previewCiitFiles, ...newFiles]);
+    };
+
+    const handleRemoveCiitFile = (index) => {
+        const updatedFiles = [...data.ciit_archivos];
+        updatedFiles.splice(index, 1);
+
+        const updatedPreviews = [...previewCiitFiles];
+        updatedPreviews.splice(index, 1);
+
+        setData('ciit_archivos', updatedFiles);
+        setPreviewCiitFiles(updatedPreviews);
     };
 
     axios.defaults.timeout = 300000; // 5 minutos
@@ -645,8 +660,12 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         
         // Agregar campos de la consulta
         Object.keys(data).forEach((key) => {
-            if (key !== 'examenes_indicados_img' && key !== 'examenes_indicados_archivos' && key !== 'receta') {
-                formData.append(key, data[key]);
+            if (
+                key !== 'examenes_indicados_img' && 
+                key !== 'examenes_indicados_archivos' && 
+                key !== 'receta' && 
+                key !== 'ciit_archivos') {
+                    formData.append(key, data[key]);
             }
         });
         
@@ -662,23 +681,24 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
             }));
           }
           
-          // Agregar archivos (imágenes y documentos)
-          if (data.examenes_indicados_img && data.examenes_indicados_img.length > 0) {
-            data.examenes_indicados_img.forEach((file, index) => {
-              formData.append(`examenes_indicados_img[${index}]`, file);
-            });
-          }
-        
-          if (data.examenes_indicados_archivos && data.examenes_indicados_archivos.length > 0) {
-            data.examenes_indicados_archivos.forEach((file, index) => {
-              formData.append(`examenes_indicados_archivos[${index}]`, file);
-            });
-          }
-          if (data.ciit_archivos && data.ciit_archivos.length > 0) {
+        // Agregar archivos (imágenes y documentos)
+        if (data.examenes_indicados_img && data.examenes_indicados_img.length > 0) {
+        data.examenes_indicados_img.forEach((file, index) => {
+            formData.append(`examenes_indicados_img[${index}]`, file);
+        });
+        }
+    
+        if (data.examenes_indicados_archivos && data.examenes_indicados_archivos.length > 0) {
+        data.examenes_indicados_archivos.forEach((file, index) => {
+            formData.append(`examenes_indicados_archivos[${index}]`, file);
+        });
+        }
+        // Agregar archivos CIIT correctamente
+        if (data.ciit_archivos && data.ciit_archivos.length > 0) {
             data.ciit_archivos.forEach((file, index) => {
                 formData.append(`ciit_archivos[${index}]`, file);
             });
-         }
+        }
     
         // Enviar el formulario
         post(route('consultas.store'), formData, {
@@ -730,36 +750,50 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
     
     const actualizarStockBackend = async (medicamentos) => {
     try {
-        console.log('Enviando a /farmacos/stock/actualizar-por-receta:', {
-        medicamentos: medicamentos.map(m => ({
-            farmaco_id: m.farmaco_id || m.id, // Usar farmaco_id como prioridad
-            cantidad: parseInt(m.cantidad)
-        }))
-        });
-    
-        const response = await axios.post('/farmacos/stock/actualizar-por-receta', {
-        medicamentos: medicamentos.map(m => ({
-            farmaco_id: m.farmaco_id || m.id,
-            cantidad: parseInt(m.cantidad)
-        }))
-        }, {
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        // Filtrar solo medicamentos no manuales con farmaco_id válido
+        const medicamentosParaStock = medicamentos.filter(m => 
+            !m.es_manual && (m.farmaco_id || m.id) && m.cantidad > 0
+        );
+
+        if (medicamentosParaStock.length === 0) {
+            console.log('No hay medicamentos que afecten stock');
+            return true; // No hay nada que actualizar
         }
+
+        const payload = {
+            medicamentos: medicamentosParaStock.map(m => ({
+                farmaco_id: m.farmaco_id || m.id,
+                cantidad: Math.max(1, parseInt(m.cantidad) || 1) // Asegurar cantidad válida
+            }))
+        };
+
+        console.log('Enviando a /farmacos/stock/actualizar-por-receta:', payload);
+
+        const response = await axios.post('/farmacos/stock/actualizar-por-receta', payload, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
         });
-    
-        console.log('Respuesta del servidor:', response.data);
-        return response.data.success;
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Error en la respuesta del servidor');
+        }
+
+        console.log('Stock actualizado correctamente:', response.data);
+        return true;
     } catch (error) {
         console.error('Error al actualizar stock:', {
-        message: error.message,
-        response: error.response?.data,
-        config: error.config
+            error: error.message,
+            response: error.response?.data,
+            request: {
+                url: error.config?.url,
+                data: error.config?.data
+            }
         });
         return false;
     }
-    };
+};
 
     return (
         <AuthenticatedLayout
@@ -986,10 +1020,10 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => toggleSection('ciit')}
-                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.ciit ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                        onClick={() => toggleSection('ciitArchivos')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.ciitArchivos ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
-                                                        CIIT
+                                                        Archivos CIIT
                                                     </button>
                                                     <button
                                                         type="button"
@@ -1073,10 +1107,10 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => toggleSection('ciit')}
-                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.ciit ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                        onClick={() => toggleSection('ciitArchivos')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.ciitArchivos ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
-                                                        CIIT
+                                                        Archivos CIIT
                                                     </button>
                                                     <button
                                                         type="button"
@@ -1364,27 +1398,18 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                         </div>
                                                     </div>
                                                 )}
-                                                {/* 10. Receta Médica */}
+                                                {/* 10. Receta Médica */}   
                                                 {expandedSections.recetas && (
                                                 <RecetaMedica 
-                                                consultaId={null}
-                                                pacienteId={data.paciente_id}
-                                                medicoId={auth.user.id}
-                                                onRecetaChange={(recetaData) => {
-                                                  console.log('Datos de receta actualizados:', recetaData);
-                                                  setData('receta', {
-                                                    ...recetaData,
-                                                    medicamentos: recetaData.medicamentos.map(med => ({
-                                                      farmaco_id: med.farmaco_id,  // Usar farmaco_id consistentemente
-                                                      nombre_comercial: med.nombre_comercial,
-                                                      cantidad: med.cantidad,
-                                                      dosis: med.dosis,
-                                                      frecuencia: med.frecuencia,
-                                                      duracion: med.duracion
-                                                    }))
-                                                  });
-                                                }}
-                                              />
+                                                    consultaId={null}
+                                                    pacienteId={data.paciente_id}
+                                                    medicoId={auth.user.id}
+                                                    recetaData={data.receta}
+                                                    onRecetaChange={(newReceta) => {
+                                                        setRecetaData(newReceta);
+                                                        setData('receta', newReceta);
+                                                    }}
+                                                />
                                                 )}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (
@@ -1403,30 +1428,39 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                         </div>
                                                     </div>
                                                 )}
-                                                {/* 10. CIIT */}
-                                                {expandedSections.ciit && (
+                                                {/* 10. Archivos CIIT */}
+                                                {expandedSections.ciitArchivos && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
                                                         <div className="p-4">
-                                                            <h3 className="text-lg font-medium mb-4">Documentos CIIT</h3>
                                                             <p className="text-sm text-gray-500 mb-4">
-                                                                Adjunte documentos relacionados con el CIIT (máximo 4 archivos).
+                                                                Adjunte archivos CIIT (imágenes, documentos o archivos comprimidos - máximo 4 archivos).
                                                             </p>
                                                             <div className="mb-4">
                                                                 <label className="block text-sm font-medium text-gray-700">Archivos CIIT</label>
                                                                 <input
                                                                     type="file"
-                                                                    onChange={handleFileChangeCiit}
+                                                                    onChange={handleFileChangeCiitFiles}
                                                                     multiple
-                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
                                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                                                 />
                                                                 <div className="mt-4 flex flex-wrap gap-2">
-                                                                    {previewCiitArchivos.map((archivo, index) => (
+                                                                    {previewCiitFiles.map((file, index) => (
                                                                         <div key={index} className="relative">
-                                                                            <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                                            {file.type === 'image' ? (
+                                                                                <img
+                                                                                    src={URL.createObjectURL(file.file)}
+                                                                                    alt={`Previsualización ${index + 1}`}
+                                                                                    className="w-24 h-24 object-cover rounded-md"
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="bg-gray-200 p-2 rounded-md flex items-center">
+                                                                                    <span className="text-sm truncate max-w-xs">{file.name}</span>
+                                                                                </div>
+                                                                            )}
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => handleRemoveCiitArchivo(index)}
+                                                                                onClick={() => handleRemoveCiitFile(index)}
                                                                                 className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
                                                                             >
                                                                                 &times;
@@ -1712,26 +1746,17 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                     </div>
                                                 )}
                                                 {/* 10. Receta Médica */}
-                                                {expandedSections.recetas && (
-                                               <RecetaMedica 
-                                               consultaId={null}
-                                               pacienteId={data.paciente_id}
-                                               medicoId={auth.user.id}
-                                               onRecetaChange={(recetaData) => {
-                                                 console.log('Datos de receta actualizados:', recetaData);
-                                                 setData('receta', {
-                                                   ...recetaData,
-                                                   medicamentos: recetaData.medicamentos.map(med => ({
-                                                     farmaco_id: med.farmaco_id,  // Usar farmaco_id consistentemente
-                                                     nombre_comercial: med.nombre_comercial,
-                                                     cantidad: med.cantidad,
-                                                     dosis: med.dosis,
-                                                     frecuencia: med.frecuencia,
-                                                     duracion: med.duracion
-                                                   }))
-                                                 });
-                                               }}
-                                             />
+                                                    {expandedSections.recetas && (
+                                                    <RecetaMedica 
+                                                    consultaId={null}
+                                                    pacienteId={data.paciente_id}
+                                                    medicoId={auth.user.id}
+                                                    recetaData={data.receta}
+                                                    onRecetaChange={(newReceta) => {
+                                                        setRecetaData(newReceta);
+                                                        setData('receta', newReceta);
+                                                    }}
+                                                />
                                                 )}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (
@@ -1750,30 +1775,39 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                                         </div>
                                                     </div>
                                                 )}
-                                                {/* 10. CIIT */}
-                                                {expandedSections.ciit && (
+                                                {/* 10. Archivos CIIT */}
+                                                {expandedSections.ciitArchivos && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
                                                         <div className="p-4">
-                                                            <h3 className="text-lg font-medium mb-4">Documentos CIIT</h3>
                                                             <p className="text-sm text-gray-500 mb-4">
-                                                                Adjunte documentos relacionados con el CIIT (máximo 4 archivos).
+                                                                Adjunte archivos CIIT (imágenes, documentos o archivos comprimidos - máximo 4 archivos).
                                                             </p>
                                                             <div className="mb-4">
                                                                 <label className="block text-sm font-medium text-gray-700">Archivos CIIT</label>
                                                                 <input
                                                                     type="file"
-                                                                    onChange={handleFileChangeCiit}
+                                                                    onChange={handleFileChangeCiitFiles}
                                                                     multiple
-                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
                                                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                                                 />
                                                                 <div className="mt-4 flex flex-wrap gap-2">
-                                                                    {previewCiitArchivos.map((archivo, index) => (
+                                                                    {previewCiitFiles.map((file, index) => (
                                                                         <div key={index} className="relative">
-                                                                            <span className="bg-gray-200 p-2 rounded-md">{archivo.name}</span>
+                                                                            {file.type === 'image' ? (
+                                                                                <img
+                                                                                    src={URL.createObjectURL(file.file)}
+                                                                                    alt={`Previsualización ${index + 1}`}
+                                                                                    className="w-24 h-24 object-cover rounded-md"
+                                                                                />
+                                                                            ) : (
+                                                                                <div className="bg-gray-200 p-2 rounded-md flex items-center">
+                                                                                    <span className="text-sm truncate max-w-xs">{file.name}</span>
+                                                                                </div>
+                                                                            )}
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => handleRemoveCiitArchivo(index)}
+                                                                                onClick={() => handleRemoveCiitFile(index)}
                                                                                 className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
                                                                             >
                                                                                 &times;

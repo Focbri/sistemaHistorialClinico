@@ -66,52 +66,52 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
         }
     };
 
-    const exportToExcel = () => {
-        const fechaActual = new Date().toISOString().split('T')[0];
-        let title = "CIE10_mas_usados";
-        
-        const activeFilters = [];
-        
-        if (filters?.activeFilters?.sex && filters?.sex) {
-            activeFilters.push(`Sexo_${filters.sex === 'M' ? 'Masculino' : 'Femenino'}`);
-        }
-        
-        if (filters?.activeFilters?.age) {
-            const min = filters?.minAge || '0';
-            const max = filters?.maxAge || '∞';
-            activeFilters.push(`Edad_${min}_a_${max}`);
-        }
-        
-        if (filters?.activeFilters?.dateRange) {
-            activeFilters.push(`Desde_${filters?.startDate}_Hasta_${filters?.endDate}`);
-        }
-        
-        if (filters?.activeFilters?.procedencia && filters?.procedencia) {
-            activeFilters.push(`Procedencia_${filters.procedencia}`);
-        }
-        
-        if (filters?.activeFilters?.terms && filters?.selectedTerms?.length > 0) {
-            activeFilters.push(`${filters.selectedTerms.length}_terminos`);
-        }
-        
-        if (activeFilters.length > 0) { 
-            title = `CIE10_mas_usados_${activeFilters.join('_')}`;
-        }
-        
-        title = `${title}_${fechaActual}`;
-            
-        const data = Object.entries(topCie10).map(([code, count]) => ({
-            'Código CIE10': code,
-            'Veces usado': count
-        }));
+    const exportToExcel = (currentFilters) => {
+    const fechaActual = new Date().toISOString().split('T')[0];
+    let title = "CIE10_mas_usados";
     
-        const ws = utils.json_to_sheet(data);
-        ws['!cols'] = [{ wch: 60 }, { wch: 10 }];
+    const activeFilters = [];
+    
+    if (currentFilters?.activeFilters?.sex && currentFilters?.sex) {
+        activeFilters.push(`Sexo_${currentFilters.sex === 'M' ? 'Masculino' : 'Femenino'}`);
+    }
+    
+    if (currentFilters?.activeFilters?.age) {
+        const min = currentFilters?.minAge || '0';
+        const max = currentFilters?.maxAge || '∞';
+        activeFilters.push(`Edad_${min}_a_${max}`);
+    }
+    
+    if (currentFilters?.activeFilters?.dateRange) {
+        activeFilters.push(`Desde_${currentFilters?.startDate}_Hasta_${currentFilters?.endDate}`);
+    }
+    
+    if (currentFilters?.activeFilters?.procedencia && currentFilters?.procedencia) {
+        activeFilters.push(`Procedencia_${currentFilters.procedencia}`);
+    }
+    
+    if (currentFilters?.activeFilters?.terms && currentFilters?.selectedTerms?.length > 0) {
+        activeFilters.push(`${currentFilters.selectedTerms.length}_terminos`);
+    }
+    
+    if (activeFilters.length > 0) { 
+        title = `CIE10_mas_usados_${activeFilters.join('_')}`;
+    }
+    
+    title = `${title}_${fechaActual}`;
         
-        const wb = utils.book_new();
-        utils.book_append_sheet(wb, ws, "CIE10 Más Usados");
-        writeFile(wb, `${title}.xlsx`);
-    };
+    const data = Object.entries(topCie10).map(([code, count]) => ({
+        'Código CIE10': code,
+        'Veces usado': count
+    }));
+
+    const ws = utils.json_to_sheet(data);
+    ws['!cols'] = [{ wch: 60 }, { wch: 10 }];
+    
+    const wb = utils.book_new();
+    utils.book_append_sheet(wb, ws, "CIE10 Más Usados");
+    writeFile(wb, `${title}.xlsx`);
+};
 
     const handleApplyFilters = async (filters) => {
         try {
@@ -211,7 +211,7 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
                     <AdvancedFilters 
                         onApplyFilters={handleApplyFilters}
                         onResetFilters={handleResetFilters}
-                        onExport={exportToExcel}
+                        onExport={(filters) => exportToExcel(filters)}
                         disabledSections={{
                             // Puedes deshabilitar secciones específicas si no las necesitas
                             // dateRange: true,

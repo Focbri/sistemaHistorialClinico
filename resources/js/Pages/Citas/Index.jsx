@@ -343,8 +343,8 @@ const verificarDisponibilidad = () => {
   const now = new Date();
   const selectedDate = new Date(data.fecha_hora);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const twoMonthsLater = new Date(today);
+  twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
   
   const selectedDateOnly = new Date(
     selectedDate.getFullYear(), 
@@ -360,11 +360,11 @@ const verificarDisponibilidad = () => {
     };
   }
 
-  if (selectedDateOnly > tomorrow) {
+  if (selectedDateOnly > twoMonthsLater) {
     return {
       isValid: false,
       adjustedTime: null,
-      message: 'Solo se pueden programar citas para hoy y mañana'
+      message: 'Solo se pueden programar citas hasta 2 meses en el futuro'
     };
   }
 
@@ -376,6 +376,7 @@ const verificarDisponibilidad = () => {
     };
   }
 
+  // Resto de validaciones (médico, disponibilidad, etc.)
   if (!data.fecha_hora || !data.medico_id) {
     return { isValid: true, adjustedTime: null, message: '' };
   }
@@ -665,20 +666,20 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
         {activeTab === 'calendario' ? (
           <div className="bg-white p-4 rounded-lg shadow">
              <Calendar
-                value={currentDate}
-                onChange={setCurrentDate}
-                onClickDay={handleDayClick}
-                locale="es"
-                minDetail="month"
-                next2Label={null}
-                prev2Label={null}
-                tileContent={tileContent}
-                tileClassName={tileClassName}
-                className="border-none w-full"
-                showNeighboringMonth={false}
-                minDate={new Date()} // No permite seleccionar fechas anteriores a hoy
-                maxDate={new Date(new Date().setDate(new Date().getDate() + 1))} // Solo permite hoy y mañana
-              />
+              value={currentDate}
+              onChange={setCurrentDate}
+              onClickDay={handleDayClick}
+              locale="es"
+              minDetail="month"
+              next2Label={null}
+              prev2Label={null}
+              tileContent={tileContent}
+              tileClassName={tileClassName}
+              className="border-none w-full"
+              showNeighboringMonth={false}
+              minDate={new Date()} // No permite seleccionar fechas anteriores a hoy
+              maxDate={new Date(new Date().setMonth(new Date().getMonth() + 2))} // Permite hasta 2 meses en el futuro
+            />
           </div>
         ) : (
           <div className="overflow-x-auto bg-white rounded-lg shadow">
@@ -923,34 +924,34 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
                     <div className="mb-4 w-1/2">
                       <label className="block text-gray-700 mb-2">Fecha y Hora</label>
                       <input
-                        type="datetime-local"
-                        value={formatDateTimeWithoutSeconds(data.fecha_hora)}
-                        onChange={(e) => {
-                          const newDate = e.target.value;
-                          setData('fecha_hora', newDate);
-                          
-                          // Validación en tiempo real
-                          const now = new Date();
-                          const selectedDate = new Date(newDate);
-                          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                          const tomorrow = new Date(today);
-                          tomorrow.setDate(tomorrow.getDate() + 1);
-                          
-                          const selectedDateOnly = new Date(
-                            selectedDate.getFullYear(), 
-                            selectedDate.getMonth(), 
-                            selectedDate.getDate()
-                          );
+  type="datetime-local"
+  value={formatDateTimeWithoutSeconds(data.fecha_hora)}
+  onChange={(e) => {
+    const newDate = e.target.value;
+    setData('fecha_hora', newDate);
+    
+    // Validación en tiempo real
+    const now = new Date();
+    const selectedDate = new Date(newDate);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const twoMonthsLater = new Date(today);
+    twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
+    
+    const selectedDateOnly = new Date(
+      selectedDate.getFullYear(), 
+      selectedDate.getMonth(), 
+      selectedDate.getDate()
+    );
 
-                          if (selectedDateOnly < today) {
-                            setErrorMessage('No se pueden programar citas para fechas pasadas');
-                            return;
-                          }
+    if (selectedDateOnly < today) {
+      setErrorMessage('No se pueden programar citas para fechas pasadas');
+      return;
+    }
 
-                          if (selectedDateOnly > tomorrow) {
-                            setErrorMessage('Solo se pueden programar citas para hoy y mañana');
-                            return;
-                          }
+    if (selectedDateOnly > twoMonthsLater) {
+      setErrorMessage('Solo se pueden programar citas hasta 2 meses en el futuro');
+      return;
+    }
 
                           // Validación de disponibilidad con médico
                           if (data.medico_id) {
@@ -962,12 +963,12 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
                             }
                           }
                         }}
-                         className="w-full p-2 border rounded"
+                          className="w-full p-2 border rounded"
                           required
-                          step="60" // Esto asegura incrementos de 1 minuto
+                          step="60"
                           min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                          max={format(new Date(new Date().setDate(new Date().getDate() + 1)), "yyyy-MM-dd'T'23:59")}
-                      />
+                          max={format(new Date(new Date().setMonth(new Date().getMonth() + 2)), "yyyy-MM-dd'T'23:59")}
+                        />
                     </div>
                   </div>
 

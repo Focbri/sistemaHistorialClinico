@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import FarmacoManualForm from './FarmacoManualForm';
 import axios from 'axios';
 
 const RecetaMedica = ({ 
   consultaId, 
   pacienteId, 
   medicoId, 
+  recetaData, // Add this prop
   onRecetaChange 
 }) => {
+
+  const [cie10Codes, setCie10Codes] = useState(recetaData?.cie10_codes || []);
+  const [medicamentos, setMedicamentos] = useState(recetaData?.medicamentos || []);
+  const [indicacionesGenerales, setIndicacionesGenerales] = useState(recetaData?.indicaciones_generales || '');
   // Estados para CIE-10
   const [cie10SearchTerm, setCie10SearchTerm] = useState('');
   const [cie10Results, setCie10Results] = useState([]);
@@ -15,15 +21,12 @@ const RecetaMedica = ({
   const [showManualCie10Form, setShowManualCie10Form] = useState(false);
   const [codigoCie10, setCodigoCie10] = useState('');
   const [descripcionCie10, setDescripcionCie10] = useState('');
-  const [cie10Codes, setCie10Codes] = useState([]);
 
   // Estados para fármacos
   const [farmacoSearchTerm, setFarmacoSearchTerm] = useState('');
   const [farmacoResults, setFarmacoResults] = useState([]);
   const [isSearchingFarmaco, setIsSearchingFarmaco] = useState(false);
   const [farmacoError, setFarmacoError] = useState(null);
-  const [medicamentos, setMedicamentos] = useState([]);
-  const [indicacionesGenerales, setIndicacionesGenerales] = useState('');
 
   // Configuración de axios para manejar CSRF token en Laravel
   axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -32,6 +35,16 @@ const RecetaMedica = ({
     axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
   }
 
+const [showManualFarmacoForm, setShowManualFarmacoForm] = useState(false);
+
+   useEffect(() => {
+    if (recetaData) {
+      setCie10Codes(recetaData.cie10_codes || []);
+      setMedicamentos(recetaData.medicamentos || []);
+      setIndicacionesGenerales(recetaData.indicaciones_generales || '');
+    }
+  }, [recetaData]);
+
   // Formatear término CIE-10
   const formatCie10Term = (code, description) => {
     return code ? `${code}|${description}` : description;
@@ -39,27 +52,27 @@ const RecetaMedica = ({
 
   // Búsqueda de términos CIE-10
   const searchCie10Terms = useCallback(async (term) => {
-    if (!term.trim()) {
-      setCie10Results([]);
-      return;
-    }
+      if (!term.trim()) {
+        setCie10Results([]);
+        return;
+      }
 
-    setIsSearchingCie10(true);
-    setCie10Error(null);
+      setIsSearchingCie10(true);
+      setCie10Error(null);
 
-    try {
-      const response = await axios.get('/cie10/search', {  // Coincide con la ruta definida
-        params: { query: term }
-      });
-      setCie10Results(response.data);
-    } catch (err) {
-      console.error('Error en búsqueda CIE-10:', err);
-      setCie10Error('Error al buscar términos CIE-10. Intente nuevamente.');
-      setCie10Results([]);
-    } finally {
-      setIsSearchingCie10(false);
-    }
-  }, []);
+      try {
+        const response = await axios.get('/cie10/search', {
+          params: { query: term }
+        });
+        setCie10Results(response.data);
+      } catch (err) {
+        console.error('Error en búsqueda CIE-10:', err);
+        setCie10Error('Error al buscar términos CIE-10. Intente nuevamente.');
+        setCie10Results([]);
+      } finally {
+        setIsSearchingCie10(false);
+      }
+    }, []);
 
   // Búsqueda de fármacos
   const searchFarmacos = useCallback(async (term) => {
@@ -142,10 +155,11 @@ const RecetaMedica = ({
   const handleSelectCie10Term = (term) => {
     if (cie10Codes.includes(term)) return;
 
-    setCie10Codes([...cie10Codes, term]);
+    const newCodes = [...cie10Codes, term];
+    setCie10Codes(newCodes);
     setCie10SearchTerm('');
     setCie10Results([]);
-    updateReceta();
+    updateReceta({ cie10_codes: newCodes });
   };
 
   // Agregar término CIE-10 manualmente
@@ -168,17 +182,19 @@ const RecetaMedica = ({
         list_01: term
       });
 
-      setCie10Codes([...cie10Codes, term]);
+      const newCodes = [...cie10Codes, term];
+      setCie10Codes(newCodes);
       setCodigoCie10('');
       setDescripcionCie10('');
       setShowManualCie10Form(false);
       setCie10Error(null);
-      updateReceta();
+      updateReceta({ cie10_codes: newCodes });
     } catch (err) {
       console.error('Error al guardar término CIE-10:', err);
-      setCie10Codes([...cie10Codes, term]);
+      const newCodes = [...cie10Codes, term];
+      setCie10Codes(newCodes);
       setCie10Error('El término se agregó pero no se pudo guardar en el catálogo');
-      updateReceta();
+      updateReceta({ cie10_codes: newCodes });
     }
   };
 
@@ -186,11 +202,11 @@ const RecetaMedica = ({
   const handleRemoveCie10Term = (index) => {
     const newCodes = cie10Codes.filter((_, i) => i !== index);
     setCie10Codes(newCodes);
-    updateReceta();
+    updateReceta({ cie10_codes: newCodes });
   };
 
   // Corregir handleUpdateCantidad
-  const handleUpdateCantidad = (index, e) => {
+const handleUpdateCantidad = (index, e) => {
     const value = e.target.value;
     const cantidad = parseInt(value) || 0;
     
@@ -219,18 +235,18 @@ const RecetaMedica = ({
     
     setMedicamentos(nuevosMedicamentos);
     setFarmacoError(null);
-    updateReceta(nuevosMedicamentos);
+    updateReceta({ medicamentos: nuevosMedicamentos });
     
     if (farmacoSearchTerm) {
       searchFarmacos(farmacoSearchTerm);
     }
-  };  
+  };
 
-  // Corregir handleAddMedicamento
-  const handleAddMedicamento = (farmaco) => {
+const handleAddMedicamento = (farmaco) => {
     try {
+      // Solo verificar stock para medicamentos no manuales
       const cantidadEnReceta = medicamentos
-        .filter(m => m.farmaco_id === farmaco.id)
+        .filter(m => m.farmaco_id === farmaco.id && !m.es_manual)
         .reduce((sum, m) => sum + m.cantidad, 0);
       
       const stockDisponible = farmaco.stock_total - cantidadEnReceta;
@@ -253,15 +269,16 @@ const RecetaMedica = ({
         duracion: '',
         stock_total: farmaco.stock_total,
         stock_disponible: stockDisponible - 1,
-        stock_detalle: farmaco.stock_detalle
+        stock_detalle: farmaco.stock_detalle,
+        es_manual: false // Asegurar que es false para registrados
       };
   
       const nuevosMedicamentos = [...medicamentos, nuevoMedicamento];
       setMedicamentos(nuevosMedicamentos);
+      updateReceta({ medicamentos: nuevosMedicamentos });
       
       setFarmacoSearchTerm('');
       setFarmacoResults([]);
-      updateReceta(nuevosMedicamentos);
       setFarmacoError(null);
     } catch (err) {
       console.error('Error al agregar medicamento:', err);
@@ -270,38 +287,26 @@ const RecetaMedica = ({
   };
 
   // Actualizar detalles de medicamento
-  const handleUpdateMedicamento = (index, field, value) => {
+const handleUpdateMedicamento = (index, field, value) => {
     const newMedicamentos = [...medicamentos];
     newMedicamentos[index][field] = value;
     setMedicamentos(newMedicamentos);
-    updateReceta();
+    updateReceta({ medicamentos: newMedicamentos });
   };
 
   // Eliminar medicamento
-  const handleRemoveMedicamento = (index) => {
+   const handleRemoveMedicamento = (index) => {
     const newMedicamentos = medicamentos.filter((_, i) => i !== index);
     setMedicamentos(newMedicamentos);
-    updateReceta();
+    updateReceta({ medicamentos: newMedicamentos });
   };
 
- // Modificar el handler
- const handleIndicacionesChange = (e) => {
-  const value = e.target.value;
-  setIndicacionesGenerales(value);
-  
-  // Si todo está vacío, enviar null
-  if (value.trim() === '' && medicamentos.length === 0 && cie10Codes.length === 0) {
-    onRecetaChange(null);
-    return;
-  }
-
-  // De lo contrario, actualizar normalmente
-  updateReceta();
-};
-
-  useEffect(() => {
-    updateReceta();
-  }, [indicacionesGenerales]);
+  // Manejar cambios en indicaciones generales
+  const handleIndicacionesChange = (e) => {
+    const value = e.target.value;
+    setIndicacionesGenerales(value);
+    updateReceta({ indicaciones_generales: value });
+  };
 
   const verificarDisponibilidadStock = useCallback(async (farmacoId, cantidadRequerida) => {
     try {
@@ -339,44 +344,38 @@ const RecetaMedica = ({
   };
 
   // En RecetaMedica.jsx
-  const updateReceta = async (updatedMedicamentos = medicamentos) => {
-    try {
-      // Si no hay medicamentos ni códigos CIE-10, enviar null
-      if (updatedMedicamentos.length === 0 && cie10Codes.length === 0 && !indicacionesGenerales.trim()) {
-        onRecetaChange(null);
-        return;
-      }
-  
-      const recetaData = {
-        paciente_id: pacienteId,
-        medico_id: medicoId,
-        consulta_id: consultaId,
-        cie10_codes: cie10Codes,
-        medicamentos: updatedMedicamentos.map(m => ({
-          farmaco_id: m.farmaco_id,
-          nombre_comercial: m.nombre_comercial,
-          componente_activo: m.componente_activo,
-          presentacion: m.presentacion,
-          concentracion: m.concentracion,
-          cantidad: m.cantidad,
-          dosis: m.dosis,
-          frecuencia: m.frecuencia,
-          duracion: m.duracion,
-          stock_total: m.stock_total,
-          stock_disponible: m.stock_disponible
-        })),
-        indicaciones_generales: indicacionesGenerales,
-        fecha: new Date().toISOString().split('T')[0]
-      };
-  
-      onRecetaChange(recetaData);
-    } catch (err) {
-      console.error('Error al actualizar receta:', err);
-    }
+const updateReceta = useCallback((partialData = {}) => {
+  const newRecetaData = {
+    paciente_id: pacienteId,
+    medico_id: medicoId,
+    consulta_id: consultaId,
+    cie10_codes: partialData.cie10_codes !== undefined ? partialData.cie10_codes : cie10Codes,
+    medicamentos: partialData.medicamentos !== undefined ? 
+      partialData.medicamentos : 
+      medicamentos.map(m => ({
+        farmaco_id: m.farmaco_id,
+        nombre_comercial: m.nombre_comercial,
+        componente_activo: m.componente_activo || null,
+        presentacion: m.presentacion || null,
+        concentracion: m.concentracion || null,
+        cantidad: m.cantidad,
+        dosis: m.dosis,
+        frecuencia: m.frecuencia,
+        duracion: m.duracion,
+        stock_total: m.stock_total || 0,
+        stock_disponible: m.stock_disponible || 0,
+        es_manual: m.es_manual || false
+      })),
+    indicaciones_generales: partialData.indicaciones_generales !== undefined ? 
+      partialData.indicaciones_generales : indicacionesGenerales,
+    fecha: new Date().toISOString().split('T')[0]
   };
 
+  onRecetaChange(newRecetaData);
+}, [pacienteId, medicoId, consultaId, cie10Codes, medicamentos, indicacionesGenerales, onRecetaChange]);
+
   // Efectos para búsquedas con debounce
-  useEffect(() => {
+useEffect(() => {
   const cie10Timer = setTimeout(() => searchCie10Terms(cie10SearchTerm), 300);
   const farmacoTimer = setTimeout(() => searchFarmacos(farmacoSearchTerm), 300);
   
@@ -384,8 +383,15 @@ const RecetaMedica = ({
     clearTimeout(cie10Timer);
     clearTimeout(farmacoTimer);
   };
-  }, [cie10SearchTerm, farmacoSearchTerm, searchCie10Terms, searchFarmacos]);
+}, [cie10SearchTerm, farmacoSearchTerm, searchCie10Terms, searchFarmacos, medicamentos]); 
 
+  useEffect(() => {
+    if (recetaData) {
+      setCie10Codes(recetaData.cie10_codes || []);
+      setMedicamentos(recetaData.medicamentos || []);
+      setIndicacionesGenerales(recetaData.indicaciones_generales || '');
+    }
+  }, [recetaData]);
 
   return (
     <div className="p-4 bg-white rounded-lg shadow">
@@ -538,6 +544,17 @@ const RecetaMedica = ({
             )}
           </div>
 
+          {showManualFarmacoForm && (
+            <FarmacoManualForm 
+              onAddManualFarmaco={(nuevoMedicamento) => {
+                const nuevosMedicamentos = [...medicamentos, nuevoMedicamento];
+                setMedicamentos(nuevosMedicamentos);
+                updateReceta({ medicamentos: nuevosMedicamentos });
+                setShowManualFarmacoForm(false);
+              }}
+              onCancel={() => setShowManualFarmacoForm(false)}
+            />
+          )}
           {/* Mensajes de error CIE-10 */}
           {cie10Error && (
             <div className="text-red-500 text-sm p-2 bg-red-50 rounded-md">
@@ -567,6 +584,15 @@ const RecetaMedica = ({
               </div>
             )}
           </div>
+          <button
+          type="button"
+          onClick={() => setShowManualFarmacoForm(!showManualFarmacoForm)}
+          className={`px-3 py-1 rounded ${
+            showManualFarmacoForm ? 'bg-gray-500 text-white' : 'bg-blue-500 text-white'
+          } hover:opacity-90`}
+        >
+          {showManualFarmacoForm ? 'Cancelar' : '+ Manual'}
+        </button>
           {/* Resultados de búsqueda de fármacos */}
           {farmacoResults.length > 0 && (
           <ul className="border border-gray-200 rounded-md max-h-60 overflow-y-auto">
@@ -608,43 +634,56 @@ const RecetaMedica = ({
             {medicamentos.length > 0 ? (
               <div className="space-y-4">
                 {medicamentos.map((med, index) => (
-                  <div key={`med-${index}`} className="border p-3 rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{med.nombre_comercial}</h4>
-                        <p className="text-sm text-gray-600">
-                          {med.componente_activo} - {med.presentacion} {med.concentracion}
-                        </p>
-                        <p className="text-xs mt-1">
-                          Stock total: {med.stock_original} | 
-                          <span className={med.cantidad > med.stock_disponible ? 'text-red-600 font-bold' : 'text-green-600'}>
-                            Disponible después de receta: {med.stock_disponible}
-                          </span>
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveMedicamento(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        ×
-                      </button>
-                    </div>
+  <div key={`med-${index}`} className="border p-3 rounded-lg">
+    <div className="flex justify-between items-start">
+      <div>
+        <h4 className="font-medium">{med.nombre_comercial}</h4>
+        {med.es_manual && (
+          <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+            Manual
+          </span>
+        )}
+        <p className="text-sm text-gray-600">
+          {med.componente_activo} - {med.presentacion} {med.concentracion}
+        </p>
+        {/* Mostrar stock solo para no manuales */}
+        {!med.es_manual && (
+          <p className="text-xs mt-1">
+            Stock total: {med.stock_original} | 
+            <span className={med.cantidad > med.stock_disponible ? 'text-red-600 font-bold' : 'text-green-600'}>
+              Disponible después de receta: {med.stock_disponible}
+            </span>
+          </p>
+        )}
+      </div>
+      <button
+        onClick={() => handleRemoveMedicamento(index)}
+        className="text-red-500 hover:text-red-700"
+      >
+        ×
+      </button>
+    </div>
 
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Cantidad</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={med.cantidad}
-                          onChange={(e) => {
-                            const value = Math.max(1, parseInt(e.target.value) || 1);
-                            e.target.value = value;
-                            handleUpdateCantidad(index, e);
-                          }}
-                          className="w-full p-2 border rounded"
-                        />
-                      </div>
+    <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Cantidad</label>
+        <input
+          type="number"
+          min="1"
+          value={med.cantidad}
+          onChange={(e) => {
+            const value = Math.max(1, parseInt(e.target.value) || 1);
+            e.target.value = value;
+            // Solo validar stock para no manuales
+            if (!med.es_manual) {
+              handleUpdateCantidad(index, e);
+            } else {
+              handleUpdateMedicamento(index, 'cantidad', value);
+            }
+          }}
+          className="w-full p-2 border rounded"
+        />
+      </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">Dosis</label>
                         <input
@@ -709,4 +748,4 @@ const RecetaMedica = ({
   );
 };
 
-export default RecetaMedica;
+export default React.memo(RecetaMedica);

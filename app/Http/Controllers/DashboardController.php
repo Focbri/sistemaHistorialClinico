@@ -62,6 +62,8 @@ class DashboardController extends Controller
         }
 
         $validated = $validator->validated();
+        $terms = $requestData['terms'] ?? ($requestData['terms[]'] ?? []); // Maneja ambos formatos
+        $validated['terms'] = is_array($terms) ? $terms : [$terms];
         
         $query = Consulta::with('paciente')
             ->select('id', 'impresion_diagnostica', 'paciente_id');

@@ -129,7 +129,7 @@ class Consulta extends Model
         'exam_old_cerca_eje_oi' ,
         'exam_old_cerca_dip' ,
         'comentario',
-        'ciit',
+        'ciit_archivos',
     ];
 
     /**

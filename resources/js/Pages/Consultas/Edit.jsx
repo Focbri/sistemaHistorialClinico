@@ -25,7 +25,6 @@ export default function ConsultasEdit({ auth, consulta }) {
             return [];
         }
     };
-
     // Initial form data setup
     const { data, setData, put, processing, errors } = useForm({
         paciente_id: consulta?.paciente_id || '',
@@ -164,7 +163,6 @@ export default function ConsultasEdit({ auth, consulta }) {
         receta: consulta?.receta || null,
         comentario: consulta?.comentario || '',
     });
-
     // State for expanded sections
     const [expandedSections, setExpandedSections] = useState({
         antecedentesPersonales: false,
@@ -180,7 +178,8 @@ export default function ConsultasEdit({ auth, consulta }) {
         refraccion: false,
         plan: false,
         examenesIndicados: false,
-        evoluciones: false
+        evoluciones: false,
+        ciitArchivos: false,
     });
 
     // UI state
@@ -192,6 +191,46 @@ export default function ConsultasEdit({ auth, consulta }) {
     const [historialDiagnosticos, setHistorialDiagnosticos] = useState([]);
     const [pacienteEncontrado, setPacienteEncontrado] = useState(true); // Starts as true since we're editing
 
+    const [previewCiitFiles, setPreviewCiitFiles] = useState([]);
+
+    const handleFileChangeCiitFiles = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length + (data.ciit_archivos ? data.ciit_archivos.length : 0) > 4) {
+            alert('Solo puedes subir un máximo de 4 archivos CIIT.');
+            return;
+        }
+
+        const newFiles = files.map((file) => ({
+            file,
+            name: file.name,
+            type: file.type.startsWith('image/') ? 'image' : 
+                file.type === 'application/zip' || file.type === 'application/x-rar-compressed' ? 'compressed' : 'file'
+        }));
+
+        setData('ciit_archivos', [...(data.ciit_archivos || []), ...files]);
+        setPreviewCiitFiles([...previewCiitFiles, ...newFiles]);
+    };
+
+    // Manejador para eliminar archivos CIIT
+    const handleRemoveCiitFile = (index) => {
+    // Si es un archivo existente (tiene id)
+    if (previewCiitFiles[index]?.id) {
+        const fileToDelete = previewCiitFiles[index];
+        setFilesToDelete(prev => [...prev, fileToDelete]);
+    }
+    
+    // Actualiza los estados
+    const updatedPreviews = [...previewCiitFiles];
+    updatedPreviews.splice(index, 1);
+    setPreviewCiitFiles(updatedPreviews);
+
+    // Si es un archivo nuevo en data.ciit_archivos
+    if (data.ciit_archivos && data.ciit_archivos[index]) {
+        const updatedFiles = [...data.ciit_archivos];
+        updatedFiles.splice(index, 1);
+        setData('ciit_archivos', updatedFiles);
+    }
+    };
     // File handling
     const [previewImages, setPreviewImages] = useState([]);
     const [previewArchivos, setPreviewArchivos] = useState([]);
@@ -301,17 +340,6 @@ export default function ConsultasEdit({ auth, consulta }) {
         setData('impresion_diagnostica', results.join('; '));
     }, [setData]);
 
-    // Handle plan selection
-    const handleSeleccionPlan = (id) => {
-        const nuevasOpciones = opcionesPlan.map(opcion => ({
-            ...opcion,
-            seleccionado: opcion.id === id,
-        }));
-        setOpcionesPlan(nuevasOpciones);
-        const planSeleccionado = nuevasOpciones.find(opcion => opcion.seleccionado)?.nombre || '';
-        setData('plan', planSeleccionado);
-    };
-
     // Marker click handlers
     const handleMarkerClick = (marcador) => {
         setMarcadorActivo(marcador.id === marcadorActivo ? null : marcador.id);
@@ -324,62 +352,62 @@ export default function ConsultasEdit({ auth, consulta }) {
     // File handling functions
     const handleFileChangeImages = (e) => {
         const files = Array.from(e.target.files);
-        if (files.length + data.examenes_indicados_img.length > 4) {
-            alert('Solo puedes subir un máximo de 4 imágenes.');
+        if (files.length + data.examenes_indicados_img.length + data.examenes_indicados_img_existentes.length > 4) {
+            alert('Solo puedes subir un máximo de 4 imágenes en total.');
             return;
-        }
+    }
 
-        const newImages = files.map((file) => ({
-            file,
-            preview: URL.createObjectURL(file),
-        }));
+    const newImages = files.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+    }));
 
-        setData('examenes_indicados_img', [...data.examenes_indicados_img, ...files]);
-        setPreviewImages([...previewImages, ...newImages]);
-    };
+    setData('examenes_indicados_img', [...data.examenes_indicados_img, ...files]);
+    setPreviewImages([...previewImages, ...newImages]);
+};
 
-    const handleFileChangeArchivos = (e) => {
-        const files = Array.from(e.target.files);
-        setData('examenes_indicados_archivos', [...data.examenes_indicados_archivos, ...files]);
-        setPreviewArchivos([...previewArchivos, ...files]);
-    };
+const handleFileChangeArchivos = (e) => {
+    const files = Array.from(e.target.files);
+    setData('examenes_indicados_archivos', [...data.examenes_indicados_archivos, ...files]);
+    setPreviewArchivos([...previewArchivos, ...files]);
+};
 
     const handleRemoveImage = (index, type) => {
-        if (type === 'img') {
-            const updatedImages = [...data.examenes_indicados_img];
-            updatedImages.splice(index, 1);
+    if (type === 'img') {
+        const updatedImages = [...data.examenes_indicados_img];
+        updatedImages.splice(index, 1);
 
-            const updatedPreviews = [...previewImages];
-            URL.revokeObjectURL(updatedPreviews[index].preview);
-            updatedPreviews.splice(index, 1);
+        const updatedPreviews = [...previewImages];
+        URL.revokeObjectURL(updatedPreviews[index].preview);
+        updatedPreviews.splice(index, 1);
 
-            setData('examenes_indicados_img', updatedImages);
-            setPreviewImages(updatedPreviews);
-        } else if (type === 'archivos') {
-            const updatedArchivos = [...data.examenes_indicados_archivos];
-            updatedArchivos.splice(index, 1);
+        setData('examenes_indicados_img', updatedImages);
+        setPreviewImages(updatedPreviews);
+    } else if (type === 'archivos') {
+        const updatedArchivos = [...data.examenes_indicados_archivos];
+        updatedArchivos.splice(index, 1);
 
-            const updatedPreviews = [...previewArchivos];
-            updatedPreviews.splice(index, 1);
+        const updatedPreviews = [...previewArchivos];
+        updatedPreviews.splice(index, 1);
 
-            setData('examenes_indicados_archivos', updatedArchivos);
-            setPreviewArchivos(updatedPreviews);
-        }
-    };
+        setData('examenes_indicados_archivos', updatedArchivos);
+        setPreviewArchivos(updatedPreviews);
+    }
+};
 
-    const handleRemoveExistingFile = (index, type) => {
-        if (type === 'img') {
-            const updatedFiles = [...data.examenes_indicados_img_existentes];
-            setFilesToDelete([...filesToDelete, updatedFiles[index]]);
-            updatedFiles.splice(index, 1);
-            setData('examenes_indicados_img_existentes', updatedFiles);
-        } else {
-            const updatedFiles = [...data.examenes_indicados_archivos_existentes];
-            setFilesToDelete([...filesToDelete, updatedFiles[index]]);
-            updatedFiles.splice(index, 1);
-            setData('examenes_indicados_archivos_existentes', updatedFiles);
-        }
-    };
+const handleRemoveExistingFile = (index, type) => {
+    if (type === 'img') {
+        const updatedFiles = [...data.examenes_indicados_img_existentes];
+        setFilesToDelete([...filesToDelete, updatedFiles[index]]);
+        updatedFiles.splice(index, 1);
+        setData('examenes_indicados_img_existentes', updatedFiles);
+    } else {
+        const updatedFiles = [...data.examenes_indicados_archivos_existentes];
+        setFilesToDelete([...filesToDelete, updatedFiles[index]]);
+        updatedFiles.splice(index, 1);
+        setData('examenes_indicados_archivos_existentes', updatedFiles);
+    }
+};
 
     // Efecto para inicializar marcadores basados en datos existentes
 useEffect(() => {
@@ -396,13 +424,16 @@ useEffect(() => {
 }, []);
 // Efecto para manejar previsualización de archivos existentes
 useEffect(() => {
-  if (consulta.examenes_indicados_img) {
-    const previewsExistentes = consulta.examenes_indicados_img.map(file => ({
-      file,
-      preview: `/storage/${file.path}` // Ajusta según tu ruta de almacenamiento
-    }));
-    setPreviewImages(previewsExistentes);
-  }
+    // Inicializar archivos existentes
+    if (consulta.examenes_indicados_img) {
+        const parsedImages = parseFileData(consulta.examenes_indicados_img);
+        setData('examenes_indicados_img_existentes', parsedImages);
+    }
+
+    if (consulta.examenes_indicados_archivos) {
+        const parsedArchivos = parseFileData(consulta.examenes_indicados_archivos);
+        setData('examenes_indicados_archivos_existentes', parsedArchivos);
+    }
 }, [consulta]);
 
     // Load diagnostic history
@@ -459,7 +490,6 @@ useEffect(() => {
         const handleBlur = () => {
             setData(fieldName, localValues);
         };
-
         return (
             <div className={`mb-4 ${className}`}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -545,6 +575,15 @@ useEffect(() => {
             formData.append(`examenes_indicados_archivos[${index}]`, file);
         });
 
+        // Agregar nuevos archivos CIIT
+        if (data.ciit_archivos) {
+            data.ciit_archivos.forEach((file, index) => {
+            if (file.file) { // Solo si es un archivo nuevo (tiene la propiedad file)
+                formData.append(`ciit_archivos[${index}]`, file.file);
+            }
+            });
+        }
+
         // Submit the form
         router.post(route('consultas.update', consulta.id), formData, {
             preserveScroll: true,
@@ -559,6 +598,36 @@ useEffect(() => {
             }
         });
     };
+useEffect(() => {
+  if (consulta.ciit_archivos) {
+    // Verifica si ciit_archivos es un string (podría estar serializado)
+    let archivos = consulta.ciit_archivos;
+    if (typeof archivos === 'string') {
+      try {
+        archivos = JSON.parse(archivos);
+      } catch (e) {
+        console.error('Error parsing ciit_archivos:', e);
+        archivos = [];
+      }
+    }
+    
+    // Asegúrate de que es un array
+    if (!Array.isArray(archivos)) {
+      archivos = [];
+    }
+
+    // Mapea los archivos al formato esperado
+    const existingFiles = archivos.map(file => ({
+      ...file,
+      type: file.mime_type ? 
+        (file.mime_type.startsWith('image/') ? 'image' : 
+         file.mime_type === 'application/zip' || file.mime_type === 'application/x-rar-compressed' ? 'compressed' : 'file') :
+        'file'
+    }));
+    
+    setPreviewCiitFiles(existingFiles);
+  }
+}, [consulta]);
 
     // Validate receta function (same as create.jsx)
     const validarReceta = (receta) => {
@@ -825,6 +894,13 @@ useEffect(() => {
                                                     </button>
                                                     <button
                                                         type="button"
+                                                        onClick={() => toggleSection('ciitArchivos')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.ciitArchivos ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Archivos CIIT
+                                                    </button>
+                                                    <button
+                                                        type="button"
                                                         onClick={() => toggleSection('examenesIndicados')}
                                                         className={`w-full text-left px-4 py-2 rounded ${expandedSections.examenesIndicados ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
@@ -902,6 +978,13 @@ useEffect(() => {
                                                         className={`w-full text-left px-4 py-2 rounded ${expandedSections.plan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
                                                         Plan
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSection('ciitArchivos')}
+                                                        className={`w-full text-left px-4 py-2 rounded ${expandedSections.ciitArchivos ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                    >
+                                                        Archivos CIIT
                                                     </button>
                                                     <button
                                                         type="button"
@@ -1131,37 +1214,37 @@ useEffect(() => {
                                                 )}
                                                 {/* 7. Fondo de Ojo */}
                                                 {expandedSections.fondoOjo && (
-  <div className="mb-6 p-4 border border-gray-200 rounded-md">
-    <div className="p-4">
-      <p className="text-sm text-gray-500 mb-4">
-        Hallazgos del examen de fondo de ojo.
-      </p>
-      <FondoOjo
-        marcadoresOD={marcadores}
-        marcadoresOI={marcadoresOI}
-        marcadorActivoOD={marcadorActivo}
-        marcadorActivoOI={marcadorActivoOI}
-        handleMarkerClickOD={handleMarkerClick}
-        handleMarkerClickOI={handleMarkerClickOI}
-        data={data}
-        setData={setData}
-        initialValues={{
-          // Pasa los valores existentes del fondo de ojo
-          fondo_ojo_retina_p_od: consulta.fondo_ojo_retina_p_od,
-          fondo_ojo_macula_od: consulta.fondo_ojo_macula_od,
-          fondo_ojo_vitreo_od: consulta.fondo_ojo_vitreo_od,
-          fondo_ojo_disco_o_od: consulta.fondo_ojo_disco_o_od,
-          fondo_ojo_vasos_od: consulta.fondo_ojo_vasos_od,
-          fondo_ojo_retina_p_oi: consulta.fondo_ojo_retina_p_oi,
-          fondo_ojo_macula_oi: consulta.fondo_ojo_macula_oi,
-          fondo_ojo_vitreo_oi: consulta.fondo_ojo_vitreo_oi,
-          fondo_ojo_disco_o_oi: consulta.fondo_ojo_disco_o_oi,
-          fondo_ojo_vasos_oi: consulta.fondo_ojo_vasos_oi,
-        }}
-      />
-    </div>
-  </div>
-)}
+                                                <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                    <div className="p-4">
+                                                    <p className="text-sm text-gray-500 mb-4">
+                                                        Hallazgos del examen de fondo de ojo.
+                                                    </p>
+                                                    <FondoOjo
+                                                        marcadoresOD={marcadores}
+                                                        marcadoresOI={marcadoresOI}
+                                                        marcadorActivoOD={marcadorActivo}
+                                                        marcadorActivoOI={marcadorActivoOI}
+                                                        handleMarkerClickOD={handleMarkerClick}
+                                                        handleMarkerClickOI={handleMarkerClickOI}
+                                                        data={data}
+                                                        setData={setData}
+                                                        initialValues={{
+                                                        // Pasa los valores existentes del fondo de ojo
+                                                        fondo_ojo_retina_p_od: consulta.fondo_ojo_retina_p_od,
+                                                        fondo_ojo_macula_od: consulta.fondo_ojo_macula_od,
+                                                        fondo_ojo_vitreo_od: consulta.fondo_ojo_vitreo_od,
+                                                        fondo_ojo_disco_o_od: consulta.fondo_ojo_disco_o_od,
+                                                        fondo_ojo_vasos_od: consulta.fondo_ojo_vasos_od,
+                                                        fondo_ojo_retina_p_oi: consulta.fondo_ojo_retina_p_oi,
+                                                        fondo_ojo_macula_oi: consulta.fondo_ojo_macula_oi,
+                                                        fondo_ojo_vitreo_oi: consulta.fondo_ojo_vitreo_oi,
+                                                        fondo_ojo_disco_o_oi: consulta.fondo_ojo_disco_o_oi,
+                                                        fondo_ojo_vasos_oi: consulta.fondo_ojo_vasos_oi,
+                                                        }}
+                                                    />
+                                                    </div>
+                                                </div>
+                                                )}
                                                 {/* 8. Impresión Diagnóstica */}
                                                 {expandedSections.diagnostico && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -1226,7 +1309,7 @@ useEffect(() => {
                                                         });
                                                         }}
                                                     />
-                                                    )}
+                                                )}
                                                 {/* 10. Plan */}
                                                 {expandedSections.plan && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -1244,6 +1327,101 @@ useEffect(() => {
                                                         </div>
                                                     </div>
                                                 )}
+{/* 11. Archivos CIIT */}
+{expandedSections.ciitArchivos && (
+  <div className="mb-6 p-4 border border-gray-200 rounded-md">
+    <div className="p-4">
+      <p className="text-sm text-gray-500 mb-4">
+        Adjunte archivos CIIT (imágenes, documentos o archivos comprimidos - máximo 4 archivos).
+      </p>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">Archivos CIIT</label>
+        <input
+          type="file"
+          onChange={handleFileChangeCiitFiles}
+          multiple
+          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+        />
+        
+        {/* Archivos existentes y nuevos en una sola lista */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Archivos</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {/* Combinar archivos existentes y nuevos para mostrar */}
+            {[...previewCiitFiles, ...(data.ciit_archivos || [])].map((file, index) => (
+              <div key={`file-${index}`} className="border rounded-md p-3 relative group hover:shadow-md transition-shadow">
+                {/* Contenido del archivo */}
+                {file.type === 'image' ? (
+                  <>
+                    <img
+                      src={file.url || `/storage/${file.path}` || URL.createObjectURL(file.file)}
+                      alt={`Archivo CIIT ${index + 1}`}
+                      className="w-full h-32 object-contain rounded-md mb-2"
+                    />
+                  </>
+                ) : (
+                  <div className="flex flex-col h-full">
+                    <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-md mb-2">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Botones de acción - siempre visibles */}
+                <div className="absolute top-2 right-2 flex space-x-1">
+                  {/* Botón de descarga/visualización */}
+                  {file.url || file.path ? (
+                    <a
+                      href={file.url || `/storage/${file.path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={!file.type?.startsWith('image/')}
+                      className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 transition-colors"
+                      title={file.type?.startsWith('image/') ? "Ver" : "Descargar"}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {file.type?.startsWith('image/') ? (
+                          <>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </>
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        )}
+                      </svg>
+                    </a>
+                  ) : null}
+                  
+                  {/* Botón de eliminación */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCiitFile(index)}
+                    className="bg-red-500 text-white p-1 rounded hover:bg-red-600 transition-colors"
+                    title="Eliminar"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* Información del archivo */}
+                <div className="text-sm truncate mt-1">{file.original_name || file.name}</div>
+                <div className="text-xs text-gray-500">
+                  {file.type === 'image' ? 'Imagen' : 
+                   file.type === 'compressed' ? 'Archivo comprimido' : 'Documento'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
                                                 {/* 11. Exámenes Indicados */}
                                                 {expandedSections.examenesIndicados && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -1326,7 +1504,6 @@ useEffect(() => {
                                                 )}
                                             </>
                                         )}
-
                                         {data.tipo_consulta === 'evolucion' && (
                                             <>
                                                 {/* 1. Evoluciones */}
@@ -1345,8 +1522,488 @@ useEffect(() => {
                                                         </div>
                                                     </div>
                                                 )}
-                                                
-                                                {/* Other sections follow the same pattern */}
+                                                {/* 5. Examen Ocular */}
+                                                {expandedSections.examenOcular && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Complete los resultados del examen ocular, incluyendo agudeza visual, refracción y otros parámetros.
+                                                            </p>
+                                                            <ExamenOcular data={data} setData={setData} edadPaciente={data.edad} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/*REFRACCION */}
+                                                {expandedSections.refraccion && (
+                                                <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                    <div className="p-4">
+                                                    <p className="text-sm text-gray-500 mb-4">
+                                                        Complete los resultados del examen de refracción.
+                                                    </p>
+                                                    <Refraccion 
+                                                        data={data} 
+                                                        setData={setData}
+                                                        edadPaciente={parseInt(data.edad) || 0}
+                                                        readOnly={false}
+                                                        consultaId={consulta.id} // Pasa el ID de la consulta
+                                                        initialData={consulta.examen} // Pasa los datos existentes del examen
+                                                    />
+                                                    </div>
+                                                </div>
+                                                )}
+                                                {/* 6. Biomicroscopia */}
+                                                {expandedSections.biomicroscopia && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className='mb-4'>
+                                                            <label className="text-xl font-medium text-gray-700 uppercase flex justify-center items-center w-full mb-4">Biomicroscopia</label>
+                                                            <div className='grid grid-cols-3 mx-8 border border-gray-200 rounded-md'>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>Examen Fisico</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OD</label>
+                                                                <label className='flex justify-center items-center py-2 border border-[#8FDBF1] shadow-sm'>OI</label>
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Movimientos Oculares</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_od', value)}/>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_movoculares_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_movoculares_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Párpados</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_parpados_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_parpados_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Córnea</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cornea_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cornea_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Conjuntiva</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_corneaconj_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_corneaconj_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cámara Anterior</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_ca_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_ca_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Iris</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_iris_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_iris_oi', value)}
+                                                                />
+                                                                <label className='border-[#8FDBF1] shadow-sm border flex items-center px-4'>Cristalino</label>
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_od || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_od', value)}
+                                                                />
+                                                                <TerminoBiomicroscopiaSearch
+                                                                    initialValue={data.biomicroscopia_cristalino_oi || ''}
+                                                                    onSelectTerm={(value) => setData('biomicroscopia_cristalino_oi', value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 7. Fondo de Ojo */}
+                                                {expandedSections.fondoOjo && (
+                                                <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                    <div className="p-4">
+                                                    <p className="text-sm text-gray-500 mb-4">
+                                                        Hallazgos del examen de fondo de ojo.
+                                                    </p>
+                                                    <FondoOjo
+                                                        marcadoresOD={marcadores}
+                                                        marcadoresOI={marcadoresOI}
+                                                        marcadorActivoOD={marcadorActivo}
+                                                        marcadorActivoOI={marcadorActivoOI}
+                                                        handleMarkerClickOD={handleMarkerClick}
+                                                        handleMarkerClickOI={handleMarkerClickOI}
+                                                        data={data}
+                                                        setData={setData}
+                                                        initialValues={{
+                                                        // Pasa los valores existentes del fondo de ojo
+                                                        fondo_ojo_retina_p_od: consulta.fondo_ojo_retina_p_od,
+                                                        fondo_ojo_macula_od: consulta.fondo_ojo_macula_od,
+                                                        fondo_ojo_vitreo_od: consulta.fondo_ojo_vitreo_od,
+                                                        fondo_ojo_disco_o_od: consulta.fondo_ojo_disco_o_od,
+                                                        fondo_ojo_vasos_od: consulta.fondo_ojo_vasos_od,
+                                                        fondo_ojo_retina_p_oi: consulta.fondo_ojo_retina_p_oi,
+                                                        fondo_ojo_macula_oi: consulta.fondo_ojo_macula_oi,
+                                                        fondo_ojo_vitreo_oi: consulta.fondo_ojo_vitreo_oi,
+                                                        fondo_ojo_disco_o_oi: consulta.fondo_ojo_disco_o_oi,
+                                                        fondo_ojo_vasos_oi: consulta.fondo_ojo_vasos_oi,
+                                                        }}
+                                                    />
+                                                    </div>
+                                                </div>
+                                                )}
+                                                {/* 8. Impresión Diagnóstica */}
+                                                {expandedSections.diagnostico && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione los códigos CIE-10 correspondientes a los diagnósticos identificados.
+                                                            </p>
+                                                            <div className="mb-4">
+                                                            <Cie10Search 
+                                                            onSelectResult={handleSelectResult}
+                                                            initialSelected={data.impresion_diagnostica ? data.impresion_diagnostica.split('; ') : []}
+                                                            />
+                                                            </div>
+                                                            <div className="mb-4">
+                                                                <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                                                    {selectedResults.map((result, index) => (
+                                                                        <div key={index} className="inline-flex items-center bg-gray-200 rounded-md p-2 m-1">
+                                                                            <span>{result}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 9. Tratamiento */}
+                                                {expandedSections.tratamiento && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Especifique el tratamiento indicado para el paciente.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="tratamiento"
+                                                                values={data.tratamiento}
+                                                                fieldName="tratamiento"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 10. Receta Médica */}
+                                                {expandedSections.recetas && (
+                                                    <RecetaMedica 
+                                                        consultaId={consulta.id}
+                                                        pacienteId={data.paciente_id}
+                                                        medicoId={auth.user.id}
+                                                        initialReceta={consulta.receta} // Pasa la receta existente
+                                                        onRecetaChange={(recetaData) => {
+                                                        console.log('Receta actualizada:', recetaData);
+                                                        setData('receta', {
+                                                            ...recetaData,
+                                                            medicamentos: recetaData.medicamentos.map(med => ({
+                                                            farmaco_id: med.farmaco_id,
+                                                            nombre_comercial: med.nombre_comercial,
+                                                            cantidad: med.cantidad,
+                                                            dosis: med.dosis,
+                                                            frecuencia: med.frecuencia,
+                                                            duracion: med.duracion
+                                                            }))
+                                                        });
+                                                        }}
+                                                    />
+                                                    )}
+                                                {/* 10. Plan */}
+                                                {expandedSections.plan && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Seleccione el plan de manejo para el paciente.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="plan"
+                                                                values={data.plan}
+                                                                fieldName="plan"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* 11. Archivos CIIT */}
+                                                {expandedSections.ciitArchivos && (
+                                                <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                    <div className="p-4">
+                                                    <p className="text-sm text-gray-500 mb-4">
+                                                        Adjunte archivos CIIT (imágenes, documentos o archivos comprimidos - máximo 4 archivos).
+                                                    </p>
+                                                    <div className="mb-4">
+                                                        <label className="block text-sm font-medium text-gray-700">Archivos CIIT</label>
+                                                        <input
+                                                        type="file"
+                                                        onChange={handleFileChangeCiitFiles}
+                                                        multiple
+                                                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                        />
+                                                        
+                                                        {/* Archivos existentes y nuevos en una sola lista */}
+                                                        <div className="mt-4">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Archivos</label>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                                            {/* Combinar archivos existentes y nuevos para mostrar */}
+                                                            {[...previewCiitFiles, ...(data.ciit_archivos || [])].map((file, index) => (
+                                                            <div key={`file-${index}`} className="border rounded-md p-3 relative group hover:shadow-md transition-shadow">
+                                                                {/* Contenido del archivo */}
+                                                                {file.type === 'image' ? (
+                                                                <>
+                                                                    <img
+                                                                    src={file.url || `/storage/${file.path}` || URL.createObjectURL(file.file)}
+                                                                    alt={`Archivo CIIT ${index + 1}`}
+                                                                    className="w-full h-32 object-contain rounded-md mb-2"
+                                                                    />
+                                                                </>
+                                                                ) : (
+                                                                <div className="flex flex-col h-full">
+                                                                    <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-md mb-2">
+                                                                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                                    </svg>
+                                                                    </div>
+                                                                </div>
+                                                                )}
+                                                                
+                                                                {/* Botones de acción - siempre visibles */}
+                                                                <div className="absolute top-2 right-2 flex space-x-1">
+                                                                {/* Botón de descarga/visualización */}
+                                                                {file.url || file.path ? (
+                                                                    <a
+                                                                    href={file.url || `/storage/${file.path}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    download={!file.type?.startsWith('image/')}
+                                                                    className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 transition-colors"
+                                                                    title={file.type?.startsWith('image/') ? "Ver" : "Descargar"}
+                                                                    >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        {file.type?.startsWith('image/') ? (
+                                                                        <>
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                        </>
+                                                                        ) : (
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                                        )}
+                                                                    </svg>
+                                                                    </a>
+                                                                ) : null}
+                                                                
+                                                                {/* Botón de eliminación */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveCiitFile(index)}
+                                                                    className="bg-red-500 text-white p-1 rounded hover:bg-red-600 transition-colors"
+                                                                    title="Eliminar"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                </button>
+                                                                </div>
+                                                                
+                                                                {/* Información del archivo */}
+                                                                <div className="text-sm truncate mt-1">{file.original_name || file.name}</div>
+                                                                <div className="text-xs text-gray-500">
+                                                                {file.type === 'image' ? 'Imagen' : 
+                                                                file.type === 'compressed' ? 'Archivo comprimido' : 'Documento'}
+                                                                </div>
+                                                            </div>
+                                                            ))}
+                                                        </div>
+                                                        </div>
+                                                    </div>
+                                                    </div>
+                                                </div>
+                                                )}
+                                                {/* 11. Exámenes Indicados */}
+                                                {expandedSections.examenesIndicados && (
+                                                <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                    <div className="p-4">
+                                                    <p className="text-sm text-gray-500 mb-4">
+                                                        Adjunte imágenes o documentos de exámenes complementarios (máximo 4 archivos por tipo).
+                                                    </p>
+                                                    
+                                                    {/* Imágenes existentes */}
+                                                    <div className="mb-4">
+                                                        <label className="block text-sm font-medium text-gray-700">Imágenes existentes</label>
+                                                        <div className="mt-4 flex flex-wrap gap-2">
+                                                        {data.examenes_indicados_img_existentes.map((file, index) => (
+                                                            <div key={`exist-img-${index}`} className="relative group">
+                                                            {file.type === 'image' ? (
+                                                                <>
+                                                                <img
+                                                                    src={file.url || `/storage/${file.path}`}
+                                                                    alt={`Imagen ${file.original_name}`}
+                                                                    className="w-24 h-24 object-cover rounded-md border border-gray-200"
+                                                                />
+                                                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                                                                    <a 
+                                                                    href={file.url || `/storage/${file.path}`} 
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-white bg-blue-500 p-1 rounded mr-1"
+                                                                    title="Ver imagen"
+                                                                    >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                    </svg>
+                                                                    </a>
+                                                                    <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveExistingFile(index, 'img')}
+                                                                    className="text-white bg-red-500 p-1 rounded"
+                                                                    title="Eliminar imagen"
+                                                                    >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                    </button>
+                                                                </div>
+                                                                </>
+                                                            ) : (
+                                                                <div className="bg-gray-100 p-2 rounded-md flex items-center">
+                                                                <span className="text-sm truncate max-w-xs">{file.original_name}</span>
+                                                                </div>
+                                                            )}
+                                                            </div>
+                                                        ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Nuevas imágenes */}
+                                                    <div className="mb-4">
+                                                        <label className="block text-sm font-medium text-gray-700">Agregar nuevas imágenes</label>
+                                                        <input
+                                                        type="file"
+                                                        onChange={handleFileChangeImages}
+                                                        multiple
+                                                        accept="image/*"
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                        />
+                                                        <div className="mt-4 flex flex-wrap gap-2">
+                                                        {previewImages.map((image, index) => (
+                                                            <div key={index} className="relative">
+                                                            <img
+                                                                src={image.preview}
+                                                                alt={`Previsualización ${index + 1}`}
+                                                                className="w-24 h-24 object-cover rounded-md"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveImage(index, 'img')}
+                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                            </div>
+                                                        ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Documentos existentes */}
+                                                    <div className="mb-4">
+                                                        <label className="block text-sm font-medium text-gray-700">Documentos existentes</label>
+                                                        <div className="mt-4 flex flex-wrap gap-2">
+                                                        {data.examenes_indicados_archivos_existentes.map((file, index) => (
+                                                            <div key={`exist-file-${index}`} className="relative bg-gray-100 p-2 rounded-md flex items-center">
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium text-gray-700 truncate">{file.original_name}</p>
+                                                                <p className="text-xs text-gray-500">{file.type === 'image' ? 'Imagen' : 'Documento'}</p>
+                                                            </div>
+                                                            <div className="flex space-x-1 ml-2">
+                                                                <a 
+                                                                href={file.url || `/storage/${file.path}`} 
+                                                                download={file.original_name}
+                                                                className="text-blue-500 hover:text-blue-700 p-1"
+                                                                title="Descargar"
+                                                                >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                                </svg>
+                                                                </a>
+                                                                <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveExistingFile(index, 'archivos')}
+                                                                className="text-red-500 hover:text-red-700 p-1"
+                                                                title="Eliminar"
+                                                                >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                </svg>
+                                                                </button>
+                                                            </div>
+                                                            </div>
+                                                        ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Nuevos documentos */}
+                                                    <div className="mb-4">
+                                                        <label className="block text-sm font-medium text-gray-700">Agregar nuevos documentos</label>
+                                                        <input
+                                                        type="file"
+                                                        onChange={handleFileChangeArchivos}
+                                                        multiple
+                                                        accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                        />
+                                                        <div className="mt-4 flex flex-wrap gap-2">
+                                                        {previewArchivos.map((archivo, index) => (
+                                                            <div key={index} className="relative bg-gray-100 p-2 rounded-md">
+                                                            <span className="text-sm">{archivo.name}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveImage(index, 'archivos')}
+                                                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                            </div>
+                                                        ))}
+                                                        </div>
+                                                    </div>
+                                                    </div>
+                                                </div>
+                                                )}
+                                                {/* 12. Comentario */}
+                                                {expandedSections.comentario && (
+                                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                                        <div className="p-4">
+                                                            <p className="text-sm text-gray-500 mb-4">
+                                                                Escriba un breve comentario.
+                                                            </p>
+                                                            <MultiInputField
+                                                                label="comentario"
+                                                                values={data.comentario}
+                                                                fieldName="comentario"
+                                                                setData={setData}
+                                                                className="tu-clase-personalizada" // Opcional
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </>
                                         )}
                                     </div>

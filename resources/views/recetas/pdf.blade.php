@@ -44,7 +44,6 @@
         <thead>
             <tr>
                 <th>Medicamento</th>
-                <th>Componente Activo</th>
                 <th>Cantidad</th>
                 <th>Dosis</th>
                 <th>Frecuencia</th>
@@ -52,14 +51,13 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($medicamentos as $med)
+           @foreach($medicamentos as $medicamento)
             <tr>
-                <td>{{ $med['nombre_comercial'] }}</td>
-                <td>{{ $med['componente_activo'] ?? 'N/A' }}</td>
-                <td>{{ $med['cantidad'] }}</td>
-                <td>{{ $med['dosis'] }}</td>
-                <td>{{ $med['frecuencia'] }}</td>
-                <td>{{ $med['duracion'] }}</td>
+                <td class="border px-4 py-2">{{ $medicamento['nombre_comercial'] }}</td>
+                <td class="border px-4 py-2">{{ $medicamento['cantidad'] }}</td>
+                <td class="border px-4 py-2">{{ $medicamento['dosis'] }}</td>
+                <td class="border px-4 py-2">{{ $medicamento['frecuencia'] }}</td>
+                <td class="border px-4 py-2">{{ $medicamento['duracion'] }}</td>
             </tr>
             @endforeach
         </tbody>
