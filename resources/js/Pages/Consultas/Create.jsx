@@ -24,6 +24,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         email: '',
         fecha_nacimiento: '',
         edad: '',
+        foto_perfil: '',
         //
         antecedentes_personales_hta: '',
         antecedentes_personales_alergias: '',
@@ -807,28 +808,27 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                         <div className="bg-[#FFFFFF]">
                             <form onSubmit={handleSubmit}>
                                 {/* SECCION PARA Mostrar datos del paciente (siempre visible, pero vacío inicialmente) */}
-                                <div className="py-4 px-4 bg-[#FFFFFF]">                                                                        
+                                <div className="py-4 px-4 bg-[#FFFFFF]">                                                                    
                                     <div className='grid grid-cols-4 gap-4'>
                                     {/* Columna 1: Imagen del paciente - ocupa 1 parte */}
                                     <div className='flex flex-col items-center justify-center col-span-1'>
-                                        <div className='w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-2 overflow-hidden'>
-                                            {data.foto_perfil ? (
-                                                <img 
-                                                    src={`/storage/${data.foto_perfil}`}  // Asegúrate de que la ruta sea correcta
-                                                    alt="Foto del paciente" 
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        e.target.onerror = null; 
-                                                        e.target.src = 'https://via.placeholder.com/150'; // Imagen de respaldo si falla
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span className="text-gray-500">Sin foto</span>
-                                            )}
-                                        </div>
-                                        {/* Elimina el botón de cambiar foto o mantenlo como visualización estática si lo prefieres */}
-                                        <span className="text-sm text-gray-500">Foto del paciente</span>
+                                    <div className='w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-2 overflow-hidden'>
+                                        {data.foto_perfil ? (
+                                            <img 
+                                                src={data.foto_perfil}
+                                                alt="Foto del paciente" 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = '';
+                                                    e.target.parentElement.classList.add('bg-gray-200');
+                                                }}
+                                            />
+                                        ) : (
+                                            <span className="text-gray-500">Sin foto</span>
+                                        )}
                                     </div>
+                                </div>
                                     {/* Columna 2: Datos concatenados del paciente - ocupa 2 partes */}
                                     <div className='flex flex-col col-span-2'>
                                         <div className="mb-2">

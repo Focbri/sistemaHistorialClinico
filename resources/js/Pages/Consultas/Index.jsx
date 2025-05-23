@@ -7,6 +7,7 @@ import AdvancedFilters from '@/Components/AdvancedFilters';
 
 export default function ConsultasIndex({ auth, consultas, links, filters }) {
 
+    const isAdmin = ['admin'].includes(auth.user.role);
     const [searchDni, setSearchDni] = useState(filters.dni || '');
 
     const [loading, setLoading] = useState(false);
@@ -423,7 +424,7 @@ const descargarPDFConsulta = async (consultaId) => {
                                     Editar
                                 </button>
                             )}
-                            {(auth.user.role === 'admin' || auth.user.role === 'medico') && (
+                            {isAdmin && (
                                 <button
                                     onClick={() => openDeleteModal(item.id)}
                                     className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"

@@ -4,6 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 export default function Inicio({auth}) {
     // Determinar si el usuario es médico o médico_externo usando el campo role
     const isMedico = ['medico', 'medico_externo'].includes(auth.user.role);
+    const isAdmin = ['admin'].includes(auth.user.role);
     
     return (
         <AuthenticatedLayout
@@ -49,6 +50,7 @@ export default function Inicio({auth}) {
                                 )}
                                 
                                 {/* Gestión de Usuarios */}
+                                {isAdmin &&(
                                 <Link 
                                     href={route('admin.users.index')} 
                                     className="bg-yellow-100 hover:bg-yellow-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
@@ -57,6 +59,7 @@ export default function Inicio({auth}) {
                                     <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Gestión de Usuarios</h2>
                                     <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Administración de usuarios del sistema</p>
                                 </Link>
+                                )}
                                 
                                 {/* Perfil */}
                                 <Link 

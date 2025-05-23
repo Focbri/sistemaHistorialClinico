@@ -39,6 +39,9 @@ const PacienteForm = ({ data, setData, pacienteEncontrado, setPacienteEncontrado
                     telefono: result.paciente.telefono,
                     tipo_consulta: result.tieneConsultaInicial ? 'evolucion' : 'inicio',
                     edad: result.paciente.edad,
+                    foto_perfil: result.paciente.foto_perfil 
+                    ? `/storage/${result.paciente.foto_perfil}`
+                    : null
                 }));
                 
                 setPacienteEncontrado && setPacienteEncontrado(true);

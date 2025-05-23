@@ -55,6 +55,23 @@ class Paciente extends Model
         return $this->hasMany(Consulta::class)->orderBy('created_at', 'desc');
     }
 
+    protected $appends = ['foto_perfil_url'];
+
+public function getFotoPerfilUrlAttribute()
+{
+    if (!$this->foto_perfil) {
+        return null;
+    }
+    
+    // Si ya es una URL completa (por ejemplo, de un servicio externo)
+    if (filter_var($this->foto_perfil, FILTER_VALIDATE_URL)) {
+        return $this->foto_perfil;
+    }
+    
+    // Generar URL para archivos locales
+    return Storage::url($this->foto_perfil);
+}
+
     public function getNombreCompletoAttribute(): string 
     {
         return "{$this->nombres} {$this->apellido_paterno} {$this->apellido_materno}";

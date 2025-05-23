@@ -7,6 +7,7 @@ import AdvancedFilters from '@/Components/AdvancedFilters';
 import axios from 'axios'; // Asegúrate de importar axios
 
 export default function PacientesIndex({ auth, pacientes }) {
+    const isAdmin = ['admin'].includes(auth.user.role);
     const [searchDni, setSearchDni] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [pacienteToDelete, setPacienteToDelete] = useState(null);
@@ -392,7 +393,7 @@ export default function PacientesIndex({ auth, pacientes }) {
                                                             <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/><path fill="#fff" d="M7 12h2v5H7zm4-7h2v12h-2zm4 5h2v7h-2z"/></svg>
                                                         </button>
 
-                                                        {(auth.user.role === 'admin' || auth.user.role === 'root') && (
+                                                        {isAdmin && (
                                                             <button
                                                                 onClick={() => openDeleteModal(paciente)}
                                                                 className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"

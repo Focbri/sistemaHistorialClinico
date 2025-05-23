@@ -657,6 +657,7 @@ class PacienteController extends Controller
                     'procedencia' => $paciente->procedencia,
                     'acompañante' => $paciente->acompañante,
                     'referido' => $paciente->referido,
+                    'foto_perfil' => $paciente->foto_perfil,
                     // Agrega cualquier otro campo necesario
                 ],
             ]);

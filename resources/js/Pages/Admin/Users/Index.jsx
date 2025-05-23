@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 
 export default function Index({ auth, users, roles }) {
+    const isAdmin = ['admin'].includes(auth.user.role);
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -66,6 +67,8 @@ export default function Index({ auth, users, roles }) {
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
                                                         </Link>
+                                                        
+                                                        {isAdmin && (
                                                         <Link
                                                             href={route('admin.users.destroy', user.id)}
                                                             method="delete"
@@ -74,6 +77,7 @@ export default function Index({ auth, users, roles }) {
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zM9 17h2V8H9zm4 0h2V8h-2zM7 6v13z"></path></svg>
                                                         </Link>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 
 const FarmacoManualForm = ({ onAddManualFarmaco, onCancel }) => {
   const [manualFarmaco, setManualFarmaco] = useState({
@@ -10,8 +9,7 @@ const FarmacoManualForm = ({ onAddManualFarmaco, onCancel }) => {
   });
   const [error, setError] = useState(null);
 
-  // En FarmacoManualForm.jsx
-const handleAddManualFarmaco = () => {
+  const handleAddManualFarmaco = () => {
     if (!manualFarmaco.nombre || !manualFarmaco.presentacion) {
       setError('Nombre comercial y presentación son obligatorios');
       return;
@@ -19,7 +17,7 @@ const handleAddManualFarmaco = () => {
 
     const nuevoMedicamento = {
       id: `manual-${Date.now()}`,
-      farmaco_id: null, // Asegurar que es null para manuales
+      farmaco_id: null,
       nombre_comercial: manualFarmaco.nombre,
       componente_activo: manualFarmaco.componente || '',
       presentacion: manualFarmaco.presentacion,
@@ -28,7 +26,8 @@ const handleAddManualFarmaco = () => {
       dosis: '',
       frecuencia: '',
       duracion: '',
-      // Eliminar campos de stock para manuales
+      stock_total: 0,
+      stock_disponible: 0,
       es_manual: true
     };
 

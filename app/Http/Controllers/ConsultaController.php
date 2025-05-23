@@ -148,6 +148,11 @@ class ConsultaController extends Controller
                     ->select('id', 'paciente_id', 'impresion_diagnostica', 'created_at', 'tipo_consulta');
             }])->find($request->input('paciente_id'));
 
+            // Asegurarse de que la URL de la foto esté disponible
+            if ($paciente && $paciente->foto_perfil) {
+                $paciente->foto_perfil_url = Storage::url($paciente->foto_perfil);
+            }
+
             if ($paciente && $tipoConsulta === 'evolucion') {
                 $historialDiagnosticos = $paciente->consultas->map(function ($consulta) {
                     return [
@@ -167,55 +172,62 @@ class ConsultaController extends Controller
             'historialDiagnosticos' => $historialDiagnosticos,
         ]);
     }
-    public function show($id){
-        $consulta = Consulta::with(['paciente', 'receta', 'user'])->findOrFail($id);
-        
+    public function show($id)
+    {
+        $consulta = Consulta::with([
+            'paciente', 
+            'receta', 
+            'user',
+            'examen',
+            'refraccion'
+        ])->findOrFail($id);
+
+        // Usar la misma función de parseo que en edit()
+        $parseFiles = function ($jsonData) {
+            if (empty($jsonData)) return [];
+            
+            try {
+                $parsed = is_array($jsonData) ? $jsonData : json_decode($jsonData, true);
+                
+                return array_map(function ($item) {
+                    $path = $item['ruta'] ?? $item['path'] ?? $item;
+                    $name = $item['nombre_original'] ?? $item['name'] ?? basename($path);
+                    
+                    return [
+                        'path' => str_replace('public/', '', $path),
+                        'original_name' => $name,
+                        'type' => $item['tipo'] ?? (preg_match('/\.(jpg|jpeg|png|gif)$/i', $path) ? 'image' : 'file'),
+                        'url' => Storage::url($path)
+                    ];
+                }, is_array($parsed) ? $parsed : [$parsed]);
+            } catch (\Exception $e) {
+                return [];
+            }
+        };
+
+        // Parsear archivos igual que en edit
+        $consulta->examenes_indicados_img = $parseFiles($consulta->examenes_indicados_img);
+        $consulta->examenes_indicados_archivos = $parseFiles($consulta->examenes_indicados_archivos);
+        $consulta->ciit_archivos = $parseFiles($consulta->ciit_archivos);
+
         // Para peticiones AJAX/API
         if (request()->expectsJson()) {
             return response()->json([
                 'consulta' => $consulta,
-                'receta' => $consulta->receta // Incluir la receta relacionada
+                'receta' => $consulta->receta
             ]);
         }
         
         // Para navegación normal
         return Inertia::render('Consultas/Show', [
-            'consulta' => $consulta
+            'consulta' => $consulta,
+            'auth' => [
+                'user' => Auth::user()
+            ]
         ]);
     }
-    public function destroy($id){
-        // Buscar y eliminar la consulta
-        $consulta = Consulta::findOrFail($id);
-        $consulta->delete();
-
-        // Redirigir a la lista de consultas con un mensaje de éxito
-        return redirect()->route('consultas.index')->with('success', 'Consulta eliminada correctamente.');
-    }
     public function edit($id)    {
-        $consulta = Consulta::with(['paciente', 'examen', 'refraccion', 'receta'])->findOrFail($id);
-    
-        // Procesar receta si existe
-        if ($consulta->receta) {
-            // Asegurar que cie10_codes sea un array
-            $consulta->receta->cie10_codes = is_array($consulta->receta->cie10_codes) 
-                ? $consulta->receta->cie10_codes 
-                : json_decode($consulta->receta->cie10_codes, true) ?? [];
-            
-            // Asegurar que medicamentos y medicamentos_manuales sean arrays
-            $consulta->receta->medicamentos = is_array($consulta->receta->medicamentos)
-                ? $consulta->receta->medicamentos
-                : json_decode($consulta->receta->medicamentos, true) ?? [];
-                
-            $consulta->receta->medicamentos_manuales = is_array($consulta->receta->medicamentos_manuales)
-                ? $consulta->receta->medicamentos_manuales
-                : json_decode($consulta->receta->medicamentos_manuales, true) ?? [];
-                
-            // Combinar medicamentos registrados y manuales para el frontend
-            $consulta->receta->all_medicamentos = array_merge(
-                $consulta->receta->medicamentos,
-                $consulta->receta->medicamentos_manuales
-            );
-        }
+    $consulta = Consulta::with(['paciente', 'examen', 'refraccion'])->findOrFail($id);
             // Función mejorada para parsear archivos
             $parseFiles = function ($jsonData) {
                 if (empty($jsonData)) return [];
@@ -238,7 +250,6 @@ class ConsultaController extends Controller
                     return [];
                 }
             };
-                Log::debug('Datos de refracción:', $consulta->refraccion ? $consulta->refraccion->toArray() : []);
 
             // Parsear archivos manteniendo estructura consistente
             $consulta->examenes_indicados_img = $parseFiles($consulta->examenes_indicados_img);
@@ -251,6 +262,14 @@ class ConsultaController extends Controller
                     'user' => Auth::user()
                 ]
             ]);
+    }
+    public function destroy($id){
+        // Buscar y eliminar la consulta
+        $consulta = Consulta::findOrFail($id);
+        $consulta->delete();
+
+        // Redirigir a la lista de consultas con un mensaje de éxito
+        return redirect()->route('consultas.index')->with('success', 'Consulta eliminada correctamente.');
     }
     // Guardar la consulta de inicio
     public function store(Request $request){
@@ -832,7 +851,7 @@ class ConsultaController extends Controller
                     ->withErrors(['message' => 'Error al crear la consulta: ' . $e->getMessage()]);
         }
     }
-    protected function procesarReceta($recetaData, $consultaId) {
+     protected function procesarReceta($recetaData, $consultaId) {
         // Validar datos de receta
         $validated = validator($recetaData, [
             'paciente_id' => 'required|exists:pacientes,id',
@@ -890,346 +909,394 @@ class ConsultaController extends Controller
                 ]);
             }
 
-        return $receta;
+            return $receta;
     }
     // Método para actualizar una consulta
-    public function update(Request $request, $id){
-        Log::info('Datos recibidos en update:', $request->all());
+public function update(Request $request, $id){
+    try {
+        // Primero obtener la consulta      
+        $consulta = Consulta::with(['examen', 'refraccion'])->findOrFail($id);
 
-        try {
-            // Validación más flexible para actualización
-            $validatedData = $request->validate([
-                'paciente_id' => 'required|exists:pacientes,id',
-                'antecedentes_personales_hta' => 'nullable|string',
-                'antecedentes_personales_alergias' => 'nullable|string',
-                'antecedentes_personales_dm' => 'nullable|string',
-                'antecedentes_personales_otros' => 'nullable|string',
-                'antecedentes_patologicos_familiares' => 'nullable|array',
-                'antecedentes_patologicos_familiares.*' => 'nullable',
-                'cirugias_previas' => 'nullable|array',
-                'cirugias_previas.*' => 'nullable',
-                //
-                'motivo_consulta_inicio' => 'nullable|string',
-                'motivo_consulta_signos' => 'nullable|string',
-                'motivo_consulta_enfermedad' => 'nullable|string',
-                'motivo_consulta_otros' => 'nullable|string',
-                //
-                'impresion_diagnostica' => 'nullable|string',
-                'tratamiento' => 'nullable|array',
-                'tratamiento.*' => 'nullable',
-                'plan' => 'nullable|array',
-                'plan.*' => 'string',
-                //
-                'evoluciones' => 'nullable|array',
-                'evoluciones.*' => 'string',
-                'tipo_consulta' => 'nullable|in:inicio,evolucion', // Asegurar que el tipo de consulta sea 
-                'fondo_ojo_posiciones' => 'nullable|json',
-                'fondo_ojo_retina_p_od' => 'nullable|string',
-                'fondo_ojo_macula_od' => 'nullable|string',
-                'fondo_ojo_vitreo_od' => 'nullable|string',
-                'fondo_ojo_disco_o_od' => 'nullable|string',
-                'fondo_ojo_vasos_od' => 'nullable|string',
-                'fondo_ojo_retina_p_oi' => 'nullable|string',
-                'fondo_ojo_macula_oi' => 'nullable|string',
-                'fondo_ojo_vitreo_oi' => 'nullable|string',
-                'fondo_ojo_disco_o_oi' => 'nullable|string',
-                'fondo_ojo_vasos_oi' => 'nullable|string',
-                    // Agregar validación para archivos a eliminar
-                'imagenes_a_eliminar' => 'nullable|json',
-                'archivos_a_eliminar' => 'nullable|json',
-                
-                // Validación para nuevos archivos
-                'nuevas_imagenes' => 'nullable|array',
-                'nuevas_imagenes.*' => 'image|mimes:jpeg,png,jpg|max:10240',
-                'nuevos_archivos' => 'nullable|array',
-                'nuevos_archivos.*' => 'mimes:pdf,doc,docx,xls,xlsx|max:51200',
-                'files_to_delete' => 'nullable|json',
-                // Campos de biomicroscopía explícitos
-                'biomicroscopia_movoculares_od' => 'nullable|string',
-                'biomicroscopia_parpados_od' => 'nullable|string',
-                'biomicroscopia_cornea_od' => 'nullable|string',
-                'biomicroscopia_corneaconj_od' => 'nullable|string',
-                'biomicroscopia_ca_od' => 'nullable|string',
-                'biomicroscopia_iris_od' => 'nullable|string',
-                'biomicroscopia_cristalino_od' => 'nullable|string',
-                'biomicroscopia_movoculares_oi' => 'nullable|string',
-                'biomicroscopia_parpados_oi' => 'nullable|string',
-                'biomicroscopia_cornea_oi' => 'nullable|string',
-                'biomicroscopia_corneaconj_oi' => 'nullable|string',
-                'biomicroscopia_ca_oi' => 'nullable|string',
-                'biomicroscopia_iris_oi' => 'nullable|string',
-                'biomicroscopia_cristalino_oi' => 'nullable|string',
-                //
-                'comentario' => 'nullable|array',
-                'comentario.*' => 'string',
-                
-                // Campo para términos de biomicroscopía
-                'terminos_biomicroscopia' => 'nullable|string' // Cadena separada por coma
-            ]);
+        // Convertir fondo_ojo_posiciones a JSON si es array
+        if ($request->has('fondo_ojo_posiciones') && is_array($request->fondo_ojo_posiciones)) {
+            $request->merge(['fondo_ojo_posiciones' => json_encode($request->fondo_ojo_posiciones)]);
+        }
+        
+        // Preparar arrays
+        $this->prepareArrayInputs($request);
 
-            $validatedExamenData = $request->validate([
-                'examen_av_sc_od' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
-                'examen_av_cae_od' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
-                'examen_av_cc_od' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
-                'examen_av_sc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
-                'examen_av_cae_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
-                'examen_av_cc_oi' => 'nullable|in:CD,MB,PPL,PL,NPL,20/200,20/100,20/70,20/50,20/40,20/30,20/25,20/20,N/M',
-                'examen_pi_tipo' => 'nullable|in:Aplanatica,Manual,Neumatica',
-                'examen_pi_od' => 'nullable|string',
-                'examen_pi_oi' => 'nullable|string',
-                'examen_ar_sph_od' => 'nullable|string',
-                'examen_ar_cyl_od' => 'nullable|string',
-                'examen_ar_ax_od' => 'nullable|string',
-                'examen_ar_sph_oi' => 'nullable|string',
-                'examen_ar_cyl_oi' => 'nullable|string',
-                'examen_ar_ax_oi' => 'nullable|string',
-                'examen_keratometria_qd1_od' => 'nullable|string',
-                'examen_keratometria_qd2_od' => 'nullable|string',
-                'examen_keratometria_eje_od' => 'nullable|string',
-                'examen_keratometria_qd1_oi' => 'nullable|string',
-                'examen_keratometria_qd2_oi' => 'nullable|string',
-                'examen_keratometria_eje_oi' => 'nullable|string',
-                'exam_new_distancia_esfera_od' => 'nullable|string',
-                'exam_new_distancia_esfera_oi' => 'nullable|string',
-                'exam_new_distancia_cilindro_od' => 'nullable|string',
-                'exam_new_distancia_cilindro_oi' => 'nullable|string',
-                'exam_new_distancia_eje_od' => 'nullable|string',
-                'exam_new_distancia_eje_oi' => 'nullable|string',
-                'exam_new_distancia_dip' => 'nullable|string',
-                'exam_old_distancia_esfera_od' => 'nullable|string',
-                'exam_old_distancia_esfera_oi' => 'nullable|string',
-                'exam_old_distancia_cilindro_od' => 'nullable|string',
-                'exam_old_distancia_cilindro_oi' => 'nullable|string',
-                'exam_old_distancia_eje_od' => 'nullable|string',
-                'exam_old_distancia_eje_oi' => 'nullable|string',
-                'exam_old_distancia_dip' => 'nullable|string',
-                //
-                'exam_new_cerca_esfera_od' => 'nullable|string',
-                'exam_new_cerca_esfera_oi' => 'nullable|string',
-                'exam_new_cerca_cilindro_od' => 'nullable|string',
-                'exam_new_cerca_cilindro_oi' => 'nullable|string',
-                'exam_new_cerca_eje_od' => 'nullable|string',
-                'exam_new_cerca_eje_oi' => 'nullable|string',
-                'exam_new_cerca_dip' => 'nullable|string',
-                'exam_old_cerca_esfera_od' => 'nullable|string',
-                'exam_old_cerca_esfera_oi' => 'nullable|string',
-                'exam_old_cerca_cilindro_od' => 'nullable|string',
-                'exam_old_cerca_cilindro_oi' => 'nullable|string',
-                'exam_old_cerca_eje_od' => 'nullable|string',
-                'exam_old_cerca_eje_oi' => 'nullable|string',
-                'exam_old_cerca_dip' => 'nullable|string',
-            ]);
+        // Validar los datos básicos
+        $validatedData = $this->validateConsultaData($request, $consulta);
+        
+        // Procesar archivos
+        $fileData = $this->processFiles($request, $consulta);
 
-            // Procesar archivos a eliminar
-            $filesToDelete = $request->filled('files_to_delete') 
+            // Combinar datos validados con datos de archivos
+        $updateData = array_merge($validatedData, $fileData);
+        
+        // Convertir arrays a JSON para campos específicos
+        $arrayFields = ['examenes_indicados_img', 'examenes_indicados_archivos', 'ciit_archivos'];
+        foreach ($arrayFields as $field) {
+            if (isset($updateData[$field])) {
+                $updateData[$field] = json_encode($updateData[$field]);
+            }
+        }
+        
+        // Actualizar la consulta
+        $consulta->update($updateData);
+        
+        // Actualizar relaciones
+        $this->updateRelatedModels($request, $consulta);
+        
+        return redirect()->route('consultas.index')->with('success', 'Consulta actualizada correctamente.');
+    
+    } catch (\Exception $e) {
+        Log::error('Error completo:', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'request' => $request->all()
+        ]);
+        return back()->withErrors(['error' => 'Error al actualizar la consulta: ' . $e->getMessage()]);
+    }
+}
+protected function validateConsultaData(Request $request, Consulta $consulta)
+{
+    // Convertir campos que podrían venir como strings a arrays
+    $this->prepareArrayInputs($request);
+    
+    return $request->validate([
+    'paciente_id' => 'required|exists:pacientes,id',
+        'user_id' => 'sometimes|exists:users,id',
+        'antecedentes_personales_hta' => 'nullable|string',
+        'antecedentes_personales_alergias' => 'nullable|string',
+        'antecedentes_personales_dm' => 'nullable|string',
+        'antecedentes_personales_otros' => 'nullable|string',
+        'antecedentes_patologicos_familiares' => 'nullable|array',
+        'antecedentes_patologicos_familiares.*' => 'string',
+        'cirugias_previas' => 'nullable|array',
+        'cirugias_previas.*' => 'string',
+        //
+        'motivo_consulta_inicio' => 'nullable|string',
+        'motivo_consulta_signos' => 'nullable|string',
+        'motivo_consulta_enfermedad' => 'nullable|string',
+        'motivo_consulta_otros' => 'nullable|string',
+        //
+        'impresion_diagnostica' => 'nullable|string',
+        'tratamiento' => 'nullable|array',
+        'tratamiento.*' => 'string',
+        'plan' => 'nullable|array',
+        'plan.*' => 'string',
+        //
+        'examenes_indicados_img' => 'nullable|array', // Máximo 4 imágenes
+        'examenes_indicados_img.*' => 'file|mimes:jpg,jpeg,png|max:10240', // Cada imagen debe ser un archivo válido
+        'examenes_indicados_archivos' => 'nullable|array', // Máximo 4 archivos
+        'examenes_indicados_archivos.*' => [
+            'file',
+            'mimes:pdf,doc,docx,xls,xlsx,zip,rar',
+            'max:51200' // 50MB en KB
+        ],
+        'ciit_archivos' => 'nullable|array',
+        'ciit_archivos.*' => [
+            'file',
+            'mimes:pdf,doc,docx,xls,xlsx,zip,rar',
+            'max:51200' // 50MB en KB
+        ],
+        //
+        'evoluciones' => 'nullable|array',
+        'evoluciones.*' => 'string',
+        'tipo_consulta' => 'nullable|in:inicio,evolucion', // Asegurar que el tipo de consulta sea 
+        'biomicroscopia_movoculares_od' => 'nullable|string',
+        'biomicroscopia_movoculares_oi' => 'nullable|string',
+        'biomicroscopia_parpados_od' => 'nullable|string',
+        'biomicroscopia_parpados_oi' => 'nullable|string',
+        'biomicroscopia_cornea_od' => 'nullable|string',
+        'biomicroscopia_cornea_oi' => 'nullable|string',
+        'biomicroscopia_corneaconj_od' => 'nullable|string',
+        'biomicroscopia_corneaconj_oi' => 'nullable|string',
+        'biomicroscopia_ca_od' => 'nullable|string',
+        'biomicroscopia_ca_oi' => 'nullable|string',
+        'biomicroscopia_iris_od' => 'nullable|string',
+        'biomicroscopia_iris_oi' => 'nullable|string',
+        'biomicroscopia_cristalino_od' => 'nullable|string',
+        'biomicroscopia_cristalino_oi' => 'nullable|string',
+        //
+        'fondo_ojo_posiciones' => 'nullable|json',
+        'fondo_ojo_retina_p_od' => 'nullable|string',
+        'fondo_ojo_macula_od' => 'nullable|string',
+        'fondo_ojo_vitreo_od' => 'nullable|string',
+        'fondo_ojo_disco_o_od' => 'nullable|string',
+        'fondo_ojo_vasos_od' => 'nullable|string',
+        'fondo_ojo_retina_p_oi' => 'nullable|string',
+        'fondo_ojo_macula_oi' => 'nullable|string',
+        'fondo_ojo_vitreo_oi' => 'nullable|string',
+        'fondo_ojo_disco_o_oi' => 'nullable|string',
+        'fondo_ojo_vasos_oi' => 'nullable|string',
+        'f_o_dilat_pup_od' => 'nullable|string',
+        'f_o_dilat_pup_oi' => 'nullable|string',
+        'f_o_locs_tres_od' => 'nullable|string',
+        'f_o_locs_tres_oi' => 'nullable|string',
+        'f_o_fundoscopia_od' => 'nullable|string',
+        'f_o_fundoscopia_oi' => 'nullable|string',
+        'f_o_conclusion' => 'nullable|string',
+        'f_o_plan' => 'nullable|string',
+        //
+        'comentario' => 'nullable|array',
+        'comentario.*' => 'string',
+    ]);
+}
+protected function prepareArrayInputs(Request $request){
+    $arrayFields = [
+        'tratamiento',
+        'plan',
+        'evoluciones',
+        'comentario',
+        'antecedentes_patologicos_familiares',
+        'cirugias_previas',
+        'fondo_ojo_posiciones' 
+    ];
+    
+    foreach ($arrayFields as $field) {
+        if ($request->has($field)) {
+            // Manejo especial para fondo_ojo_posiciones que debe ser JSON
+            if ($field === 'fondo_ojo_posiciones') {
+                if (is_array($request->input($field))) {
+                    $request->merge([$field => json_encode($request->input($field))]);
+                }
+                continue;
+            }
+            // Si viene como string JSON, decodificarlo
+            if (is_string($request->input($field))) {
+                try {
+                    $decoded = json_decode($request->input($field), true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $request->merge([$field => $decoded]);
+                    } else {
+                        // Si no es JSON válido, convertirlo a array
+                        $request->merge([$field => [$request->input($field)]]);
+                    }
+                } catch (\Exception $e) {
+                    // Si falla el decode, crear array con el valor
+                    $request->merge([$field => [$request->input($field)]]);
+                }
+            }
+            
+            // Asegurarse que siempre es array
+            if (!is_array($request->input($field))) {
+                $request->merge([$field => [$request->input($field)]]);
+            }
+            
+            // Filtrar valores vacíos
+            $filtered = array_filter($request->input($field), function($item) {
+                return !empty(trim($item));
+            });
+            
+            $request->merge([$field => array_values($filtered)]);
+        }
+    }
+}
+protected function processFiles(Request $request, Consulta $consulta)
+{
+    $fileData = [];
+    
+    try {
+        // Procesar archivos a eliminar
+        if ($request->filled('files_to_delete')) {
+            $filesToDelete = json_decode($request->input('files_to_delete'), true) ?? [];
+            foreach ($filesToDelete as $file) {
+                if (isset($file['path']) && Storage::disk('public')->exists($file['path'])) {
+                    Storage::disk('public')->delete($file['path']);
+                }
+            }
+        }
+        
+        // Definir rutas base con el DNI del paciente
+        $basePath = 'pacientes/'.$consulta->paciente->dni;
+        
+        // Procesar imágenes
+        $fileData['examenes_indicados_img'] = $this->processFileGroup(
+            $request, 
+            'examenes_indicados_img',
+            'examenes_indicados_img_existentes',
+            $basePath.'/imagenes' // Ruta completa
+        );
+        
+        // Procesar archivos
+        $fileData['examenes_indicados_archivos'] = $this->processFileGroup(
+            $request, 
+            'examenes_indicados_archivos',
+            'examenes_indicados_archivos_existentes',
+            $basePath.'/archivos' // Ruta completa
+        );
+        
+        // Procesar CIIT
+        $fileData['ciit_archivos'] = $this->processFileGroup(
+            $request, 
+            'ciit_archivos',
+            'ciit_archivos_existentes',
+            $basePath.'/archivos_ciit' // Ruta completa
+        );
+        
+    } catch (\Exception $e) {
+        Log::error('Error al procesar archivos: ' . $e->getMessage());
+        throw $e;
+    }
+    
+    return $fileData;
+}
+protected function processFileGroup(Request $request, $fileKey, $existingKey, $storagePath)
+{
+    $files = [];
+    
+    // Procesar archivos existentes (si no fueron eliminados)
+    if ($request->has($existingKey)) {
+        $existingFiles = $request->input($existingKey);
+        
+        if (is_string($existingFiles)) {
+            $existingFiles = json_decode($existingFiles, true) ?? [];
+        }
+        
+        $existingFiles = is_array($existingFiles) ? $existingFiles : [];
+        
+        $filesToDelete = $request->filled('files_to_delete') 
             ? json_decode($request->input('files_to_delete'), true) ?? []
             : [];
-
-            foreach ($filesToDelete as $filePath) {
-                if (Storage::disk('public')->exists($filePath)) {
-                    Storage::disk('public')->delete($filePath);
-                }
-            }
-
-            // Agrega estas validaciones para los nuevos campos:
-            if ($request->hasFile('nuevas_imagenes')) {
-                $request->validate([
-                    'nuevas_imagenes.*' => 'image|mimes:jpeg,png,jpg|max:2048'
-                ]);
-            }
-
-            if ($request->hasFile('nuevos_archivos')) {
-                $request->validate([
-                    'nuevos_archivos.*' => 'mimes:pdf,doc,docx,xls,xlsx|max:5120'
-                ]);
+            
+        foreach ($existingFiles as $file) {
+            if (empty($file)) continue;
+            
+            if (is_string($file)) {
+                $file = [
+                    'path' => $file,
+                    'original_name' => basename($file),
+                    'type' => strpos($fileKey, 'img') !== false ? 'image' : 'file'
+                ];
             }
             
-            // Buscar la consulta
-            $consulta = Consulta::findOrFail($id);
-
-            // Verificación en el backend
-            if (!in_array(Auth::user()->role, ['admin', 'medico'])) {
-                $horasTranscurridas = Carbon::parse($consulta->created_at)->diffInHours(now());
-                if ($horasTranscurridas > 48) {
-                    return back()->with('error', 'No puedes editar esta consulta después de 48 horas');
-                }
-            }
-
-            // 1. Actualizar campos directos de biomicroscopía
-            $biomicroscopiaFields = [
-                'movoculares_od', 'parpados_od', 'cornea_od', 'corneaconj_od',
-                'ca_od', 'iris_od', 'cristalino_od', 'movoculares_oi',
-                'parpados_oi', 'cornea_oi', 'corneaconj_oi', 'ca_oi',
-                'iris_oi', 'cristalino_oi'
-            ];
-
-            foreach ($biomicroscopiaFields as $field) {
-                $key = 'biomicroscopia_' . $field;
-                $consulta->$key = $request->input($key, '');
-            }
-
-            // 2. Manejar términos de biomicroscopía (solo catálogo, sin relación directa)
-            if ($request->filled('terminos_biomicroscopia')) {
-                $terminos = explode(',', $request->terminos_biomicroscopia);
-                
-                foreach ($terminos as $termino) {
-                    $termino = trim($termino);
-                    if (!empty($termino)) {
-                        // Buscar o crear término sin asociar a consulta (catálogo general)
-                        TerminoBiomicroscopia::firstOrCreate(
-                            ['termino' => $termino],
-                            ['termino' => $termino] // consulta_id permanecerá null
-                        );
-                    }
-                }
-            }
-
-            // Verificar si el paciente_id cambió
-            if ($request->paciente_id != $consulta->paciente_id) {
-                return back()->withErrors(['paciente_id' => 'No se puede cambiar el paciente asociado a la consulta']);
-            }
-
-                // Verificar consulta de inicio (excluyendo la actual)
-            if ($request->tipo_consulta === 'inicio') {
-                $existeOtraConsultaInicio = Consulta::where('paciente_id', $request->paciente_id)
-                    ->where('tipo_consulta', 'inicio')
-                    ->where('id', '!=', $id)
-                    ->exists();
-
-                if ($existeOtraConsultaInicio) {
-                    return back()->withErrors(['message' => 'Ya existe una consulta de inicio para este paciente. No se puede generar más de una.']);
-                }
-            }
-            // Obtener el paciente
-            $paciente = $consulta->paciente;
-
-            // Configuración de carpetas (sin 'public/' al inicio)
-            $carpetaBase = 'pacientes/'.$paciente->dni;
-            $carpetaImagenes = $carpetaBase.'/imagenes';
-            $carpetaArchivos = $carpetaBase.'/archivos';
-
-            // Crear las carpetas si no existen
-            if (!Storage::disk('public')->exists($carpetaImagenes)) {
-                Storage::disk('public')->makeDirectory($carpetaImagenes);
-            }
-            if (!Storage::disk('public')->exists($carpetaArchivos)) {
-                Storage::disk('public')->makeDirectory($carpetaArchivos);
-            }    
-
-            // Procesar todos los archivos (existentes y nuevos) 
-            $archivos = $this->procesarArchivos($request, $consulta, $filesToDelete);
-
-                // Obtener archivos existentes (filtrados)
-            $existingImages = $this->parseFileData($consulta->examenes_indicados_img);
-            $existingFiles = $this->parseFileData($consulta->examenes_indicados_archivos);
-
-            // Procesar nuevas imágenes
-            $imagenes = [];
-            if ($request->hasFile('examenes_indicados_img')) {
-                foreach ($request->file('examenes_indicados_img') as $file) {
-                    $nombreOriginal = $file->getClientOriginalName();
-                    $path = $file->storeAs(
-                        $carpetaImagenes,
-                        $nombreOriginal,
-                        'public'
-                    );
-                    
-                    $imagenes[] = [
-                        'ruta' => $path,
-                        'nombre_original' => $nombreOriginal,
-                        'tipo' => 'image'
-                    ];
-                }
-            }
-
-            // Procesar nuevos archivos
-            $archivos = [];
-            if ($request->hasFile('examenes_indicados_archivos')) {
-                foreach ($request->file('examenes_indicados_archivos') as $file) {
-                    $nombreOriginal = $file->getClientOriginalName();
-                    $path = $file->storeAs(
-                        $carpetaArchivos,
-                        $nombreOriginal,
-                        'public'
-                    );
-                    
-                    $archivos[] = [
-                        'ruta' => $path,
-                        'nombre_original' => $nombreOriginal,
-                        'tipo' => 'file'
-                    ];
-                }
-            }
-
-                // Combinar archivos existentes (excluyendo los eliminados) con los nuevos
-            $existingImages = json_decode($consulta->examenes_indicados_img, true) ?? [];
-            $existingFiles = json_decode($consulta->examenes_indicados_archivos, true) ?? [];
-
-            $allImages = array_merge(   
-                array_filter($existingImages, fn($img) => !in_array($img['ruta'], $filesToDelete ?? [])),
-                $imagenes
-            );
+            if (!is_array($file) || !isset($file['path'])) continue;
             
-            $allFiles = array_merge(
-                array_filter($existingFiles, fn($file) => !in_array($file['ruta'], $filesToDelete ?? [])),
-                $archivos
-            );
-            
-                // Procesar archivos primero
-            $archivosProcesados = $this->procesarArchivos($request, $consulta);
-
-                // Actualizar la consulta con los datos validados + archivos procesados
-                $consulta->update(array_merge($validatedData, [
-                'examenes_indicados_img' => json_encode($allImages),
-                'examenes_indicados_archivos' => json_encode($allFiles),
-                'fondo_ojo_posiciones' => $request->fondo_ojo_posiciones 
-                    ? json_decode($request->fondo_ojo_posiciones, true)
-                    : null,
-            ]));
-            
-            // Actualizar el examen asociado si existe
-            if ($consulta->examen) {
-                $consulta->examen->update($validatedExamenData);
-            } else {
-                $consulta->examen()->create($validatedExamenData);
+            $shouldDelete = false;
+            foreach ($filesToDelete as $fileToDelete) {
+                if (isset($fileToDelete['path']) && $fileToDelete['path'] === $file['path']) {
+                    $shouldDelete = true;
+                    break;
+                }
             }
             
-            if ($request->filled('terminos_biomicroscopia')) {
-                // 1. Eliminar términos antiguos asociados a esta consulta
-                TerminoBiomicroscopia::where('consulta_id', $consulta->id)->delete();
-                
-                // 2. Procesar nuevos términos
-                $terminos = array_unique(
-                    array_filter(
-                        array_map('trim', explode(',', $request->terminos_biomicroscopia)),
-                        fn($t) => !empty($t)
-                    )
-                );
-            
-                foreach ($terminos as $termino) {
-                    TerminoBiomicroscopia::create([
-                        'termino' => $termino,
-                        'consulta_id' => $consulta->id // Asociar explícitamente a la consulta
-                    ]);
-                    
-                    // También agregar al catálogo general si no existe
-                    TerminoBiomicroscopia::firstOrCreate(
-                        ['termino' => $termino, 'consulta_id' => null],
-                        ['termino' => $termino]
-                    );
-                }
-            }          
-
-            // Procesar términos de motivo de consulta
-            $this->procesarTerminosMotivoConsulta($request, $consulta);
-        
-                return redirect()->route('consultas.index')->with('success', 'Consulta actualizada correctamente.');
-                
-            } catch (\Exception $e) {
-                Log::error('Error al actualizar consulta:', ['error' => $e->getMessage()]);
-                return redirect()->back()->withErrors(['message' => 'Error al actualizar la consulta: ' . $e->getMessage()]);
+            if (!$shouldDelete) {
+                $files[] = [
+                    'path' => $file['path'],
+                    'original_name' => $file['original_name'] ?? $file['nombre_original'] ?? basename($file['path']),
+                    'type' => $file['type'] ?? (strpos($fileKey, 'img') !== false ? 'image' : 'file')
+                ];
             }
+        }
     }
+    
+    // Procesar nuevos archivos - MODIFICADO PARA CONSERVAR NOMBRES ORIGINALES
+    if ($request->hasFile($fileKey)) {
+        foreach ($request->file($fileKey) as $file) {
+            try {
+                // Usar storeAs para conservar el nombre original
+                $nombreOriginal = $file->getClientOriginalName();
+                $path = $file->storeAs(
+                    $storagePath, // La carpeta base ya está definida
+                    $nombreOriginal, // Conservar nombre original
+                    'public'
+                );
+                
+                $files[] = [
+                    'path' => $path,
+                    'original_name' => $nombreOriginal,
+                    'type' => $fileKey === 'examenes_indicados_img' ? 'image' : 'file'
+                ];
+            } catch (\Exception $e) {
+                Log::error('Error al guardar archivo: ' . $e->getMessage());
+                continue;
+            }
+        }
+    }
+    
+    return $files;
+}
+    protected function updateRelatedModels(Request $request, Consulta $consulta)
+    {
+        // Actualizar examen ocular
+        if ($consulta->examen) {
+            $consulta->examen->update($request->only([
+                'examen_av_sc_od',
+                'examen_av_cae_od',
+                'examen_av_cc_od',
+                'examen_av_sc_oi',
+                'examen_av_cae_oi',
+                'examen_av_cc_oi',
+                'examen_pi_tipo',
+                'examen_pi_od',
+                'examen_pi_oi',
+                'examen_ar_sph_od',
+                'examen_ar_cyl_od',
+                'examen_ar_ax_od',
+                'examen_ar_sph_oi',
+                'examen_ar_cyl_oi',
+                'examen_ar_ax_oi',
+                'examen_keratometria_qd1_od' ,
+                'examen_keratometria_qd2_od' ,
+                'examen_keratometria_eje_od' ,
+                'examen_keratometria_qd1_oi' ,
+                'examen_keratometria_qd2_oi' ,
+                'examen_keratometria_eje_oi' ,
+            ]));
+        }
+        
+        // Actualizar refracción
+        $refraccionData = $request->only([
+                'exam_old_distancia_esfera_od',
+                'exam_old_distancia_cilindro_od',
+                'exam_old_distancia_eje_od',
+                'exam_old_distancia_esfera_oi',
+                'exam_old_distancia_cilindro_oi',
+                'exam_old_distancia_eje_oi',
+                'exam_old_distancia_dip',
+                // Campos de examen previo - Cerca
+                'exam_old_cerca_esfera_od',
+                'exam_old_cerca_cilindro_od',
+                'exam_old_cerca_eje_od',
+                'exam_old_cerca_esfera_oi',
+                'exam_old_cerca_cilindro_oi',
+                'exam_old_cerca_eje_oi',
+                'exam_old_cerca_dip',
+                // Campos de examen actual - Distancia
+                'exam_new_distancia_esfera_od',
+                'exam_new_distancia_cilindro_od',
+                'exam_new_distancia_eje_od',
+                'exam_new_distancia_esfera_oi',
+                'exam_new_distancia_cilindro_oi',
+                'exam_new_distancia_eje_oi',
+                'exam_new_distancia_dip',
+                // Campos de examen actual - Cerca
+                'exam_new_cerca_esfera_od',
+                'exam_new_cerca_cilindro_od',
+                'exam_new_cerca_eje_od',
+                'exam_new_cerca_esfera_oi',
+                'exam_new_cerca_cilindro_oi',
+                'exam_new_cerca_eje_oi',
+                'exam_new_cerca_dip',
+                // Campos adicionales
+                'instrucciones',
+                'adiciones',
+        ]);
+        // Filtrar datos vacíos (opcional, depende de tus requisitos)
+    $refraccionData = array_filter($refraccionData, function($value) {
+        return $value !== null && $value !== '';
+    });
+    
+    if ($consulta->refraccion) {
+        // Si existe la refracción, actualizarla
+        $consulta->refraccion->update($refraccionData);
+    } elseif (!empty(array_filter($refraccionData))) {
+        // Si no existe pero hay datos, crear nueva refracción
+        $consulta->refraccion()->create($refraccionData);
+    }
+}
     // Método unificado para guardar archivos
     protected function guardarArchivos($files, $carpeta, $tipo) {
         $archivos = [];
@@ -1387,6 +1454,11 @@ class ConsultaController extends Controller
                 ], 404);
             }
 
+             // Añadir la URL completa de la foto
+            if ($paciente->foto_perfil) {
+                $paciente->foto_perfil_url = Storage::url($paciente->foto_perfil);
+            }
+
             $tieneConsultaInicial = Consulta::where('paciente_id', $paciente->id)
                 ->where('tipo_consulta', 'inicio')
                 ->exists();
@@ -1405,7 +1477,6 @@ class ConsultaController extends Controller
             ], 500);
         }
     }
-
     public function buscarPacienteCompleto($dni){
         $paciente = Paciente::where('dni', $dni)
             ->orWhere('carnet_extranjeria', $dni)
