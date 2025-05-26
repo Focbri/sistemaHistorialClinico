@@ -21,10 +21,10 @@ class Cita extends Model
         return $this->belongsTo(Paciente::class);
     }
     
-    public function medico()
-    {
-        return $this->belongsTo(User::class, 'medico_id');
-    }
+public function medico()
+{
+    return $this->belongsTo(User::class, 'medico_id')->whereIn('role', ['medico', 'medico_externo']);
+}
 
     public function user()
 {
@@ -42,9 +42,6 @@ class Cita extends Model
             } else {
                 throw new \Exception('No hay usuario autenticado al registrar la cirugía');
             }
-
-            // Obtener el paciente relacionado
-            $paciente = $cita->paciente;
             
         });
     }

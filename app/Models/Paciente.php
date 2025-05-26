@@ -35,15 +35,21 @@ class Paciente extends Model
         'codigo_historial',
     ];
 
-    protected static function booted()
-    {
-        static::creating(function ($paciente) {
-            // Generar código de historial al crear un nuevo paciente
-            if (empty($paciente->codigo_historial)) {
-                $paciente->codigo_historial = 'HCL-' . $paciente->dni;
-            }
-        });
-    }
+protected static function booted()
+{
+    static::creating(function ($paciente) {
+        // Generar código de historial autoincremental
+        if (empty($paciente->codigo_historial)) {
+            $count = self::count(); // Obtiene el número total de pacientes existentes
+            $nextNumber = $count + 1; // Calcula el siguiente número
+            
+            // Formatea el número con ceros a la izquierda (ej. 001, 002, ..., 010, etc.)
+            $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+            
+            $paciente->codigo_historial = 'HCL-' . $formattedNumber;
+        }
+    });
+}
 
     /**
      * Relación con el modelo Consulta (un paciente puede tener muchas consultas).
@@ -148,11 +154,6 @@ protected static function boot()
             $paciente->user_id = \Illuminate\Support\Facades\Auth::id();
         } else {
             throw new \Exception('No hay usuario autenticado al crear un paciente');
-        }
-
-        // Generar código de historial
-        if (empty($paciente->codigo_historial)) {
-            $paciente->codigo_historial = 'HCL-' . $paciente->dni;
         }
     });
 }

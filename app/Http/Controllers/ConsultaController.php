@@ -511,8 +511,7 @@ class ConsultaController extends Controller
             }
             // Generar código de historial si es la primera consulta
             if (!$paciente->codigo_historial) {
-                $paciente->codigo_historial = 'HCL-' . $paciente->dni;
-                $paciente->save();
+                $paciente->save(); // Esto activará el boot() del modelo y generará el código
             }
             $ciitArchivos = [];
             if ($request->hasFile('ciit_archivos')) {
@@ -1218,8 +1217,7 @@ protected function processFileGroup(Request $request, $fileKey, $existingKey, $s
     
     return $files;
 }
-    protected function updateRelatedModels(Request $request, Consulta $consulta)
-    {
+    protected function updateRelatedModels(Request $request, Consulta $consulta)    {
         // Actualizar examen ocular
         if ($consulta->examen) {
             $consulta->examen->update($request->only([

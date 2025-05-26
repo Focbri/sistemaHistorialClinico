@@ -62,9 +62,9 @@ class Cirugia extends Model
             $paciente = $cirugia->paciente;
             
             // Generar código de historial si no existe
-            if ($paciente && empty($cirugia->codigo_historial)) {
+            /*if ($paciente && empty($cirugia->codigo_historial)) {
                 $cirugia->codigo_historial = $paciente->codigo_historial;
-            }
+            }*/
         });
     }
 }

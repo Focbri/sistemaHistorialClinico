@@ -907,18 +907,18 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
                     <div className="mb-4 w-1/2">
                       <label className="block text-gray-700 mb-2">Médico</label>
                       <select
-                        value={data.medico_id}
-                        onChange={(e) => setData('medico_id', e.target.value)}
-                        className="w-full p-2 border rounded"
-                        required
-                      >
-                        <option value="">Seleccione un médico</option>
-                        {medicos.map(medico => (
-                          <option key={medico.id} value={medico.id}>
-                            {medico.name}
-                          </option>
-                        ))}
-                      </select>
+                      value={data.medico_id}
+                      onChange={(e) => setData('medico_id', e.target.value)}
+                      className="w-full p-2 border rounded"
+                      required
+                    >
+                      <option value="">Seleccione un médico</option>
+                      {medicos.map(medico => (
+                        <option key={medico.id} value={medico.id}>
+                          {medico.name} {medico.role === 'medico_externo' ? '(Externo)' : ''}
+                        </option>
+                      ))}
+                    </select>
                     </div>
 
                     <div className="mb-4 w-1/2">

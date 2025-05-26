@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class CitaController extends Controller
 {
@@ -85,17 +86,23 @@ class CitaController extends Controller
             'calendarData' => $calendarData,
             'currentMonth' => $request->input('month', date('m')),
             'currentYear' => $request->input('year', date('Y')),
-            'medicos' => User::where('role', 'medico')->get(),
+            'medicos' => User::whereIn('role', ['medico', 'medico_externo'])
+                        ->orderBy('name')
+                        ->get(),
             'citas' => $citas,
             'filters' => $request->only(['sex', 'min_age', 'max_age', 'start_date', 'end_date', 'procedencia', 'terms'])
         ]);
     }
 
-    public function store(Request $request)
-    {
+    public function store(Request $request)    {
         $request->validate([
         'paciente_id' => 'required|exists:pacientes,id',
-        'medico_id' => 'required|exists:users,id',
+        'medico_id' => [
+            'required',
+            Rule::exists('users', 'id')->where(function ($query) {
+                $query->whereIn('role', ['medico', 'medico_externo']);
+            }),
+        ],
         'fecha_hora' => [
             'required',
             'date',
@@ -229,7 +236,12 @@ class CitaController extends Controller
     public function update(Request $request, Cita $cita)
     {
         $request->validate([
-            'medico_id' => 'required|exists:users,id',
+           'medico_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(function ($query) {
+                    $query->whereIn('role', ['medico', 'medico_externo']);
+                }),
+            ],
             'fecha_hora' => 'required|date',
             'motivo' => 'required|string|max:255',
             'estado' => 'required|in:programada,completada,cancelada',
