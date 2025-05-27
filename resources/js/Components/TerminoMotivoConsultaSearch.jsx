@@ -26,7 +26,7 @@ const TerminoMotivoConsultaSearch = ({
         }
 
         try {
-            const response = await axios.get('/terminos-motivo-consulta/search', {
+            const response = await axios.get('/terminos/motivo-consulta/search', {
                 params: { query: searchQuery }
             });
             setResults(response.data);
@@ -113,7 +113,7 @@ const TerminoMotivoConsultaSearch = ({
                     onFocus={() => query.trim() && !readOnly && setIsDropdownOpen(true)}
                     disabled={readOnly}
                 />
-                {!readOnly && (
+                {!readOnly && ( 
                     <button
                         type="button"
                         onClick={handleAddManually}

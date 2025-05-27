@@ -13,8 +13,7 @@ use Illuminate\Validation\Rule;
 
 class CitaController extends Controller
 {
-    public function index(Request $request)
-    {
+public function index(Request $request){
         $query = Cita::with(['paciente', 'medico']);
 
         // Aplicar filtros si existen
@@ -376,25 +375,27 @@ class CitaController extends Controller
         return redirect()->back()->with('success', 'Cita eliminada correctamente');
     }
     //CITAS ASIGNADAS PARA MÉDICO
-    public function asignadas()
-    {
-        $citasProgramadas = Cita::with(['paciente'])
-            ->where('medico_id', Auth::id())
-            ->where('estado', 'programada')
-            ->orderBy('fecha_hora')
-            ->get();
+    public function asignadas(Request $request)
+{
+    // Citas programadas paginadas
+    $citasProgramadas = Cita::with(['paciente'])
+        ->where('medico_id', Auth::id())
+        ->where('estado', 'programada')
+        ->orderBy('fecha_hora')
+        ->paginate(10); // 10 citas por página
 
-        $citasAtendidas = Cita::with(['paciente'])
-            ->where('medico_id', Auth::id())
-            ->where('estado', 'completada')
-            ->orderBy('fecha_hora', 'desc')
-            ->get();
-        
-        return Inertia::render('Citas/Asignadas', [
-            'citas' => $citasProgramadas,
-            'citasAtendidas' => $citasAtendidas
-        ]);
-    }
+    // Citas atendidas paginadas
+    $citasAtendidas = Cita::with(['paciente'])
+        ->where('medico_id', Auth::id())
+        ->where('estado', 'completada')
+        ->orderBy('fecha_hora', 'desc')
+        ->paginate(10);
+
+    return Inertia::render('Citas/Asignadas', [
+        'citas' => $citasProgramadas,
+        'citasAtendidas' => $citasAtendidas
+    ]);
+}
 
     public function updateStatus(Request $request, Cita $cita)
     {

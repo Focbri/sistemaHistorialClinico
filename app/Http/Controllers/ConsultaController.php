@@ -7,7 +7,7 @@ use \App\Models\TerminoBiomicroscopia;
 use \App\Models\Examen;
 use \App\Models\Receta;
 use \App\Models\Refraccion;
-use App\Models\TerminoMotivoConsulta;
+use \App\Models\TerminoMotivoConsulta;
 use \App\Models\Cirugia;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
@@ -49,7 +49,7 @@ class ConsultaController extends Controller
             })
             ->when($request->filled('procedencia'), function($q) use ($request) {
                 $q->whereHas('paciente', function($q) use ($request) {
-                    $q->where('distrito', $request->procedencia);
+                    $q->where('procedencia', $request->procedencia);
                 });
             })
             ->when($request->filled('tipo_consulta'), function($q) use ($request) {
@@ -86,7 +86,7 @@ class ConsultaController extends Controller
             })
             ->when($request->filled('procedencia'), function($q) use ($request) {
                 $q->whereHas('paciente', function($q) use ($request) {
-                    $q->where('distrito', $request->procedencia);
+                    $q->where('procedencia', $request->procedencia);
                 });
             })
             ->when($request->filled('medico_id'), function($q) use ($request) {
@@ -148,10 +148,7 @@ class ConsultaController extends Controller
                     ->select('id', 'paciente_id', 'impresion_diagnostica', 'created_at', 'tipo_consulta');
             }])->find($request->input('paciente_id'));
 
-            // Asegurarse de que la URL de la foto esté disponible
-            if ($paciente && $paciente->foto_perfil) {
-                $paciente->foto_perfil_url = Storage::url($paciente->foto_perfil);
-            }
+
 
             if ($paciente && $tipoConsulta === 'evolucion') {
                 $historialDiagnosticos = $paciente->consultas->map(function ($consulta) {
@@ -455,7 +452,8 @@ class ConsultaController extends Controller
             }
 
             // IMPORTANTE Configurar rutas 
-            $carpetaBase = 'pacientes/'.$paciente->dni;
+            $tipoDocumento = $paciente->tipo_documento; // Asegúrate de cargar la relación si es necesario
+            $carpetaBase = 'pacientes/' . $tipoDocumento . '_' . $paciente->dni;
             $carpetaImagenes = $carpetaBase.'/imagenes';
             $carpetaArchivos = $carpetaBase.'/archivos';
             $carpetaArchivosCiit = $carpetaBase.'/archivos_ciit';
@@ -1109,7 +1107,8 @@ protected function processFiles(Request $request, Consulta $consulta)
         }
         
         // Definir rutas base con el DNI del paciente
-        $basePath = 'pacientes/'.$consulta->paciente->dni;
+        $tipoDocumento = $consulta->paciente->tipo_documento;
+        $basePath = 'pacientes/' . $tipoDocumento . '_' . $consulta->paciente->dni;
         
         // Procesar imágenes
         $fileData['examenes_indicados_img'] = $this->processFileGroup(
@@ -1398,7 +1397,9 @@ protected function processFileGroup(Request $request, $fileKey, $existingKey, $s
     protected function procesarArchivoComprimido($file, $pacienteId){
         $extension = $file->getClientOriginalExtension();
         $nombreOriginal = $file->getClientOriginalName();
-        $carpetaDestino = 'pacientes/'.$pacienteId.'/archivos_comprimidos';
+        $paciente = Paciente::find($pacienteId); // O usa la relación si ya la tienes
+        $tipoDocumento = $paciente->tipo_documento;
+        $carpetaDestino = 'pacientes/' . $tipoDocumento . '_' . $paciente->dni . '/archivos_comprimidos';
         
         // Guardar el archivo comprimido
         $path = $file->storeAs(
@@ -1432,49 +1433,68 @@ protected function processFileGroup(Request $request, $fileKey, $existingKey, $s
         }
     }    
     // En tu controlador (ConsultasController.php)
-    public function buscarPaciente(Request $request){
-        try {
-            $request->validate([
-                'dni' => 'required|string|max:12' // Usamos 'dni' que es el nombre real de la columna
-            ]);
+    public function buscarPaciente(Request $request)
+{
+    try {
+        $request->validate([
+            'dni' => 'required|string|max:12'
+        ]);
 
-            $paciente = Paciente::where('dni', $request->dni)
-                ->select('id', 'dni', 'tipo_documento', 'nombres', 'apellido_paterno', 'apellido_materno', 
-                        'edad', 'sexo', 'telefono', 'direccion', 'email', 
-                        'fecha_nacimiento', 'estado_civil', 'ocupacion',
-                        'procedencia', 'acompañante', 'referido', 'peso', 'foto_perfil')
-                ->first();
+        $paciente = Paciente::where('dni', $request->dni)
+            ->select('id', 'dni', 'tipo_documento', 'nombres', 'apellido_paterno', 'apellido_materno', 
+                    'edad', 'sexo', 'telefono', 'direccion', 'email', 
+                    'fecha_nacimiento', 'estado_civil', 'ocupacion',
+                    'procedencia', 'acompañante', 'referido', 'peso', 'foto_perfil')
+            ->first();
 
-            if (!$paciente) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Paciente no encontrado'
-                ], 404);
-            }
-
-             // Añadir la URL completa de la foto
-            if ($paciente->foto_perfil) {
-                $paciente->foto_perfil_url = Storage::url($paciente->foto_perfil);
-            }
-
-            $tieneConsultaInicial = Consulta::where('paciente_id', $paciente->id)
-                ->where('tipo_consulta', 'inicio')
-                ->exists();
-
-            return response()->json([
-                'success' => true,
-                'paciente' => $paciente,
-                'tieneConsultaInicial' => $tieneConsultaInicial
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error en buscarPaciente: ' . $e->getMessage());
+        if (!$paciente) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error en el servidor al buscar paciente'
-            ], 500);
+                'message' => 'Paciente no encontrado'
+            ], 404);
         }
+        
+         Log::debug('Valor original de foto_perfil:', ['foto_perfil' => $paciente->foto_perfil]);
+        $fotoPerfil = $this->normalizarUrlImagen($paciente->foto_perfil);
+        Log::debug('Valor normalizado de foto_perfil:', ['foto_perfil' => $fotoPerfil]);
+
+        return response()->json([
+            'success' => true,
+            'paciente' => array_merge($paciente->toArray(), [
+                'foto_perfil' => $fotoPerfil
+            ]),
+            'tieneConsultaInicial' => Consulta::where('paciente_id', $paciente->id)
+                ->where('tipo_consulta', 'inicio')
+                ->exists()
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error en buscarPaciente: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error en el servidor al buscar paciente'
+        ], 500);
     }
+}
+
+protected function normalizarUrlImagen($path)
+{
+    if (empty($path)) {
+        return null;
+    }
+
+    // Si ya es una URL completa, devolverla tal cual
+    if (filter_var($path, FILTER_VALIDATE_URL)) {
+        return $path;
+    }
+
+    // Limpiar cualquier prefijo existente
+    $path = ltrim($path, '/');
+    $path = ltrim($path, 'storage/');
+
+    // Devolver ruta relativa consistente
+    return 'storage/' . $path;
+}
     public function buscarPacienteCompleto($dni){
         $paciente = Paciente::where('dni', $dni)
             ->orWhere('carnet_extranjeria', $dni)
@@ -1816,4 +1836,4 @@ protected function processFileGroup(Request $request, $fileKey, $existingKey, $s
             );
         }
     }
-}
+} 

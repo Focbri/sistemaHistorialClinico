@@ -5,6 +5,7 @@ import Pagination from '@/Components/Pagination';
 
 export default function Index({ auth, farmacos, filters }) {
     const [search, setSearch] = React.useState(filters.search || '');
+    const isAdminRec = ['recepcionista', 'admin'].includes(auth.user.role);
 
     // Sincronizar el estado local cuando los filtros cambian
     React.useEffect(() => {
@@ -66,12 +67,14 @@ export default function Index({ auth, farmacos, filters }) {
                                         onChange={(e) => setSearch(e.target.value)}
                                     />
                                 </form>
+                                {isAdminRec && (
                                 <Link 
                                     href={route('farmacos.create')}
                                     className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150"
                                 >
                                     Nuevo Fármaco
                                 </Link>
+                                )}
                             </div>
 
                             {/* Tabla de fármacos */}
@@ -88,7 +91,9 @@ export default function Index({ auth, farmacos, filters }) {
                                                 </th>
                                             ))}
                                             <th className="w-[10%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                            {isAdminRec && (
                                             <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -116,6 +121,7 @@ export default function Index({ auth, farmacos, filters }) {
                                                     <td className="w-[10%] px-6 py-4 whitespace-normal text-sm font-medium text-gray-900 text-center">
                                                         {sumaStocks}
                                                     </td>
+                                                    {isAdminRec && (
                                                     <td className="w-[15%] px-6 py-4 whitespace-normal text-sm font-medium space-x-2">
                                                         <Link 
                                                             href={route('farmacos.edit', farmaco.id)}
@@ -130,6 +136,7 @@ export default function Index({ auth, farmacos, filters }) {
                                                             Stock
                                                         </Link>
                                                     </td>
+                                                    )}
                                                 </tr>
                                             );
                                         })}

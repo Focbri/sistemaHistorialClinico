@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale';
 import 'react-calendar/dist/Calendar.css';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import AdvancedFilters from '@/Components/AdvancedFilters';
+import Pagination from '@/Components/Pagination';
 import axios from 'axios';
 
 export default function CitasIndex({ calendarData: initialCalendarData = [], medicos = [], citas = [] }) {
@@ -154,10 +155,15 @@ const loadMonthData = async (date) => {
   const month = date.getMonth() + 1;
   const monthKey = `${year}-${month}`;
 
+  // Asegurarse de que loadedMonths es un Set
+  setLoadedMonths(prev => {
+    if (!(prev instanceof Set)) {
+      return new Set();
+    }
+    return prev;
+  });
+
   if (!loadedMonths.has(monthKey)) {
-    setLoading(true);
-    setError(null);
-    
     try {
       const response = await router.get('/citas', { year, month }, {
         preserveState: true,
@@ -165,7 +171,6 @@ const loadMonthData = async (date) => {
         onSuccess: (props) => {
           if (props?.calendarData) {
             setCalendarData(prev => {
-              // Filtrar datos antiguos del mismo mes
               const filtered = prev.filter(item => {
                 if (!item?.date) return false;
                 const itemDate = typeof item.date === 'string' ? parseISO(item.date) : item.date;
@@ -176,7 +181,12 @@ const loadMonthData = async (date) => {
               });
               return [...filtered, ...props.calendarData];
             });
-            setLoadedMonths(prev => new Set(prev).add(monthKey));
+            
+            setLoadedMonths(prev => {
+              const newSet = new Set(prev);
+              newSet.add(monthKey);
+              return newSet;
+            });
           }
         },
       });
@@ -189,7 +199,7 @@ const loadMonthData = async (date) => {
   }
 };
 
-  // Precarga de datos
+// Precarga de datos
   useEffect(() => {
     const loadInitialData = async () => {
       await loadMonthData(currentDate);
@@ -601,19 +611,26 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
     });
   };
 
-  const handleDelete = () => {
-    destroy(route('citas.destroy', selectedCita.id), {
-      onSuccess: () => {
-        setShowDeleteModal(false);
-        setSelectedCita(null);
-        
-        // Forzar recarga del mes actual
+const handleDelete = () => {
+  destroy(route('citas.destroy', selectedCita.id), {
+    onSuccess: () => {
+      setShowDeleteModal(false);
+      setSelectedCita(null);
+      
+      // Forzar recarga del mes actual - forma correcta
+      setLoadedMonths(prev => {
+        // Asegurarse de que prev es un Set
+        const currentSet = prev instanceof Set ? prev : new Set();
         const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
-        setLoadedMonths(prev => new Set(prev).delete(monthKey));
-        loadMonthData(currentDate);
-      },
-    });
-  };
+        const newSet = new Set(currentSet);
+        newSet.delete(monthKey);
+        return newSet;
+      });
+      
+      loadMonthData(currentDate);
+    },
+  });
+};
 
   // Formatear fecha para mostrar
   const formatFecha = (fechaHora) => {
@@ -663,25 +680,7 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
           </button>
         </div>
 
-        {activeTab === 'calendario' ? (
-          <div className="bg-white p-4 rounded-lg shadow">
-             <Calendar
-              value={currentDate}
-              onChange={setCurrentDate}
-              onClickDay={handleDayClick}
-              locale="es"
-              minDetail="month"
-              next2Label={null}
-              prev2Label={null}
-              tileContent={tileContent}
-              tileClassName={tileClassName}
-              className="border-none w-full"
-              showNeighboringMonth={false}
-              minDate={new Date()} // No permite seleccionar fechas anteriores a hoy
-              maxDate={new Date(new Date().setMonth(new Date().getMonth() + 2))} // Permite hasta 2 meses en el futuro
-            />
-          </div>
-        ) : (
+        {activeTab === 'lista' ? (
           <div className="overflow-x-auto bg-white rounded-lg shadow">
             <div className="mb-6">
               <AdvancedFilters
@@ -699,8 +698,8 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -711,10 +710,10 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
                 {citas.map(cita => (
                   <tr key={cita.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {cita.paciente.nombres} {cita.paciente.apellido_paterno}
+                      {cita.paciente.dni}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {cita.paciente.dni}
+                      {cita.paciente.nombres} {cita.paciente.apellido_paterno}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {formatFecha(cita.fecha_hora)}
@@ -755,6 +754,28 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
                 ))}
               </tbody>
             </table>
+            {/* Agrega la paginación al final de la tabla */}
+          <div className="mt-4 px-6 py-3">
+            <Pagination links={citas.links} />
+          </div>
+          </div>          
+        ) : (
+          <div className="bg-white p-4 rounded-lg shadow">
+             <Calendar
+              value={currentDate}
+              onChange={setCurrentDate}
+              onClickDay={handleDayClick}
+              locale="es"
+              minDetail="month"
+              next2Label={null}
+              prev2Label={null}
+              tileContent={tileContent}
+              tileClassName={tileClassName}
+              className="border-none w-full"
+              showNeighboringMonth={false}
+              minDate={new Date()} // No permite seleccionar fechas anteriores a hoy
+              maxDate={new Date(new Date().setMonth(new Date().getMonth() + 2))} // Permite hasta 2 meses en el futuro
+            />
           </div>
         )}
 
@@ -802,7 +823,7 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
                     <label className="block text-gray-700 mb-2">DNI del Paciente</label>
                     <div className="flex">
                       <input
-                        type="text"
+                        type="number"
                         value={data.dni}
                         onChange={(e) => {
                           setData('dni', e.target.value);
@@ -1214,7 +1235,7 @@ const formatDateTimeWithoutSeconds = (dateTimeString) => {
         )}
       </div>
 
-      <style jsx global>{`
+      <style jsx="true" global>{`
         .react-calendar {
           width: 100%;
           border: 1px solid #e2e8f0;

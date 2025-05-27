@@ -39,9 +39,7 @@ const PacienteForm = ({ data, setData, pacienteEncontrado, setPacienteEncontrado
                     telefono: result.paciente.telefono,
                     tipo_consulta: result.tieneConsultaInicial ? 'evolucion' : 'inicio',
                     edad: result.paciente.edad,
-                    foto_perfil: result.paciente.foto_perfil 
-                    ? `/storage/${result.paciente.foto_perfil}`
-                    : null
+                    foto_perfil: result.paciente.foto_perfil || '', 
                 }));
                 
                 setPacienteEncontrado && setPacienteEncontrado(true);
@@ -64,11 +62,17 @@ const PacienteForm = ({ data, setData, pacienteEncontrado, setPacienteEncontrado
             <input
                 type="text"
                 value={data.dni || ''}
-                onChange={(e) => setData('dni', e.target.value)}
+                maxLength={12}
+                minLength={0}
+                onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                        setData('dni', e.target.value);
+                    }
+                }}
                 disabled={pacienteEncontrado}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="Ingrese DNI o Carnet de Extranjería"
-                maxLength="12"
             />
             <button
                 type="button"

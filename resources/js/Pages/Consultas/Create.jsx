@@ -151,14 +151,27 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         buscarPaciente();
     }
     
-    if (pacienteProp && !pacienteEncontrado) {
+     if (pacienteProp && !pacienteEncontrado) {
         setData(prev => ({
             ...prev,
-            ...Object.fromEntries(
-                Object.entries(pacienteProp)
-                    .filter(([key]) => key in prev)
-                    .map(([key, value]) => [key, value || ''])
-            )
+            paciente_id: pacienteProp.id,
+            dni: pacienteProp.dni || pacienteProp.carnet_extranjeria || '',
+            nombres: pacienteProp.nombres || '',
+            apellido_paterno: pacienteProp.apellido_paterno || '',
+            apellido_materno: pacienteProp.apellido_materno || '',
+            telefono: pacienteProp.telefono || '',
+            email: pacienteProp.email || '',
+            fecha_nacimiento: pacienteProp.fecha_nacimiento || '',
+            edad: pacienteProp.edad || '',
+            sexo: pacienteProp.sexo || '',
+            peso: pacienteProp.peso || '',
+            estado_civil: pacienteProp.estado_civil || '',
+            ocupacion: pacienteProp.ocupacion || '',
+            direccion: pacienteProp.direccion || '',
+            procedencia: pacienteProp.procedencia || '',
+            acompañante: pacienteProp.acompañante || '',
+            referido: pacienteProp.referido || '',
+            foto_perfil: pacienteProp.foto_perfil || '',
         }));
         setPacienteEncontrado(true);
         verificarTipoConsulta(pacienteProp.id);
@@ -380,8 +393,10 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         if (!response.ok) throw new Error('Paciente no encontrado');
 
         const result = await response.json();
+        console.log('Respuesta de la API:', result);
         
         if (result.success && result.paciente) {
+            console.log('URL de la imagen recibida:', result.paciente.foto_perfil); // Log de depuración
             setData(prev => ({
                 ...prev,
                 paciente_id: result.paciente.id,
@@ -400,7 +415,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                 procedencia: result.paciente.procedencia || '',
                 acompañante: result.paciente.acompañante || '',
                 referido: result.paciente.referido || '',
-                foto_perfil: result.paciente.foto_perfil || '',
+                foto_perfil: result.paciente.foto_perfil || null 
             }));
             
             setPacienteEncontrado(true);
@@ -813,21 +828,24 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                     {/* Columna 1: Imagen del paciente - ocupa 1 parte */}
                                     <div className='flex flex-col items-center justify-center col-span-1'>
                                     <div className='w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-2 overflow-hidden'>
-                                        {data.foto_perfil ? (
-                                            <img 
-                                                src={data.foto_perfil}
-                                                alt="Foto del paciente" 
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.src = '';
-                                                    e.target.parentElement.classList.add('bg-gray-200');
-                                                }}
-                                            />
-                                        ) : (
-                                            <span className="text-gray-500">Sin foto</span>
-                                        )}
-                                    </div>
+    {data.foto_perfil ? (
+        <img 
+            src={data.foto_perfil.startsWith('http') 
+                ? data.foto_perfil 
+                : `${window.location.origin}/${data.foto_perfil}`}
+            alt="Foto del paciente"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+                console.error('Error cargando imagen:', e.target.src);
+                e.target.onerror = null;
+                e.target.src = '';
+                e.target.parentElement.classList.add('bg-gray-200');
+            }}
+        />
+    ) : (
+        <span className="text-gray-500">Sin foto</span>
+    )}
+</div>
                                 </div>
                                     {/* Columna 2: Datos concatenados del paciente - ocupa 2 partes */}
                                     <div className='flex flex-col col-span-2'>

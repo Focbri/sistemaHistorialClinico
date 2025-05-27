@@ -8,6 +8,7 @@ import AdvancedFilters from '@/Components/AdvancedFilters';
 export default function ConsultasIndex({ auth, consultas, links, filters }) {
 
     const isAdmin = ['admin'].includes(auth.user.role);
+    const isAdminMedico = ['admin', 'medico_externo', 'medico'].includes(auth.user.role);
     const [searchDni, setSearchDni] = useState(filters.dni || '');
 
     const [loading, setLoading] = useState(false);
@@ -293,7 +294,14 @@ const descargarPDFConsulta = async (consultaId) => {
                                         type="text"
                                         placeholder="Buscar por DNI del paciente"
                                         value={searchDni}
-                                        onChange={(e) => setSearchDni(e.target.value)}
+                                        maxLength={12}
+                                        minLength={0}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                                setSearchDni( e.target.value);
+                                            }
+                                        }}
                                         className="px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
                                     />
                                     <button
@@ -303,7 +311,7 @@ const descargarPDFConsulta = async (consultaId) => {
                                         Buscar
                                     </button>
                                 </form>
-
+                                {isAdminMedico && ( 
                                 <div className="flex space-x-2">
                                     <Link
                                         href={route('cirugias.create')}
@@ -324,6 +332,7 @@ const descargarPDFConsulta = async (consultaId) => {
                                         <span>Consulta</span>
                                     </Link>
                                 </div>
+                                )}
                             </div>
                             <AdvancedFilters
                                 initialFilters={{
@@ -354,11 +363,11 @@ const descargarPDFConsulta = async (consultaId) => {
                                 <table className="min-w-full border border-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalle</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                     </tr>
                                 </thead>
@@ -370,6 +379,7 @@ const descargarPDFConsulta = async (consultaId) => {
             
             return (
                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-4 text-sm text-gray-900">{item.codigo_historial}</td>
                     <td className="px-4 py-4 text-sm text-gray-900">
                         {item.tipo_consulta ? (
                             <span className={`px-2 py-1 rounded-full text-xs ${
@@ -386,16 +396,16 @@ const descargarPDFConsulta = async (consultaId) => {
                             </span>
                         )}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">{item.codigo_historial}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                        {new Date(item.created_at).toLocaleDateString()}
-                    </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
                         {item.paciente.nombres} {item.paciente.apellido_paterno}
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
                         {item.paciente.dni}
                     </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                        {new Date(item.created_at).toLocaleDateString()}
+                    </td>
+                    {/*ACCIONES */}
                     <td className="px-4 py-4 text-sm text-gray-900">
                         <div className="flex items-center space-x-2">
                             <Link
@@ -406,9 +416,11 @@ const descargarPDFConsulta = async (consultaId) => {
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M12 9a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5a5 5 0 0 1 5-5a5 5 0 0 1 5 5a5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"></path></svg>
                             </Link>
-                            {puedeEditar ? (
+                            {puedeEditar && isAdminMedico ? (
                                 <Link
-                                    href={route('consultas.edit', item.id)}
+                                    href={item.tipo_consulta ? 
+                                    route('consultas.edit', item.id) : 
+                                    route('cirugias.edit', item.id)}
                                     className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
@@ -421,7 +433,7 @@ const descargarPDFConsulta = async (consultaId) => {
                                     className="px-3 py-1 text-white bg-gray-400 rounded cursor-not-allowed"
                                     title="No puedes editar después de 48 horas"
                                 >
-                                    Editar
+                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
                                 </button>
                             )}
                             {isAdmin && (
@@ -432,54 +444,61 @@ const descargarPDFConsulta = async (consultaId) => {
                                     <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zM9 17h2V8H9zm4 0h2V8h-2zM7 6v13z"></path></svg>
                                 </button>
                             )}
+                            {isAdminMedico && (
+            <>
+                {item.tipo_consulta ? (
+                    // Es una consulta - mostrar botones relacionados con consulta
+                    <>
+                        <button
+                            onClick={() => descargarPDFConsulta(item.id)}
+                            className="px-3 py-1 flex justify-center items-center text-white bg-green-500 rounded hover:bg-green-600 disabled:bg-green-300"
+                            title="Descargar PDF de consulta"
+                            disabled={showPdfNotification && pdfNotificationMessage.includes('Generando')}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
+                                <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
+                            </svg>
+                            <span className="ml-1">Consulta</span>
+                        </button>
+                        
+                        {item.receta && (
                             <button
-                                onClick={() => descargarPDFConsulta(item.id)}
-                                className="px-3 py-1 flex justify-center items-center text-white bg-green-500 rounded hover:bg-green-600 disabled:bg-green-300"
-                                title="Descargar PDF de consulta"
-                                disabled={showPdfNotification && pdfNotificationMessage.includes('Generando')}
+                                onClick={() => descargarPDFReceta(item.id)}
+                                className="px-3 py-1 flex justify-center items-center bg-purple-500 text-white rounded hover:bg-purple-600"
+                            >
+                                <span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
+                                </span>
+                                <span>Receta</span>
+                            </button>
+                        )}
+                        
+                        {item.refraccion && (
+                            <button
+                                onClick={() => descargarPDFRefraccion(item.id)}
+                                className="px-3 py-1 flex justify-center items-center text-white bg-teal-500 rounded hover:bg-teal-600"
+                                title="Descargar examen de refracción"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
                                     <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
                                 </svg>
-                                <span className="ml-1">Consulta</span>
+                                <span className="ml-1">Refracción</span>
                             </button>
-                            {item.receta && (
-                                <button
-                                    onClick={() => descargarPDFReceta(item.id)}
-                                    className="px-3 py-1 flex justify-center items-center bg-purple-500 text-white rounded hover:bg-purple-600"
-                                >
-                                    <span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
-                                    </span>
-                                    <span>Receta</span>
-                                </button>
+                        )}
+                    </>
+                ) : (
+                    // Es una cirugía - mostrar solo botón de cirugía
+                    <button
+                        onClick={() => descargarPDFCirugia(item.id)}
+                        className="px-3 py-1 flex justify-center items-center text-white bg-indigo-500 rounded hover:bg-indigo-600"
+                    >
+                        <span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
+                        </span>
+                        <span>Cirugía</span>
+                    </button>
                             )}
-                            {/* Botón para descargar PDF de refracción */}
-                            {item.refraccion && (
-                                <button
-                                    onClick={() => descargarPDFRefraccion(item.id)}
-                                    className="px-3 py-1 flex justify-center items-center text-white bg-teal-500 rounded hover:bg-teal-600"
-                                    title="Descargar examen de refracción"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
-                                        <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
-                                    </svg>
-                                    <span className="ml-1">Refracción</span>
-                                </button>
-                            )}
-                            {!item.receta && (
-                                <span className='hidden'>crear receta</span>
-                            )}
-                            {!item.tipo_consulta && (
-                                <button
-                                    onClick={() => descargarPDFCirugia(item.id)}
-                                    className="px-3 py-1 flex justify-center items-center text-white bg-indigo-500 rounded hover:bg-indigo-600"
-                                >
-                                    <span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
-                                    </span>
-                                    <span>Cirugía</span>
-                                </button>
+                        </>
                             )}
                         </div>
                     </td>

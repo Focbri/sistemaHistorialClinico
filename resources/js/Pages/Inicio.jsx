@@ -5,6 +5,9 @@ export default function Inicio({auth}) {
     // Determinar si el usuario es médico o médico_externo usando el campo role
     const isMedico = ['medico', 'medico_externo'].includes(auth.user.role);
     const isAdmin = ['admin'].includes(auth.user.role);
+    const isMedicoExterno = auth.user.role === 'medico_externo';
+    const isRecepcionista = auth.user.role === 'recepcionista';
+    const isInvitado = auth.user.role === 'invitado';
     
     return (
         <AuthenticatedLayout

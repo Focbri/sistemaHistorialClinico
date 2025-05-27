@@ -14,6 +14,8 @@ export default function PacientesIndex({ auth, pacientes }) {
     const [showConsultasModal, setShowConsultasModal] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const isAdminMed = ['medico', 'admin'].includes(auth.user.role);
+    const isAdminMedRec = ['recepcionista', 'admin', 'medico_externo', 'medico'].includes(auth.user.role);
 
     const [pacienteConsultas, setPacienteConsultas] = useState({
         nombres: '',
@@ -24,10 +26,17 @@ export default function PacientesIndex({ auth, pacientes }) {
     
     const [loadingConsultas, setLoadingConsultas] = useState(false);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        router.get(route('pacientes.index'), { dni: searchDni });
-    };
+const handleSearch = (e) => {
+    e.preventDefault();
+    router.get(route('pacientes.index'), 
+        { dni: searchDni }, 
+        {
+            preserveState: true,
+            replace: true,
+            only: ['pacientes', 'filters']
+        }
+    );
+};
 
     const openDeleteModal = (paciente) => {
         setPacienteToDelete(paciente);
@@ -66,89 +75,55 @@ export default function PacientesIndex({ auth, pacientes }) {
       }
     });
     
-    const handleApplyFilters = async (appliedFilters) => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    // Construye los parámetros para la API
-    const params = { dni: searchDni }; // Mantén la búsqueda por DNI si existe
-    
-    if (appliedFilters.activeFilters.sex && appliedFilters.sex) {
-      params.sex = appliedFilters.sex;
-    }
-    
-    if (appliedFilters.activeFilters.age) {
-      if (appliedFilters.minAge) params.min_age = appliedFilters.minAge;
-      if (appliedFilters.maxAge) params.max_age = appliedFilters.maxAge;
-    }
-    
-    if (appliedFilters.activeFilters.dateRange) {
-      if (appliedFilters.startDate) params.start_date = appliedFilters.startDate;
-      if (appliedFilters.endDate) params.end_date = appliedFilters.endDate;
-    }
-    
-    if (appliedFilters.activeFilters.procedencia && appliedFilters.procedencia) {
-      params.procedencia = appliedFilters.procedencia;
-    }
-    
-    // Hacer la petición al backend para filtrar pacientes
-    router.get(route('pacientes.index'), params, {
-      preserveState: true,
-      onSuccess: () => {
-        // Los pacientes filtrados vendrán en las props
-      },
-      onError: (errors) => {
-        setError('Error al aplicar los filtros');
-      }
-    });
-    
-  } catch (error) {
-    console.error('Error al aplicar filtros:', error);
-    setError('Error al aplicar los filtros');
-  } finally {
-    setLoading(false);
-  }
-};
-    
-    const handleResetFilters = async () => {
-      try {
+const handleApplyFilters = async (appliedFilters) => {
+    try {
         setLoading(true);
-        setFilters({
-          sex: '',
-          minAge: '',
-          maxAge: '',
-          startDate: '',
-          endDate: '',
-          procedencia: '',
-          searchTerm: '',
-          selectedTerms: [],
-          activeFilters: {
-            sex: false,
-            age: false,
-            dateRange: false,
-            procedencia: false,
-            terms: false
-          }
-        });
-
-        // Recargar todos los pacientes sin filtros
-        await router.get('/pacientes', {}, {
-          preserveState: true,
-          onSuccess: (props) => {
-            if (props?.citas) {
-              // Actualiza las citas con todos los resultados
-            }
-          }
+        setError(null);
+        
+        const params = { 
+            dni: searchDni,
+            sex: appliedFilters.sex || undefined,
+            minAge: appliedFilters.minAge || undefined,
+            maxAge: appliedFilters.maxAge || undefined,
+            startDate: appliedFilters.startDate || undefined,
+            endDate: appliedFilters.endDate || undefined,
+            procedencia: appliedFilters.procedencia || undefined
+        };
+        
+        router.get(route('pacientes.index'), params, {
+            preserveState: true,
+            replace: true,
+            only: ['pacientes', 'filters']
         });
         
-      } catch (error) {
+    } catch (error) {
+        console.error('Error al aplicar filtros:', error);
+        setError('Error al aplicar los filtros');
+    } finally {
+        setLoading(false);
+    }
+};
+
+    
+const handleResetFilters = async () => {
+    try {
+        setLoading(true);
+        setError(null);
+        setSearchDni('');
+        
+        await router.get(route('pacientes.index'), {}, {
+            preserveState: true,
+            replace: true,
+            only: ['pacientes', 'filters']
+        });
+        
+    } catch (error) {
         console.error('Error al resetear filtros:', error);
         setError('Error al resetear los filtros');
-      } finally {
+    } finally {
         setLoading(false);
-      }
-    };
+    }
+};
 
     const openConsultasModal = async (paciente) => {
     setLoadingConsultas(true);
@@ -311,10 +286,17 @@ export default function PacientesIndex({ auth, pacientes }) {
                             <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0 mb-6">
                                 <form onSubmit={handleSearch} className="flex items-center w-full md:w-auto">
                                     <input
-                                        type="text"
+                                        type="number" 
                                         placeholder="Buscar por DNI"
                                         value={searchDni}
-                                        onChange={(e) => setSearchDni(e.target.value)}
+                                        max={99999999}
+                                        maxLength={9}
+                                        onChange={(e) => {
+                                            if (e.target.value.length <= 8) {
+                                                setSearchDni( e.target.value);
+                                            }
+                                        }}
+                                        
                                         className="px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
                                     />
                                     <button
@@ -323,7 +305,8 @@ export default function PacientesIndex({ auth, pacientes }) {
                                     >
                                         Buscar
                                     </button>
-                                </form>               
+                                </form>
+                                {isAdminMed && (              
                                 <Link
                                     href={route('pacientes.create')}
                                     className="px-4 py-2 flex justify-center items-center gap-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -333,6 +316,7 @@ export default function PacientesIndex({ auth, pacientes }) {
                                     </span>
                                     <span>Paciente</span>
                                 </Link>
+                                )}
                             </div>
                             <div className='mb-4'>
                                 <AdvancedFilters
@@ -351,22 +335,20 @@ export default function PacientesIndex({ auth, pacientes }) {
                                 <table className="min-w-full border border-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido Paterno</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido Materno</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombres</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {pacientes.map((paciente) => (
+                                        {pacientes.data.map((paciente) => (
                                             <tr key={paciente.id} className="hover:bg-gray-50 transition-colors">
                                                 <td className="px-4 py-4 text-sm text-gray-900">{paciente.dni}</td>
                                                 <td className="px-4 py-4 text-sm text-gray-900">{paciente.nombres}</td>
-                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.apellido_paterno}</td>
-                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.apellido_materno}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900">{paciente.apellido_paterno} {paciente.apellido_materno}</td>
                                                 <td className="px-4 py-4 text-sm text-gray-900">{paciente.telefono}</td>
                                                 <td className="px-4 py-4 text-sm text-gray-900">{paciente.email}</td>
                                                 <td className="px-4 py-4 h-full">
@@ -377,12 +359,14 @@ export default function PacientesIndex({ auth, pacientes }) {
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M12 9a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5a5 5 0 0 1 5-5a5 5 0 0 1 5 5a5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"/></svg>
                                                         </Link>
+                                                        {isAdminMed && (
                                                         <Link
                                                             href={route('pacientes.edit', paciente.id)}
                                                             className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"/></svg>
                                                         </Link>
+                                                        )}
                                                         
                                                         {/* Botón para ver historial de consultas */}
                                                         <button
@@ -408,6 +392,14 @@ export default function PacientesIndex({ auth, pacientes }) {
                                     </tbody>
                                 </table>
                             </div>
+                            {/* Paginación */}
+<div className="mt-4">
+    <Pagination 
+        links={pacientes.links} 
+        preserveState
+        only={['pacientes', 'filters']}
+    />
+</div>
                         </div>
                     </div>
                 </div>

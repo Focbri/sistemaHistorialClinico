@@ -96,8 +96,6 @@ const [manualFarmaco, setManualFarmaco] = useState({
       dosis: '',
       frecuencia: '',
       duracion: '',
-      stock_total: 0,
-      stock_disponible: 0,
       es_manual: true
     };
 
@@ -259,20 +257,29 @@ const handleUpdateCantidad = (index, e) => {
     const nuevosMedicamentos = [...medicamentos];
     const medicamento = nuevosMedicamentos[index];
     
-    const stockDisponible = medicamento.stock_total - 
-      medicamentos.reduce((sum, m, i) => 
-        i !== index && m.farmaco_id === medicamento.farmaco_id ? sum + m.cantidad : sum, 0);
-    
-    if (cantidad > stockDisponible) {
-      setFarmacoError(`Stock insuficiente para ${medicamento.nombre_comercial}`);
-      return;
-    }
+    if (medicamento.es_manual) {
+      nuevosMedicamentos[index] = {
+        ...medicamento,
+        cantidad: cantidad
+      };
+    } 
+    else {
+      // Validación de stock solo para fármacos no manuales
+      const stockDisponible = medicamento.stock_total - 
+        medicamentos.reduce((sum, m, i) => 
+          i !== index && m.farmaco_id === medicamento.farmaco_id ? sum + m.cantidad : sum, 0);
+      
+      if (cantidad > stockDisponible) {
+        setFarmacoError(`Stock insuficiente para ${medicamento.nombre_comercial}`);
+        return;
+      }
   
     nuevosMedicamentos[index] = {
       ...medicamento,
       cantidad: cantidad,
       stock_disponible: stockDisponible - cantidad
     };
+  }
     
     setMedicamentos(nuevosMedicamentos);
     setFarmacoError(null);
@@ -281,7 +288,7 @@ const handleUpdateCantidad = (index, e) => {
     if (farmacoSearchTerm) {
       searchFarmacos(farmacoSearchTerm);
     }
-  };
+};
 
 
   // Corregir handleAddMedicamento
@@ -729,13 +736,16 @@ useEffect(() => {
                         <h4 className="font-medium">{med.nombre_comercial}</h4>
                         <p className="text-sm text-gray-600">
                           {med.componente_activo} - {med.presentacion} {med.concentracion}
+                          {med.es_manual && <span className="ml-2 text-blue-500">(Manual)</span>}
                         </p>
-                        <p className="text-xs mt-1">
-                          Stock total: {med.stock_original} | 
-                          <span className={med.cantidad > med.stock_disponible ? 'text-red-600 font-bold' : 'text-green-600'}>
-                            Disponible después de receta: {med.stock_disponible}
-                          </span>
-                        </p>
+                        {/* Solo mostrar stock si NO es manual */}
+                        {!med.es_manual && (
+                          <p className="text-xs mt-1">
+                            <span className={med.cantidad > med.stock_disponible ? 'text-red-600 font-bold' : 'text-green-600'}>
+                              Disponible después de receta: {med.stock_disponible}
+                            </span>
+                          </p>
+                        )}
                       </div>
                       <button
                         onClick={() => handleRemoveMedicamento(index)}

@@ -2,16 +2,16 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import Modal from '@/Components/Modal';
+import Pagination from '@/Components/Pagination';
 
 export default function CitasAsignadas({ auth, citas, citasAtendidas }) {
     const [selectedCita, setSelectedCita] = useState(null);
     const [showActionModal, setShowActionModal] = useState(false);
     const [hasPreviousConsultas, setHasPreviousConsultas] = useState(false);
-      const [activeTab, setActiveTab] = useState('calendario');
+    const [activeTab, setActiveTab] = useState('calendario');
 
     const openActionModal = async (cita) => {
-        setSelectedCita(cita);
-                
+        setSelectedCita(cita);                
         setShowActionModal(true);
     };
 
@@ -47,131 +47,116 @@ export default function CitasAsignadas({ auth, citas, citasAtendidas }) {
                             CITAS ATENDIDAS
                         </button>
                     </div>
+                    
                     {activeTab === 'calendario' ? (
-                    
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <h1 className="text-2xl font-bold mb-6">Mis Citas Asignadas</h1>
-                            
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {citas.map(cita => (
-                                            <tr key={cita.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {cita.paciente?.nombres} {cita.paciente?.apellido_paterno}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {cita.paciente?.dni || cita.paciente?.carnet_extranjeria || 'N/A'}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {new Date(cita.fecha_hora).toLocaleString()}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {cita.motivo}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                        ${cita.estado === 'completada' ? 'bg-green-100 text-green-800' : 
-                                                          cita.estado === 'cancelada' ? 'bg-red-100 text-red-800' : 
-                                                          'bg-blue-100 text-blue-800'}`}>
-                                                        {cita.estado === 'completada' ? 'Atendida' : 
-                                                         cita.estado === 'cancelada' ? 'Cancelada' : 'Programada'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                                                    <button 
-                                                        onClick={() => openActionModal(cita)}
-                                                        className="text-blue-600 hover:text-blue-900"
-                                                    >
-                                                        Atender
-                                                    </button>
-                                                    {cita.estado === 'programada' && (
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                            <div className="p-6 text-gray-900">
+                                <h1 className="text-2xl font-bold mb-6">Mis Citas Asignadas</h1>
+                                
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {citas.data.map(cita => (
+                                                <tr key={cita.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {cita.paciente?.dni || cita.paciente?.carnet_extranjeria || 'N/A'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {cita.paciente?.nombres} {cita.paciente?.apellido_paterno}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {new Date(cita.fecha_hora).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {cita.motivo}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                            ${cita.estado === 'completada' ? 'bg-green-100 text-green-800' : 
+                                                              cita.estado === 'cancelada' ? 'bg-red-100 text-red-800' : 
+                                                              'bg-blue-100 text-blue-800'}`}>
+                                                            {cita.estado === 'completada' ? 'Atendida' : 
+                                                             cita.estado === 'cancelada' ? 'Cancelada' : 'Programada'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap space-x-2">
                                                         <button 
-                                                            onClick={() => marcarComoAtendida(cita.id)}
-                                                            className="text-purple-600 hover:text-purple-900"
+                                                            onClick={() => openActionModal(cita)}
+                                                            className="text-blue-600 hover:text-blue-900"
                                                         >
-                                                            Marcar como atendida
+                                                            Atender
                                                         </button>
-                                                    )}
-                                                    <Link 
-                                                        href={route('citas.edit', cita.id)}
-                                                        className="text-yellow-600 hover:text-yellow-900"
-                                                    >
-                                                        Editar
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                {/* Paginación para citas asignadas */}
+                                <div className="mt-4">
+                                    <Pagination links={citas.links} />
+                                </div>
                             </div>
                         </div>
-                    </div>
                     ) : (
-
-                    
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <h1 className="text-2xl font-bold mb-6">Mis Citas Atendidas</h1>
-                            
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {citasAtendidas.map(cita => (
-                                            <tr key={cita.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {cita.paciente?.nombres} {cita.paciente?.apellido_paterno}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {cita.paciente?.dni || cita.paciente?.carnet_extranjeria || 'N/A'}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {new Date(cita.fecha_hora).toLocaleString()}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {cita.motivo}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                        Atendida
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                                                    <Link 
-                                                        href={route('citas.edit', cita.id)}
-                                                        className="text-yellow-600 hover:text-yellow-900"
-                                                    >
-                                                        Editar
-                                                    </Link>
-                                                </td>
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                            <div className="p-6 text-gray-900">
+                                <h1 className="text-2xl font-bold mb-6">Mis Citas Atendidas</h1>
+                                
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {citasAtendidas.data.map(cita => (
+                                                <tr key={cita.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {cita.paciente?.dni || cita.paciente?.carnet_extranjeria || 'N/A'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {cita.paciente?.nombres} {cita.paciente?.apellido_paterno}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {new Date(cita.fecha_hora).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {cita.motivo}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                            Atendida
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                {/* Paginación para citas atendidas */}
+                                <div className="mt-4">
+                                    <Pagination links={citasAtendidas.links} />
+                                </div>
                             </div>
                         </div>
-                    </div>
                     )}
                 </div>
             </div>
@@ -214,11 +199,11 @@ export default function CitasAsignadas({ auth, citas, citasAtendidas }) {
                                                 paciente_id: selectedCita.paciente_id, 
                                                 cita_id: selectedCita.id,
                                                 tipo: 'inicio',
-                                                dni: selectedCita.paciente?.dni || selectedCita.paciente?.carnet_extranjeria // Añade esta línea
+                                                dni: selectedCita.paciente?.dni || selectedCita.paciente?.carnet_extranjeria
                                             })}
                                             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-center"
                                         >
-                                            Consulta Inicial
+                                            Consulta
                                         </Link>
                                     ) : (
                                         <Link 
@@ -226,7 +211,7 @@ export default function CitasAsignadas({ auth, citas, citasAtendidas }) {
                                                 paciente_id: selectedCita.paciente_id, 
                                                 cita_id: selectedCita.id,
                                                 tipo: 'evolucion',
-                                                dni: selectedCita.paciente?.dni || selectedCita.paciente?.carnet_extranjeria // Añade esta línea
+                                                dni: selectedCita.paciente?.dni || selectedCita.paciente?.carnet_extranjeria
                                             })}
                                             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-center"
                                         >

@@ -12,53 +12,50 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PacienteController extends Controller
-{
+{ 
     public function index(Request $request)
-    {
-        $query = Paciente::query();
-        
-        // Búsqueda por DNI (existente)
-        if ($request->dni) {
-            $query->where('dni', 'like', "%{$request->dni}%");
-        }
-        
-        // Nuevos filtros
-        if ($request->sex) {
-            $query->where('sexo', $request->sex);
-        }
-        
-        if ($request->min_age || $request->max_age) {
-            if ($request->min_age) {
-                $query->where('edad', '>=', $request->min_age);
-            }
-            if ($request->max_age) {
-                $query->where('edad', '<=', $request->max_age);
-            }
-        }
-        
-        if ($request->procedencia) {
-            $query->where('procedencia', $request->procedencia);
-        }
-        
-        if ($request->start_date || $request->end_date) {
-            if ($request->start_date) {
-                $query->whereDate('created_at', '>=', $request->start_date);
-            }
-            if ($request->end_date) {
-                $query->whereDate('created_at', '<=', $request->end_date);
-            }
-        }
-        
-        // Ordenamiento (existente)
-        $pacientes = $query->orderBy('apellido_paterno')
-            ->orderBy('apellido_materno')
-            ->orderBy('nombres')
-            ->get();
+{
+    $query = Paciente::query()
+        ->when($request->filled('dni'), function($q) use ($request) {
+            $q->where('dni', 'like', '%'.$request->dni.'%');
+        })
+        ->when($request->filled('sex'), function($q) use ($request) {
+            $q->where('sexo', $request->sex);
+        })
+        ->when($request->filled('minAge') && $request->filled('maxAge'), function($q) use ($request) {
+            $minDate = now()->subYears($request->maxAge)->format('Y-m-d');
+            $maxDate = now()->subYears($request->minAge)->format('Y-m-d');
+            $q->whereBetween('fecha_nacimiento', [$minDate, $maxDate]);
+        })
+        ->when($request->filled('startDate'), function($q) use ($request) {
+            $q->whereDate('created_at', '>=', $request->startDate);
+        })
+        ->when($request->filled('endDate'), function($q) use ($request) {
+            $q->whereDate('created_at', '<=', $request->endDate);
+        })
+        ->when($request->filled('procedencia'), function($q) use ($request) {
+            $q->where('procedencia', $request->procedencia);
+        })
+        ->orderBy('created_at', 'desc');
 
-        return inertia('Pacientes/Index', ['pacientes' => $pacientes]);
-    }
+    $pacientes = $query->paginate(10); // 10 pacientes por página
+
+    return Inertia::render('Pacientes/Index', [
+        'pacientes' => $pacientes,
+        'filters' => $request->only([
+            'dni',
+            'sex',
+            'minAge',
+            'maxAge',
+            'startDate',
+            'endDate',
+            'procedencia'
+        ]),
+    ]);
+}
 
     public function create(Request $request)
     {
@@ -101,7 +98,7 @@ class PacienteController extends Controller
                 'foto_perfil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             ]);
 
-            // Crear el paciente
+            // Crear el paciente con el código generado
             $paciente = new Paciente();
             $paciente->fill($validatedData);
 
@@ -697,6 +694,22 @@ class PacienteController extends Controller
             ]
         ]);
     }
+
+public function buscarPorDNI(Request $request)
+{
+    $request->validate(['dni' => 'required|string']);
+
+    $paciente = Paciente::where('dni', $request->dni)->first();
+
+    if (!$paciente) {
+        return response()->json(['success' => false, 'message' => 'Paciente no encontrado'], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'paciente' => $paciente
+    ]);
+}
 
     public function consultas(Paciente $paciente)
     {

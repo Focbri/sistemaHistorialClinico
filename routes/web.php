@@ -98,6 +98,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
      ->middleware('auth');
     });
 
+    Route::post('pacientes/buscar-por-dni', [PacienteController::class, 'buscarPorDNI'])
+    ->name('pacientes.buscar-por-dni');
+
     // CIE10
     Route::prefix('cie10')->group(function () {
         Route::get('search', [Cie10Controller::class, 'search'])->name('cie10.search');

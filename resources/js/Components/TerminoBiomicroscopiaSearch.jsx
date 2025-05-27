@@ -26,7 +26,7 @@ const TerminoBiomicroscopiaSearch = ({
         }
 
         try {
-            const response = await axios.get('/terminos-biomicroscopia/search', {
+            const response = await axios.get('/terminos/biomicroscopia/search', {
                 params: { query: searchQuery }
             });
             setResults(response.data);

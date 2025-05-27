@@ -9,25 +9,40 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Models\Cita;
 use Inertia\Inertia;
 
 class CirugiaController extends Controller
 {
     public function create(Request $request)
 {
-    $paciente_id = $request->input('paciente_id');
+    $paciente = null;
     $cita_id = $request->input('cita_id');
     
-    // Obtener todos los pacientes activos
-    $pacientes = Paciente::all(); 
-    
-    // Si viene con paciente_id específico, cargar ese paciente
-    $paciente = $paciente_id ? Paciente::find($paciente_id) : null;
+
+    if ($cita_id) {
+        $cita = Cita::with('paciente')->findOrFail($cita_id);
+        $paciente = $cita->paciente;
+    }
 
     return Inertia::render('Consultas/CreateCirugia', [
         'paciente' => $paciente,
-        'pacientes' => $pacientes, // Pasar todos los pacientes
         'cita_id' => $cita_id
+    ]);
+}
+
+public function edit(Cirugia $cirugia)
+{
+    $pacientes = Paciente::all();
+    
+    // Asegurar el formato de fecha correcto para el input date
+    $cirugia->fecha_cirugia = $cirugia->fecha_cirugia ? 
+        (new \DateTime($cirugia->fecha_cirugia))->format('Y-m-d') : 
+        now()->format('Y-m-d');
+    
+    return Inertia::render('Consultas/EditCirugia', [
+        'cirugia' => $cirugia,
+        'pacientes' => $pacientes
     ]);
 }
 
@@ -67,7 +82,7 @@ class CirugiaController extends Controller
     }
     public function show(Cirugia $cirugia)
 {
-    return inertia('Cirugias/Show', [
+    return inertia('Consultas/ShowCirugia', [
         'cirugia' => $cirugia->load('paciente', 'user')
     ]);
 }
@@ -100,5 +115,29 @@ public function generarPDF($id)
         Log::error('Error al generar PDF de cirugía: ' . $e->getMessage());
         return back()->with('error', 'Error al generar el PDF: ' . $e->getMessage());
     }
+}
+
+public function update(Request $request, Cirugia $cirugia)
+{
+    $validated = $request->validate([
+        'diagnostico_preoperatorio' => 'required|string',
+        'diagnostico_postoperatorio' => 'nullable|string',
+        'cirugia' => 'required|string',
+        'cirujano_principal' => 'required|string',
+        'cirujano_ayudante' => 'nullable|string',
+        'anestesiologo' => 'required|string',
+        'tipo_anestesia' => 'required|string',
+        'personal_enfermeria' => 'nullable|array',
+        'hallazgos' => 'nullable|string',
+        'procedimiento' => 'required|string',
+        'fecha_cirugia' => 'required|date',
+        'hora_inicio' => 'required',
+        'hora_fin' => 'nullable'
+    ]);
+
+    $cirugia->update($validated);
+
+    return redirect()->route('consultas.index', $cirugia->id)
+        ->with('success', 'Cirugía actualizada correctamente');
 }
 }

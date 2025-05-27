@@ -38,15 +38,19 @@ class Paciente extends Model
 protected static function booted()
 {
     static::creating(function ($paciente) {
-        // Generar código de historial autoincremental
         if (empty($paciente->codigo_historial)) {
-            $count = self::count(); // Obtiene el número total de pacientes existentes
-            $nextNumber = $count + 1; // Calcula el siguiente número
+            // Usa lockForUpdate para evitar race conditions
+            $lastCode = self::lockForUpdate()
+                ->orderBy('id', 'desc')
+                ->value('codigo_historial');
             
-            // Formatea el número con ceros a la izquierda (ej. 001, 002, ..., 010, etc.)
-            $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+            $nextNumber = 1; // Valor por defecto
             
-            $paciente->codigo_historial = 'HCL-' . $formattedNumber;
+            if ($lastCode && preg_match('/HCL-(\d+)/', $lastCode, $matches)) {
+                $nextNumber = (int)$matches[1] + 1;
+            }
+            
+            $paciente->codigo_historial = 'HCL-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
         }
     });
 }

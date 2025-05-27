@@ -40,21 +40,42 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                             <input
                                 type="text"
                                 value={data.exam_old_distancia_esfera_od || ''}
-                                onChange={(e) => handleChange('exam_old_distancia_esfera_od', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_distancia_esfera_od', value);
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
                             <input
                                 type="text"
                                 value={data.exam_old_distancia_cilindro_od || ''}
-                                onChange={(e) => handleChange('exam_old_distancia_cilindro_od', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_distancia_cilindro_od', value);
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
                             <input
                                 type="text"
                                 value={data.exam_old_distancia_eje_od || ''}
-                                onChange={(e) => handleChange('exam_old_distancia_eje_od', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_distancia_eje_od', value);
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
@@ -63,21 +84,42 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                             <input
                                 type="text"
                                 value={data.exam_old_distancia_esfera_oi || ''}
-                                onChange={(e) => handleChange('exam_old_distancia_esfera_oi', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_distancia_esfera_oi', value);
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
                             <input
                                 type="text"
                                 value={data.exam_old_distancia_cilindro_oi || ''}
-                                onChange={(e) => handleChange('exam_old_distancia_cilindro_oi', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_distancia_cilindro_oi', value);
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
                             <input
                                 type="text"
                                 value={data.exam_old_distancia_eje_oi || ''}
-                                onChange={(e) => handleChange('exam_old_distancia_eje_oi', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_distancia_eje_oi', value);
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
@@ -87,7 +129,14 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                             <input
                                 type="text"
                                 value={data.exam_old_distancia_dip || ''}
-                                onChange={(e) => handleChange('exam_old_distancia_dip', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_distancia_dip', value); 
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm w-20"
                             />
@@ -108,21 +157,42 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                                 <input
                                     type="text"
                                     value={data.exam_old_cerca_esfera_od || ''}
-                                    onChange={(e) => handleChange('exam_old_cerca_esfera_od', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_cerca_esfera_od', value); 
+                                    }
+                                }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
                                 <input
                                     type="text"
                                     value={data.exam_old_cerca_cilindro_od || ''}
-                                    onChange={(e) => handleChange('exam_old_cerca_cilindro_od', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_cerca_cilindro_od', value); 
+                                    }
+                                }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
                                 <input
                                     type="text"
                                     value={data.exam_old_cerca_eje_od || ''}
-                                    onChange={(e) => handleChange('exam_old_cerca_eje_od', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_cerca_eje_od', value); 
+                                    }
+                                }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
@@ -131,21 +201,42 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                                 <input
                                     type="text"
                                     value={data.exam_old_cerca_esfera_oi || ''}
-                                    onChange={(e) => handleChange('exam_old_cerca_esfera_oi', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_cerca_esfera_oi', value); 
+                                    }
+                                }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
                                 <input
                                     type="text"
                                     value={data.exam_old_cerca_cilindro_oi || ''}
-                                    onChange={(e) => handleChange('exam_old_cerca_cilindro_oi', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_cerca_cilindro_oi', value); 
+                                    }
+                                }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
                                 <input
                                     type="text"
                                     value={data.exam_old_cerca_eje_oi || ''}
-                                    onChange={(e) => handleChange('exam_old_cerca_eje_oi', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_cerca_eje_oi', value); 
+                                    }
+                                }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
@@ -155,7 +246,14 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                                 <input
                                     type="text"
                                     value={data.exam_old_cerca_dip || ''}
-                                    onChange={(e) => handleChange('exam_old_cerca_dip', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_old_cerca_dip', value); 
+                                    }
+                                }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm w-20"
                                 />
@@ -181,21 +279,42 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                             <input
                                 type="text"
                                 value={data.exam_new_distancia_esfera_od || ''}
-                                onChange={(e) => handleChange('exam_new_distancia_esfera_od', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_new_distancia_esfera_od', value); 
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
                             <input
                                 type="text"
                                 value={data.exam_new_distancia_cilindro_od || ''}
-                                onChange={(e) => handleChange('exam_new_distancia_cilindro_od', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_new_distancia_cilindro_od', value); 
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
                             <input
                                 type="text"
                                 value={data.exam_new_distancia_eje_od || ''}
-                                onChange={(e) => handleChange('exam_new_distancia_eje_od', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_new_distancia_eje_od', value); 
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
@@ -204,21 +323,42 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                             <input
                                 type="text"
                                 value={data.exam_new_distancia_esfera_oi || ''}
-                                onChange={(e) => handleChange('exam_new_distancia_esfera_oi', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_new_distancia_esfera_oi', value); 
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
                             <input
                                 type="text"
                                 value={data.exam_new_distancia_cilindro_oi || ''}
-                                onChange={(e) => handleChange('exam_new_distancia_cilindro_oi', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_new_distancia_cilindro_oi', value); 
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
                             <input
                                 type="text"
                                 value={data.exam_new_distancia_eje_oi || ''}
-                                onChange={(e) => handleChange('exam_new_distancia_eje_oi', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_new_distancia_eje_oi', value); 
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm"
                             />
@@ -228,7 +368,14 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                             <input
                                 type="text"
                                 value={data.exam_new_distancia_dip || ''}
-                                onChange={(e) => handleChange('exam_new_distancia_dip', e.target.value)}
+                                maxLength={4}
+                                minLength={0}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                        handleChange('exam_new_distancia_dip', value); 
+                                    }
+                                }}
                                 disabled={readOnly}
                                 className="border border-gray-300 rounded p-1 text-sm w-20"
                             />
@@ -249,21 +396,42 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                                 <input
                                     type="text"
                                     value={data.exam_new_cerca_esfera_od || ''}
-                                    onChange={(e) => handleChange('exam_new_cerca_esfera_od', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                            handleChange('exam_new_cerca_esfera_od', value); 
+                                        }
+                                    }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
                                 <input
                                     type="text"
                                     value={data.exam_new_cerca_cilindro_od || ''}
-                                    onChange={(e) => handleChange('exam_new_cerca_cilindro_od', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                            handleChange('exam_new_cerca_cilindro_od', value); 
+                                        }
+                                    }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
                                 <input
                                     type="text"
                                     value={data.exam_new_cerca_eje_od || ''}
-                                    onChange={(e) => handleChange('exam_new_cerca_eje_od', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                            handleChange('exam_new_cerca_eje_od', value); 
+                                        }
+                                    }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
@@ -272,21 +440,42 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                                 <input
                                     type="text"
                                     value={data.exam_new_cerca_esfera_oi || ''}
-                                    onChange={(e) => handleChange('exam_new_cerca_esfera_oi', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                            handleChange('exam_new_cerca_esfera_oi', value); 
+                                        }
+                                    }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
                                 <input
                                     type="text"
                                     value={data.exam_new_cerca_cilindro_oi || ''}
-                                    onChange={(e) => handleChange('exam_new_cerca_cilindro_oi', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                            handleChange('exam_new_cerca_cilindro_oi', value); 
+                                        }
+                                    }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
                                 <input
                                     type="text"
                                     value={data.exam_new_cerca_eje_oi || ''}
-                                    onChange={(e) => handleChange('exam_new_cerca_eje_oi', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                            handleChange('exam_new_cerca_eje_oi', value); 
+                                        }
+                                    }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm"
                                 />
@@ -296,7 +485,14 @@ const Refraccion = ({ data, setData, readOnly = false, edadPaciente, initialData
                                 <input
                                     type="text"
                                     value={data.exam_new_cerca_dip || ''}
-                                    onChange={(e) => handleChange('exam_new_cerca_dip', e.target.value)}
+                                    maxLength={4}
+                                    minLength={0}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (/^[-0-9.]*$/.test(value)) { // Validar con regex
+                                            handleChange('exam_new_cerca_dip', value); 
+                                        }
+                                    }}
                                     disabled={readOnly}
                                     className="border border-gray-300 rounded p-1 text-sm w-20"
                                 />

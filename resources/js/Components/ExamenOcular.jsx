@@ -257,7 +257,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_ar_sph_od ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -273,7 +273,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_ar_cyl_od ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -289,7 +289,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_ar_ax_od ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -306,7 +306,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_ar_sph_oi ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -322,7 +322,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_ar_cyl_oi ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -338,8 +338,8 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_ar_ax_oi ?? ''}
-                            maxLength={6}
-                            minLength={0}
+                            maxLength={4}
+                            minLength={0} 
                             onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^[-0-9.]*$/.test(value)) { // Validar con regex
@@ -368,7 +368,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_keratometria_qd1_od ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -384,7 +384,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_keratometria_qd2_od ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -400,7 +400,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_keratometria_eje_od ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -417,7 +417,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_keratometria_qd1_oi ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -433,7 +433,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_keratometria_qd2_oi ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;
@@ -449,7 +449,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                         <input
                             type="text"
                             value={data.examen_keratometria_eje_oi ?? ''}
-                            maxLength={6}
+                            maxLength={4}
                             minLength={0}
                             onChange={(e) => {
                                 const value = e.target.value;

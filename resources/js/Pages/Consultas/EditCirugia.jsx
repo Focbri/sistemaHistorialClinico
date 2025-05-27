@@ -4,158 +4,66 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { useState, useEffect } from 'react';
 
-// Componente para buscar pacientes por DNI (versión simplificada)
-const BuscadorPacienteDNI = ({ onPacienteSelect, pacienteInicial }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(pacienteInicial || null);
-  const [errorBusqueda, setErrorBusqueda] = useState(null);
+export default function EditCirugia({ auth, cirugia, pacientes }) {
+    const { data, setData, put, errors, processing } = useForm({ 
+        paciente_id: cirugia.paciente_id,
+        cita_id: cirugia.cita_id,
+        diagnostico_preoperatorio: cirugia.diagnostico_preoperatorio,
+        diagnostico_postoperatorio: cirugia.diagnostico_postoperatorio,
+        cirugia: cirugia.cirugia,
+        cirujano_principal: cirugia.cirujano_principal,
+        cirujano_ayudante: cirugia.cirujano_ayudante,
+        anestesiologo: cirugia.anestesiologo,
+        tipo_anestesia: cirugia.tipo_anestesia,
+        personal_enfermeria: Array.isArray(cirugia.personal_enfermeria) ? 
+                            cirugia.personal_enfermeria : 
+                            JSON.parse(cirugia.personal_enfermeria || '[]'),
+        hallazgos: cirugia.hallazgos,
+        procedimiento: cirugia.procedimiento,
+        fecha_cirugia: cirugia.fecha_cirugia ? 
+            new Date(cirugia.fecha_cirugia).toISOString().split('T')[0] : 
+            new Date().toISOString().split('T')[0],
+        hora_inicio: cirugia.hora_inicio || '',
+        hora_fin: cirugia.hora_fin || ''
+    });
 
-  // Efecto para manejar cambios en pacienteInicial
-  useEffect(() => {
-    if (pacienteInicial) {
-      setPacienteSeleccionado(pacienteInicial);
-      onPacienteSelect(pacienteInicial);
-    } else {
-      setPacienteSeleccionado(null);
-      onPacienteSelect(null);
-    }
-  }, [pacienteInicial]);
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        put(route('cirugias.update', cirugia.id));
+    };
 
-  const handleBuscarPaciente = async (dni) => {
-    try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-      
-      const response = await fetch('/pacientes/buscar-por-dni', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken
-        },
-        body: JSON.stringify({ dni: dni })
-      });
-
-      if (!response.ok) {
-        throw new Error('Paciente no encontrado');
-      }
-
-      const result = await response.json();
-      
-      if (result.success && result.paciente) {
-        setPacienteSeleccionado(result.paciente);
-        onPacienteSelect(result.paciente);
-        setErrorBusqueda(null);
-      } else {
-        throw new Error(result.message || 'Paciente no encontrado');
-      }
-    } catch (error) {
-      console.error('Error al buscar paciente:', error);
-      setPacienteSeleccionado(null);
-      onPacienteSelect(null);
-      setErrorBusqueda(error.message);
-    }
-  };
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <TextInput
-          type="number"
-          value={searchTerm}
-          max={99999999}
-          maxLength={9}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Ingrese DNI del paciente"
-          className="flex-1"
-        />
-        <button
-          type="button"
-          onClick={() => handleBuscarPaciente(searchTerm)}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+    return (
+        <AuthenticatedLayout
+            user={auth.user}
+            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Editar Cirugía</h2>}
         >
-          Buscar
-        </button>
-      </div>
-
-      {errorBusqueda && (
-        <div className="text-red-500 text-sm">{errorBusqueda}</div>
-      )}
-
-      {pacienteSeleccionado && (
-    <div className="p-4 bg-blue-50 rounded-md border border-blue-100 mt-2">
-        <h3 className="font-bold text-blue-800 mb-2">Información del Paciente</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <p><span className="font-semibold">Nombre:</span> {pacienteSeleccionado.nombres} {pacienteSeleccionado.apellido_paterno} {pacienteSeleccionado.apellido_materno}</p>
-        <p><span className="font-semibold">DNI:</span> {pacienteSeleccionado.dni}</p>
-        <p><span className="font-semibold">Edad:</span> {pacienteSeleccionado.edad} años</p>
-        <p><span className="font-semibold">Teléfono:</span> {pacienteSeleccionado.telefono || 'No registrado'}</p>
-        </div>
-    </div>
-    )}
-    </div>
-  );
-};
-
-export default function CreateCirugia({ auth, paciente, pacientes = [], cita_id }) {
-  const pacienteInicial = paciente || (pacientes.length > 0 ? pacientes[0] : null);
-  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(paciente || null);
-
-  const { data, setData, post, errors, processing } = useForm({ 
-    paciente_id: paciente?.id || '',
-    cita_id: cita_id || '',
-    diagnostico_preoperatorio: '',
-    diagnostico_postoperatorio: '',
-    cirugia: '',
-    cirujano_principal: auth.user.name,
-    cirujano_ayudante: '',
-    anestesiologo: '',
-    tipo_anestesia: '',
-    personal_enfermeria: [],
-    hallazgos: '',
-    procedimiento: '',
-    fecha_cirugia: new Date().toISOString().split('T')[0],
-    hora_inicio: '',
-    hora_fin: ''
-  });
-
-  useEffect(() => {
-    if (pacienteSeleccionado) {
-      setData('paciente_id', pacienteSeleccionado.id);
-    }
-  }, [pacienteSeleccionado]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    post(route('cirugias.store'));
-  };
-
-  return (
-    <AuthenticatedLayout
-      user={auth.user}
-      header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Registrar Nueva Cirugía</h2>}
-    >
-      <Head title="Registrar Cirugía" />
-      
-      <div className="py-12">
-        <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-            <div className="p-6 bg-white border-b border-gray-200">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Selección de Paciente */}
-                <div>
-                  <InputLabel htmlFor="paciente_id" value="Paciente *" />
-                  <BuscadorPacienteDNI 
-                    pacientes={pacientes}
-                    onPacienteSelect={setPacienteSeleccionado}
-                    pacienteInicial={pacienteInicial}  // Añade esta línea
-                  />
-                  <input
-                    type="hidden"
-                    id="paciente_id"
-                    value={data.paciente_id}
-                  />
-                  <InputError message={errors.paciente_id} className="mt-2" />
-                </div>
+            <Head title="Editar Cirugía" />
+            
+            <div className="py-12">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        <div className="p-6 bg-white border-b border-gray-200">
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Selección de Paciente */}
+                                <div>
+                                    <InputLabel htmlFor="paciente_id" value="Paciente *" />
+                                    <select
+                                        id="paciente_id"
+                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                        value={data.paciente_id}
+                                        onChange={(e) => setData('paciente_id', e.target.value)}
+                                        required
+                                        disabled
+                                    >
+                                        {pacientes.map((paciente) => (
+                                            <option key={paciente.id} value={paciente.id}>
+                                                {paciente.nombres} {paciente.apellido_paterno} - {paciente.dni}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <InputError message={errors.paciente_id} className="mt-2" />
+                                </div>
 
                                 {/* Diagnóstico Preoperatorio */}
                                 <div>
@@ -259,7 +167,6 @@ export default function CreateCirugia({ auth, paciente, pacientes = [], cita_id 
                                             className="mt-1 block w-full"
                                             value={data.tipo_anestesia}
                                             onChange={(e) => setData('tipo_anestesia', e.target.value)}
-                                            placeholder="Ej: General, Regional, Local, etc."
                                             required
                                         />
                                         <InputError message={errors.tipo_anestesia} className="mt-2" />
@@ -341,7 +248,7 @@ export default function CreateCirugia({ auth, paciente, pacientes = [], cita_id 
                                         Cancelar
                                     </Link>
                                     <PrimaryButton disabled={processing}>
-                                        {processing ? 'Registrando...' : 'Registrar Cirugía'}
+                                        {processing ? 'Actualizando...' : 'Actualizar Cirugía'}
                                     </PrimaryButton>
                                 </div>
                             </form>

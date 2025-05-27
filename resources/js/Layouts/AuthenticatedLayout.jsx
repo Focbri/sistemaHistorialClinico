@@ -73,11 +73,25 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Consultas
                                 </NavLink>
                                 <NavLink
+                                    href={route('citas.index')}
+                                    active={route().current('citas.index')}
+                                >
+                                    Citas
+                                </NavLink>
+                                <NavLink
+                                    href={route('farmacos.index')}
+                                    active={route().current('farmacos.index')}
+                                >
+                                    Farmacia
+                                </NavLink>
+                                {(user.role === 'admin' || user.role === 'medico') && (
+                                <NavLink
                                     href={route('dashboard.index')}
                                     active={route().current('dashboard.index')}
                                 >
                                     Reportes
                                 </NavLink>
+                                )}
                                 {/* Mostrar opción de "Crear Usuario" solo para administradores */}
                                 {(user.role === 'admin' || user.role === 'root') && (
                                     <NavLink
@@ -204,13 +218,27 @@ export default function AuthenticatedLayout({ header, children }) {
                             Consultas
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
+                            href={route('citas.index')}
+                            active={route().current('citas.index')}
+                        >
+                            Citas
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('farmacos.index')}
+                            active={route().current('farmacos.index')}
+                        >
+                            Farmacia
+                        </ResponsiveNavLink>
+                        {(user.role === 'admin' || user.role === 'medico') && (
+                        <ResponsiveNavLink
                             href={route('dashboard.index')}
                             active={route().current('dashboard.index')}
                         >
                             Reportes
                         </ResponsiveNavLink>
+                        )}
                         {/* Mostrar opción de "Crear Usuario" solo para administradores */}
-                        {(user.role === 'admin' || user.role === 'root') && (
+                        {(user.role === 'admin' || user.role === 'medico') && (
                             <ResponsiveNavLink
                                 href={route('admin.users.index')}
                                 active={route().current('admin.users.index')}
