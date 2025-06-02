@@ -146,6 +146,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
     }, [recetaData]);
 
     useEffect(() => {
+        console.log('Initial props:', { dniProp, pacienteProp });
     if (dniProp && !pacienteEncontrado) {
         setData('dni', dniProp);
         buscarPaciente();
@@ -378,14 +379,11 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
     if (!data.dni) return;
     
     try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (!csrfToken) throw new Error('CSRF token no disponible');
-
         const response = await fetch('/consultas/buscar-paciente', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             },
             body: JSON.stringify({ dni: data.dni.trim() }),
         });
@@ -393,10 +391,8 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         if (!response.ok) throw new Error('Paciente no encontrado');
 
         const result = await response.json();
-        console.log('Respuesta de la API:', result);
         
         if (result.success && result.paciente) {
-            console.log('URL de la imagen recibida:', result.paciente.foto_perfil); // Log de depuración
             setData(prev => ({
                 ...prev,
                 paciente_id: result.paciente.id,
