@@ -14,17 +14,36 @@ export default defineConfig({
         include: ['react', 'react-dom', 'react-modal'],
     },
     server: {
-        host: '0.0.0.0', // Permite conexiones desde la red local
+        host: 'localhost', // Cambiado de 0.0.0.0 para evitar problemas CORS
+        port: 3000, // Puerto explícito para el frontend
         hmr: {
             host: 'localhost',
         },
         proxy: {
-            // Redirige todas las solicitudes que comiencen con "/consultas" al backend de Laravel
-            '/consultas': {
-                target: 'http://localhost:8000', // URL de tu backend Laravel
-                changeOrigin: true, // Cambia el origen de la solicitud al backend
-                secure: false, // Desactiva la verificación de certificados SSL (útil en desarrollo)
+            // Proxy para todas las rutas API
+            '/api': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+                secure: false,
+                ws: true, // Habilita WebSockets
             },
+            // Proxy para autenticación (sanctum/csrf-cookie)
+            '/sanctum': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+            // Proxy para archivos de almacenamiento
+            '/storage': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+            }
         },
     },
+    // Configuración de build para producción
+    build: {
+        outDir: 'public/build',
+        emptyOutDir: true,
+        manifest: true,
+    }
 });

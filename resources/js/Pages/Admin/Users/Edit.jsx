@@ -8,6 +8,7 @@ import TextInput from '@/Components/TextInput';
 export default function Edit({ auth, user }) {
     const { data, setData, put, processing, errors, reset } = useForm({
         name: user.name,
+        apellido: user.apellido, // Añade esta línea
         email: user.email,
         role: user.role,
         password: '',
@@ -46,6 +47,19 @@ export default function Edit({ auth, user }) {
                                         required
                                     />
                                     <InputError message={errors.name} className="mt-2" />
+                                </div>
+                                <div className="mt-4">
+                                    <InputLabel htmlFor="apellido" value="Apellido" />
+                                    <TextInput
+                                        id="apellido"
+                                        name="apellido"
+                                        value={data.apellido}
+                                        className="mt-1 block w-full"
+                                        autoComplete="family-name"
+                                        onChange={(e) => setData('apellido', e.target.value)}
+                                        required
+                                    />
+                                    <InputError message={errors.apellido} className="mt-2" />
                                 </div>
 
                                 <div className="mt-4">

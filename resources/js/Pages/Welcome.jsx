@@ -1,7 +1,15 @@
 import { Head, Link } from '@inertiajs/react'; // Importa Link desde @inertiajs/react
 import logoVO from '../../assets/logoVisualO.jpeg';
+import { useEffect } from 'react';
+import { router } from '@inertiajs/react';
 
-export default function Welcome() {
+export default function ({ auth }) {
+    useEffect(() => {
+        // Si ya está autenticado, redirigir a inicio
+        if (auth.user) {
+            router.visit('/inicio');
+        }
+    }, [auth.user]);
     return (
         <>
             <Head title="Inicio | Visual Ophtalmics" />

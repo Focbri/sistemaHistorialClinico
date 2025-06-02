@@ -33,8 +33,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('inicio', absolute: false))
-            ->with('success', '¡Bienvenido de nuevo!');
+        return redirect()->route('inicio')->with('success', '¡Bienvenido!');
     }
 
     /**

@@ -48,7 +48,7 @@ export default function Inicio({auth}) {
                                     >
                                         <div className="text-5xl mb-4 2xl:text-8xl">📊</div>
                                         <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Reportes</h2>
-                                        <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Generación de reportes estadísticos</p>
+                                        <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Generación de diagnósticos frecuentes</p>
                                     </Link>
                                 )}
                                 

@@ -80,10 +80,13 @@ public function edit(Cirugia $cirugia)
         return redirect()->route('consultas.index')
             ->with('success', 'Cirugía registrada correctamente');
     }
-    public function show(Cirugia $cirugia)
+public function show(Cirugia $cirugia)
 {
+    // Carga las relaciones paciente y user
+    $cirugia->load(['paciente', 'user']);
+    
     return inertia('Consultas/ShowCirugia', [
-        'cirugia' => $cirugia->load('paciente', 'user')
+        'cirugia' => $cirugia
     ]);
 }
 
@@ -139,5 +142,22 @@ public function update(Request $request, Cirugia $cirugia)
 
     return redirect()->route('consultas.index', $cirugia->id)
         ->with('success', 'Cirugía actualizada correctamente');
+}
+
+public function destroy(Cirugia $cirugia)
+{
+    if (Auth::user()->role != 'admin') {
+        abort(403);
+    }
+
+    try {
+        // Eliminar sin cargar relaciones
+        $cirugia->delete();
+        
+        return redirect()->route('consultas.index')
+            ->with('success', 'Cirugía eliminada');
+    } catch (\Exception $e) {
+        return back()->with('error', 'Error al eliminar');
+    }
 }
 }

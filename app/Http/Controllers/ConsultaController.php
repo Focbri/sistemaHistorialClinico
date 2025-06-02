@@ -127,6 +127,9 @@ class ConsultaController extends Controller
                 'tipo_consulta',
                 'medico_id'
             ]),
+            'auth' => [
+            'user' => Auth::user()
+        ],
         ]);
     }
     public function create(Request $request){

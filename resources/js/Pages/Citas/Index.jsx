@@ -1235,7 +1235,7 @@ const handleDelete = () => {
         )}
       </div>
 
-      <style jsx="true" global>{`
+      <style jsx>{`
         .react-calendar {
           width: 100%;
           border: 1px solid #e2e8f0;

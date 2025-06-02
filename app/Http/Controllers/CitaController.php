@@ -89,7 +89,10 @@ public function index(Request $request){
                         ->orderBy('name')
                         ->get(),
             'citas' => $citas,
-            'filters' => $request->only(['sex', 'min_age', 'max_age', 'start_date', 'end_date', 'procedencia', 'terms'])
+            'filters' => $request->only(['sex', 'min_age', 'max_age', 'start_date', 'end_date', 'procedencia', 'terms']),
+            'auth' => [
+                'user' => Auth::user()
+            ],
         ]);
     }
 

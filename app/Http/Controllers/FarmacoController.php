@@ -8,6 +8,7 @@ use App\Models\Stock;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\FarmacoResource;
 
 
@@ -27,6 +28,9 @@ class FarmacoController extends Controller
     return Inertia::render('Farmacos/Index', [
         'farmacos' => $farmacos,
         'filters' => $request->only(['search']),
+        'auth' => [
+            'user' => Auth::user()
+        ],
     ]);
 }
     public function create()

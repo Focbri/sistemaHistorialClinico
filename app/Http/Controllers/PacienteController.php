@@ -18,7 +18,7 @@ class PacienteController extends Controller
 { 
     public function index(Request $request)
 {
-    $query = Paciente::query()
+    $query = Paciente::query() 
         ->when($request->filled('dni'), function($q) use ($request) {
             $q->where('dni', 'like', '%'.$request->dni.'%');
         })
@@ -54,13 +54,19 @@ class PacienteController extends Controller
             'endDate',
             'procedencia'
         ]),
+        'auth' => [
+            'user' => Auth::user()
+        ],
     ]);
 }
 
     public function create(Request $request)
     {
         return Inertia::render('Pacientes/Create', [
-            'dni' => $request->query('dni', '') // Pasa el DNI como prop
+            'dni' => $request->query('dni', ''),
+            'auth' => [
+            'user' => Auth::user()
+        ],
         ]);
     }
 

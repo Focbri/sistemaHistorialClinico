@@ -33,21 +33,31 @@ export default function ConsultasIndex({ auth, consultas, links, filters }) {
     // Función para eliminar una consulta (con modal de confirmación)
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [consultaToDelete, setConsultaToDelete] = useState(null);
+    const [deleteType, setDeleteType] = useState(null); // 'consulta' o 'cirugia'
 
-    const openDeleteModal = (consultaId) => {
-        setConsultaToDelete(consultaId);
+    const openDeleteModal = (itemId, isCirugia) => {
+        setConsultaToDelete(itemId);
+        setDeleteType(isCirugia ? 'cirugia' : 'consulta');
         setIsDeleteModalOpen(true);
     };
 
     const confirmDelete = () => {
-        if (consultaToDelete) {
-            router.delete(route('consultas.destroy', consultaToDelete), {
-                onSuccess: () => {
-                    setIsDeleteModalOpen(false);
-                }
-            });
-        }
-    };
+    if (consultaToDelete) {
+        // Determinar si es una consulta o cirugía
+        const isCirugia = !consultas.data.find(c => c.id === consultaToDelete)?.tipo_consulta;
+        
+        const routeName = isCirugia ? 'cirugias.destroy' : 'consultas.destroy';
+        
+        router.delete(route(routeName, consultaToDelete), {
+            onSuccess: () => {
+                setIsDeleteModalOpen(false);
+            },
+            onError: () => {
+                alert('Error al eliminar');
+            }
+        });
+    }
+};
     //FILTRO
 
 const handleApplyFilters = async (appliedFilters) => {
@@ -438,7 +448,7 @@ const descargarPDFConsulta = async (consultaId) => {
                             )}
                             {isAdmin && (
                                 <button
-                                    onClick={() => openDeleteModal(item.id)}
+                                    onClick={() => openDeleteModal(item.id, !item.tipo_consulta)}
                                     className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zM9 17h2V8H9zm4 0h2V8h-2zM7 6v13z"></path></svg>

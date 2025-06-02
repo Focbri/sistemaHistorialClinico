@@ -204,7 +204,7 @@ const AdvancedFilters = ({
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
       <div className="p-6 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Seleccione un Filtro</h3>
+        <h3 className="text-lg font-medium text-gray-900 2xl:text-2xl">Seleccione un Filtro</h3>
       </div>
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -218,9 +218,9 @@ const AdvancedFilters = ({
                       type="checkbox"
                       checked={filters.activeFilters.sex}
                       onChange={() => toggleFilter('sex')}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      className="h-4 w-4 2xl:h-5 2xl:w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Sexo</span>
+                    <span className="ml-2 text-sm text-gray-700 2xl:text-lg">Sexo</span>
                   </label>
                 )}
                 
@@ -230,9 +230,9 @@ const AdvancedFilters = ({
                       type="checkbox"
                       checked={filters.activeFilters.age}
                       onChange={() => toggleFilter('age')}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      className="h-4 w-4 2xl:h-5 2xl:w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Edad</span>
+                    <span className="ml-2 text-sm text-gray-700 2xl:text-lg">Edad</span>
                   </label>
                 )}
                 
@@ -242,9 +242,9 @@ const AdvancedFilters = ({
                       type="checkbox"
                       checked={filters.activeFilters.dateRange}
                       onChange={() => toggleFilter('dateRange')}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      className="h-4 w-4 2xl:h-5 2xl:w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Rango Fechas</span>
+                    <span className="ml-2 text-sm text-gray-700 2xl:text-lg">Rango Fechas</span>
                   </label>
                 )}
                 
@@ -254,9 +254,9 @@ const AdvancedFilters = ({
                     type="checkbox"
                     checked={filters.activeFilters.procedencia}
                     onChange={() => toggleFilter('procedencia')}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    className="h-4 w-4 2xl:h-5 2xl:w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Procedencia</span>
+                    <span className="ml-2 text-sm text-gray-700 2xl:text-lg">Procedencia</span>
                 </label>
                 )}
                 
@@ -266,9 +266,9 @@ const AdvancedFilters = ({
                       type="checkbox"
                       checked={filters.activeFilters.terms}
                       onChange={() => toggleFilter('terms')}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      className="h-4 w-4 2xl:h-5 2xl:w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Términos</span>
+                    <span className="ml-2 text-sm text-gray-700 2xl:text-lg">Términos</span>
                   </label>
                 )}
               </div>
@@ -278,7 +278,7 @@ const AdvancedFilters = ({
           {/* Sex filter */}
           {!disabledSections.sex && filters.activeFilters.sex && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Sexo</label>
+              <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Sexo</label>
               <select
                 name="sex"
                 value={filters.sex}
@@ -296,7 +296,7 @@ const AdvancedFilters = ({
           {!disabledSections.age && filters.activeFilters.age && (
             <>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Edad mínima</label>
+                <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Edad mínima</label>
                 <input
                   type="number"
                   name="minAge"
@@ -308,7 +308,7 @@ const AdvancedFilters = ({
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Edad máxima</label>
+                <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Edad máxima</label>
                 <input
                   type="number"
                   name="maxAge"
@@ -326,7 +326,7 @@ const AdvancedFilters = ({
           {!disabledSections.dateRange && filters.activeFilters.dateRange && (
             <>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Fecha inicial</label>
+                <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Fecha inicial</label>
                 <input
                   type="date"
                   name="startDate"
@@ -336,7 +336,7 @@ const AdvancedFilters = ({
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Fecha final</label>
+                <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Fecha final</label>
                 <input
                   type="date"
                   name="endDate"
@@ -350,7 +350,7 @@ const AdvancedFilters = ({
           
         {!disabledSections.procedencia && filters.activeFilters.procedencia && (
         <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Procedencia</label>
+            <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Procedencia</label>
             <select
             name="procedencia"
             value={filters.procedencia}
@@ -408,7 +408,7 @@ const AdvancedFilters = ({
           {/* Terms filter */}
           {!disabledSections.terms && filters.activeFilters.terms && (
             <div className="col-span-2 space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Buscar términos</label>
+              <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Buscar términos</label>
               <div className="relative">
                 <input
                   type="text"
@@ -448,7 +448,7 @@ const AdvancedFilters = ({
               {/* Selected terms */}
               {filters.selectedTerms.length > 0 && (
                 <div className="mt-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Términos seleccionados</label>
+                  <label className="block text-sm font-medium text-gray-700 2xl:text-lg mb-1">Términos seleccionados</label>
                   <div className="flex flex-wrap gap-2">
                     {filters.selectedTerms.map((term, index) => (
                       <span 
@@ -487,18 +487,18 @@ const AdvancedFilters = ({
             <button
               onClick={resetFilters}
               disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 2xl:text-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Limpiar
             </button>
             <button
               onClick={applyFilters}
               disabled={loading || !isFormValid}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex 2xl:text-lg items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 2xl:h-5 2xl:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>

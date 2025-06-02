@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -86,7 +87,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         
         // Solo admin puede editar, y no puede editar a otros admins
-        if (!Auth::check() || Auth::user()->role !== 'admin' || $user->role === 'admin') {
+        if (!Auth::check() || Auth::user()->role !== 'admin') {
             abort(403);
         }
 
@@ -100,9 +101,10 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         
-        if (!Auth::check() || Auth::user()->role !== 'admin' || $user->role === 'admin') {
+        if (!Auth::check() || Auth::user()->role !== 'admin') {
             abort(403);
         }
+        Log::info('Intentando actualizar usuario', ['id' => $id, 'request' => $request->all()]);
 
         $request->validate([
             'name' => 'required|string|max:255',

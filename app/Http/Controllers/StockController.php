@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\Stock;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\FarmacoResource;
@@ -26,7 +27,10 @@ class StockController extends Controller
                 'visual' => 'Visual',
                 'insamed' => 'Insamed',
                 's_p' => 'S&P'
-            ]
+            ],
+            'auth' => [
+                'user' => Auth::user()
+            ],
         ]);
     }
 
