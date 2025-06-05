@@ -128,7 +128,8 @@ class RefraccionController extends Controller
     public function generarPDF($id)
     {
         try {
-            $refraccion = Refraccion::with(['consulta.paciente'])->findOrFail($id);
+            $refraccion = Refraccion::with(['consulta.paciente', 'consulta.medico'])->findOrFail($id);
+            
 
             $pdf = Pdf::loadView('refracciones.pdf', [
                 'refraccion' => $refraccion,

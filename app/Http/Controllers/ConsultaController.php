@@ -1611,13 +1611,21 @@ protected function normalizarUrlImagen($path)
                 'nombres' => $consulta->paciente->nombres,
                 'apellido_paterno' => $consulta->paciente->apellido_paterno,
                 'apellido_materno' => $consulta->paciente->apellido_materno,
+                'fecha_nacimiento' => $consulta->paciente->fecha_nacimiento->format('d/m/Y'),
                 'dni' => $consulta->paciente->dni,
+                'tipo_documento' => $consulta->paciente->tipo_documento,
                 'edad' => $consulta->paciente->edad,
                 'sexo' => $consulta->paciente->sexo,
-                'telefono' => $consulta->paciente->telefono,
-                'email' => $consulta->paciente->email,
+                'peso' => $consulta->paciente->peso,
+                'estado_civil' => $consulta->paciente->estado_civil,
+                'ocupacion' => $consulta->paciente->ocupacion,
+                'procedencia' => $consulta->paciente->procedencia,
                 'direccion' => $consulta->paciente->direccion,
-                'fecha_nacimiento' => $consulta->paciente->fecha_nacimiento,
+                'telefono' => $consulta->paciente->telefono,
+                'acompañante' => $consulta->paciente->acompañante,
+                'referido' => $consulta->paciente->referido,
+                'foto_perfil' => $this->normalizarUrlImagen($consulta->paciente->foto_perfil),
+                'email' => $consulta->paciente->email,                
             ],
             'consulta' => array_merge(
                 $consulta->only([
@@ -1670,8 +1678,12 @@ protected function normalizarUrlImagen($path)
                     'comentario',
                     'evoluciones',
                     'tipo_consulta',
+                    'codigo_historial'
                 ]),
-                ['examen' => $examenData] // Incluye todos los datos del examen con sus nombres reales
+                [
+                'examen' => $examenData,
+                'created_at' => $consulta->created_at,
+                'updated_at' => $consulta->updated_at ]// Incluye todos los datos del examen con sus nombres reales
             ),
             'medico' => [
                 'name' => $consulta->medico->name ?? 'Médico no asignado',

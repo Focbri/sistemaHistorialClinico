@@ -9,190 +9,479 @@
         .header h1 { font-size: 18px; margin: 0; }
         .header p { font-size: 12px; margin: 5px 0; }
         .section { margin-bottom: 15px; }
-        .section-title { background-color: #f0f0f0; padding: 5px; font-weight: bold; }
+        .section-title {
+            font-weight: bold;
+            padding-bottom: 0px;
+            margin-bottom: 5px;
+            display: inline-block; /* Hace que el elemento solo ocupe el ancho del contenido */
+            border-bottom: 2px solid #000; /* Línea inferior como subrayado */
+        }
+        .espacio-titulo {
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
         .two-columns { display: flex; justify-content: space-between; }
         .column { width: 48%; }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 5px 0; }
         table, th, td { border: 1px solid #ddd; }
-        th, td { padding: 5px; text-align: left; }
+        th, td { padding: 2px; text-align: left; }
         .signature-area { margin-top: 50px; display: flex; justify-content: space-between; }
         .page-break { page-break-after: always; }
+        .table-paciente { width: 100%; border-collapse: collapse; }
+        .texto-parrafo{
+            display: block;
+            margin: 5px 0 10px 0; /* Margen superior e inferior mejorado */
+            padding: 0;
+            font-size: 12px;
+            border-bottom: 1px dotted #000; /* Línea inferior como subrayado */
+            min-height: 16px; /* Altura mínima garantizada */
+            padding: 2px 0;   /* Espacio interno superior/inferior */
+        }
+        hr {
+            margin: 2px 0;  /* Reduce el margen vertical */
+            padding: 0;
+            border: none;
+            border-top: 1px solid #ddd;  /* Línea más delgada */
+            height: 1px;  /* Altura exacta */
+        }
+        .texto-centrado{
+            text-align: center;
+        }
+        .exam-table td, .exam-table th {
+        min-height: 20px; /* Altura mínima para todas las celdas */
+        }
+        
+        .exam-table td p:empty::before {
+            content: "-"; /* Mostrar un guión cuando no hay contenido */
+            color: #999; /* Color gris para el marcador de vacío */
+        }
+        
+        .exam-table td p {
+            min-height: 16px; /* Altura mínima para el párrafo dentro de la celda */
+            margin: 0; /* Eliminar márgenes para evitar espacios desiguales */
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>VISUAL OPHTHALMICS</h1>
-        <p>Fecha: {{ now()->format('d/m/Y H:i') }}</p>
-        <p>Tipo de Consulta: {{ $consulta['tipo_consulta'] ?? 'No especificado' }}</p>
+        <table style="border: none;">
+            <tr style="border: none;">
+                <td style="width: 30%; text-align: left; border: none;">
+                    <img src="{{ public_path('img/logoVisualOsf.png') }}" alt="Logo" style="max-width: 150px; max-height: 80px;">
+                </td>
+                <td style="width: 40%; text-align: center; vertical-align: bottom; border: none;">
+                    <h1 style="display: inline-block; border-bottom: 2px solid #000; border: none;">HISTORIA CLÍNICA</h1>
+                </td>
+                <td style="width: 30%; text-align: right; border: none;">
+                    <p style="font-size: 18px; border: none;">{{ is_array($consulta['codigo_historial']) ? implode(', ', $consulta['codigo_historial']) : $consulta['codigo_historial'] }}</p>
+                </td>
+            </tr>
+        </table>
+        <table style="border: none;">
+            <tr>
+                <td style="width: 30%; border: none;">
+                    <p style="border: none;"></p>
+                </td>
+                <td style="width: 40%; text-align: center; border: none;">
+                    <p style="border: none;">Tipo de Consulta: {{ $consulta['tipo_consulta'] ?? 'No especificado' }}</p>
+                </td>
+                <td style="width: 30%; text-align: right; border: none;">
+                    <p style="border: none;">Fecha: 
+                        @if(isset($consulta['created_at']) && isset($consulta['updated_at']))
+                            {{ max(\Carbon\Carbon::parse($consulta['created_at']), \Carbon\Carbon::parse($consulta['updated_at']))->format('d/m/Y') }}
+                        @elseif(isset($consulta['created_at']))
+                            {{ \Carbon\Carbon::parse($consulta['created_at'])->format('d/m/Y') }}
+                        @else
+                            {{ now()->format('d/m/Y') }}
+                        @endif
+                    </p>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <!-- Datos del Paciente (SIEMPRE) -->
     <div class="section">
         <div class="section-title">DATOS DEL PACIENTE</div>
-        <div class="two-columns">
-            <div class="column">
-                <p><strong>Nombre:</strong> {{ $paciente['nombres'] ?? '' }} {{ $paciente['apellido_paterno'] ?? '' }} {{ $paciente['apellido_materno'] ?? '' }}</p>
-                <p><strong>DNI:</strong> {{ $paciente['dni'] ?? 'No especificado' }}</p>
-                <p><strong>Edad:</strong> {{ $paciente['edad'] ?? '' }} años</p>
-                <p><strong>Sexo:</strong> {{ $paciente['sexo'] ?? '' }}</p>
-            </div>
-            <div class="column">
-                <p><strong>Teléfono:</strong> {{ $paciente['telefono'] ?? 'No especificado' }}</p>
-                <p><strong>Email:</strong> {{ $paciente['email'] ?? 'No especificado' }}</p>
-                <p><strong>Dirección:</strong> {{ $paciente['direccion'] ?? 'No especificado' }}</p>
-                <p><strong>Fecha Nac.:</strong> {{ $paciente['fecha_nacimiento'] ?? 'No especificado' }}</p>
-            </div>
-        </div>
+            <table class="table-paciente" style="width: 100%; border: none; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 40%;  vertical-align: top; border: none">
+                        <p><strong>Apellido Paterno:</strong> {{ $paciente['apellido_paterno'] ?? '' }}</p>
+                        <p><strong>Apellido Materno:</strong> {{ $paciente['apellido_materno'] ?? '' }}</p>
+                        <p><strong>Nombre:</strong> {{ $paciente['nombres'] ?? '' }}</p>
+                    </td>
+                    <td style="width: 30%; vertical-align: top; border: none">
+                        <p><strong>Fecha Nac.:</strong> {{ $paciente['fecha_nacimiento'] ?? 'No especificado' }}</p>
+                        <p><strong>Edad:</strong> {{ $paciente['edad'] ?? '' }} años</p>
+                        <p><strong>Peso:</strong> {{ $paciente['peso'] ?? '' }} kg</p>
+                    </td>
+                    <td style="width: 30%;  vertical-align: top; border: none">
+                        <p><strong>{{ $paciente['tipo_documento'] }}:</strong> {{ $paciente['dni'] ?? 'No especificado' }}</p>
+                        <p><strong>Sexo:</strong> {{ $paciente['sexo'] ?? '' }}</p>
+                    </td>
+                </tr>
+            </table>
+            <hr>
+            <table class="table-paciente" style="width: 100%; border: none; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 40%;  vertical-align: top; border: none">
+                        <p><strong>Estado Civil:</strong> {{ $paciente['estado_civil'] ?? 'No especificado' }}</p>
+                        <p><strong>Ocupación:</strong> {{ $paciente['ocupacion'] ?? 'No especificado' }}</p>
+                        <p><strong>Procedencia:</strong> {{ $paciente['procedencia'] ?? 'No especificado' }}</p>
+                        <p><strong>Domicilio:</strong> {{ $paciente['direccion'] ?? 'No especificado' }}</p>
+                    </td>
+                    <td style="width: 30%;  vertical-align: top; border: none">
+                        <p><strong>Teléfono:</strong> {{ $paciente['telefono'] ?? 'No especificado' }}</p>
+                        <p><strong>Acompañante:</strong> {{ $paciente['acompañante'] ?? 'No especificado' }}</p>
+                        <p><strong>Referido por:</strong> {{ $paciente['referido'] ?? 'No especificado' }}</p>
+                        <p><strong>Email:</strong> {{ $paciente['email'] ?? 'No especificado' }}</p>
+                    </td>
+                </tr>
+            </table>
     </div>
 
     @if($consulta['tipo_consulta'] == 'inicio')
         <!-- Antecedentes SOLO INICIO -->
         <div class="section">
             <div class="section-title">ANTECEDENTES PERSONALES</div>
-            @if(!empty($consulta['antecedentes_personales_hta']))
-            <p><strong>HTA:</strong> {{ is_array($consulta['antecedentes_personales_hta']) ? implode(', ', $consulta['antecedentes_personales_hta']) : $consulta['antecedentes_personales_hta'] }}</p>
-            @endif
-            @if(!empty($consulta['antecedentes_personales_dm']))
-            <p><strong>DM:</strong> {{ is_array($consulta['antecedentes_personales_dm']) ? implode(', ', $consulta['antecedentes_personales_dm']) : $consulta['antecedentes_personales_dm'] }}</p>
-            @endif
-            @if(!empty($consulta['antecedentes_personales_alergias']))
-            <p><strong>ALERGIAS:</strong> {{ is_array($consulta['antecedentes_personales_alergias']) ? implode(', ', $consulta['antecedentes_personales_alergias']) : $consulta['antecedentes_personales_alergias'] }}</p>
-            @endif
-            @if(!empty($consulta['antecedentes_personales_otros']))
-            <p><strong>OTROS:</strong> {{ is_array($consulta['antecedentes_personales_otros']) ? implode(', ', $consulta['antecedentes_personales_otros']) : $consulta['antecedentes_personales_otros'] }}</p>
-            @endif
-            
-            <div class="section-title">FAMILIARES</div>
-            @if(!empty($consulta['antecedentes_patologicos_familiares']))
-            <p><strong>Familiares:</strong> {{ is_array($consulta['antecedentes_patologicos_familiares']) ? implode(', ', $consulta['antecedentes_patologicos_familiares']) : $consulta['antecedentes_patologicos_familiares'] }}</p>
-            @endif
-            
-            <div class="section-title">CIRUGIAS PREVIAS</div>
-            @if(!empty($consulta['cirugias_previas']))
-            <p><strong>Cirugías Previas:</strong> {{ is_array($consulta['cirugias_previas']) ? implode(', ', $consulta['cirugias_previas']) : $consulta['cirugias_previas'] }}</p>
-            @endif
+
+            <table class="exam-table" width="100%" style="border-color: red;"> 
+                <thead>
+                    <tr>
+                        <th class="texto-centrado" style="border-color: #000;">HTA</th>
+                        <th class="texto-centrado" style="border-color: #000;">DM</th>
+                        <th class="texto-centrado" style="border-color: #000;">Alergias</th>
+                        <th class="texto-centrado" style="border-color: #000;">Otros</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['antecedentes_personales_hta']) ? implode(', ', $consulta['antecedentes_personales_hta']) : $consulta['antecedentes_personales_hta'] ?? '' }}</p></td>
+                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['antecedentes_personales_dm']) ? implode(', ', $consulta['antecedentes_personales_dm']) : $consulta['antecedentes_personales_dm'] ?? '' }}</p></td>
+                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['antecedentes_personales_alergias']) ? implode(', ', $consulta['antecedentes_personales_alergias']) : $consulta['antecedentes_personales_alergias'] ?? '' }}</p></td>
+                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['antecedentes_personales_otros']) ? implode(', ', $consulta['antecedentes_personales_otros']) : $consulta['antecedentes_personales_otros'] ?? '' }}</p></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="section-title espacio-titulo">ANTECEDENTES PATOLÓGICOS FAMILIARES</div>
+            <p class="texto-parrafo">{{ is_array($consulta['antecedentes_patologicos_familiares']) ? implode(', ', $consulta['antecedentes_patologicos_familiares']) : $consulta['antecedentes_patologicos_familiares'] ?? '' }}</p>
+
+            <div class="section-title espacio-titulo">CIRUGIAS PREVIAS</div>
+            <p class="texto-parrafo">{{ is_array($consulta['cirugias_previas']) ? implode(', ', $consulta['cirugias_previas']) : $consulta['cirugias_previas'] ?? '' }}</p>
+
         </div>
 
         <!-- Motivo de Consulta SOLO INICIO -->
         <div class="section">
             <div class="section-title">MOTIVO DE CONSULTA</div>
-            @if(!empty($consulta['motivo_consulta_inicio']))
-            <p><strong>Inicio:</strong> {{ is_array($consulta['motivo_consulta_inicio']) ? implode(', ', $consulta['motivo_consulta_inicio']) : $consulta['motivo_consulta_inicio'] }}</p>
-            @endif
-            @if(!empty($consulta['motivo_consulta_signos']))
-            <p><strong>Signos:</strong> {{ is_array($consulta['motivo_consulta_signos']) ? implode(', ', $consulta['motivo_consulta_signos']) : $consulta['motivo_consulta_signos'] }}</p>
-            @endif
-            @if(!empty($consulta['motivo_consulta_enfermedad']))
-            <p><strong>Enfermedad:</strong> {{ is_array($consulta['motivo_consulta_enfermedad']) ? implode(', ', $consulta['motivo_consulta_enfermedad']) : $consulta['motivo_consulta_enfermedad'] }}</p>
-            @endif
-            @if(!empty($consulta['motivo_consulta_otros']))
-            <p><strong>Otros:</strong> {{ is_array($consulta['motivo_consulta_otros']) ? implode(', ', $consulta['motivo_consulta_otros']) : $consulta['motivo_consulta_otros'] }}</p>
-            @endif
+            <table class="exam-table" width="100%"> 
+                <thead>
+                    <tr>
+                        <th class="texto-centrado" style="border-color: #000;">Inicio</th>
+                        <th class="texto-centrado" style="border-color: #000;">Signos</th>
+                        <th class="texto-centrado" style="border-color: #000;">Enfermedad</th>
+                        <th class="texto-centrado" style="border-color: #000;">Otros</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['motivo_consulta_inicio']) ? implode(', ', $consulta['motivo_consulta_inicio']) : $consulta['motivo_consulta_inicio'] ?? '' }}</p></td>
+                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['motivo_consulta_signos']) ? implode(', ', $consulta['motivo_consulta_signos']) : $consulta['motivo_consulta_signos'] ?? '' }}</p></td>
+                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['motivo_consulta_enfermedad']) ? implode(', ', $consulta['motivo_consulta_enfermedad']) : $consulta['motivo_consulta_enfermedad'] ?? '' }}</p></td>
+                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['motivo_consulta_otros']) ? implode(', ', $consulta['motivo_consulta_otros']) : $consulta['motivo_consulta_otros'] ?? '' }}</p></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     @endif
 
     @if($consulta['tipo_consulta'] == 'evolucion')
         <!-- EVOLUCIONES SOLO EVOLUCION-->
         <div class="section">
-            <div class="section-title">EVOLUCIONES</div>
-            @if(!empty($consulta['evoluciones']))
-            <p><strong>Evoluciones:</strong> {{ is_array($consulta['evoluciones']) ? implode(', ', $consulta['evoluciones']) : $consulta['evoluciones'] }}</p>
-            @endif
+            <div class="section-title">EVOLUCIONES</div>            
+            <p>{{ is_array($consulta['evoluciones']) ? implode(', ', $consulta['evoluciones']) : $consulta['evoluciones'] ?? '' }}</p>
         </div>
     @endif
 
     <!-- Examen Ocular (AMBOS) -->
-    @if(!empty($consulta['examen']))
+    @if(!empty($consulta['examen']) && 
+    (isset($consulta['examen']['examen_av_sc_od']) || 
+     isset($consulta['examen']['examen_av_cae_od']) ||
+     isset($consulta['examen']['examen_av_cc_od']) ||
+     isset($consulta['examen']['examen_av_sc_oi']) ||
+     isset($consulta['examen']['examen_av_cae_oi']) ||
+     isset($consulta['examen']['examen_av_cc_oi']) ||
+     isset($consulta['examen']['examen_pi_tipo']) ||
+     isset($consulta['examen']['examen_pi_od']) ||
+     isset($consulta['examen']['examen_pi_oi']) ||
+     isset($consulta['examen']['examen_ar_sph_od']) ||
+     isset($consulta['examen']['examen_ar_cyl_od']) ||
+     isset($consulta['examen']['examen_ar_ax_od']) ||
+     isset($consulta['examen']['examen_ar_sph_oi']) ||
+     isset($consulta['examen']['examen_ar_cyl_oi']) ||
+     isset($consulta['examen']['examen_ar_ax_oi']) ||
+     isset($consulta['examen']['examen_keratometria_qd1_od']) ||
+     isset($consulta['examen']['examen_keratometria_qd2_od']) ||
+     isset($consulta['examen']['examen_keratometria_eje_od']) ||
+     isset($consulta['examen']['examen_keratometria_qd1_oi']) ||
+     isset($consulta['examen']['examen_keratometria_qd2_oi']) ||
+     isset($consulta['examen']['examen_keratometria_eje_oi']))
+    )
     <div class="section">
         <div class="section-title">EXAMEN OCULAR</div>
-            <!-- AV (Agudeza Visual) -->
-            <p><strong>AV SC OD:</strong> {{ $consulta['examen']['examen_av_sc_od'] ?? 'No registrado' }}</p>
-            <p><strong>AV CAE OD:</strong> {{ $consulta['examen']['examen_av_cae_od'] ?? 'No registrado' }}</p>
-            <p><strong>AV CC OD:</strong> {{ $consulta['examen']['examen_av_cc_od'] ?? 'No registrado' }}</p>
-            <p><strong>AV SC OI:</strong> {{ $consulta['examen']['examen_av_sc_oi'] ?? 'No registrado' }}</p>
-            <p><strong>AV CAE OI:</strong> {{ $consulta['examen']['examen_av_cae_oi'] ?? 'No registrado' }}</p>
-            <p><strong>AV CC OI:</strong> {{ $consulta['examen']['examen_av_cc_oi'] ?? 'No registrado' }}</p>
-
-            <!-- PI (Presión Intraocular) -->
-            <p><strong>PI TIPO:</strong> {{ $consulta['examen']['examen_pi_tipo'] ?? 'No registrado' }}</p>
-            <p><strong>PI OD:</strong> {{ $consulta['examen']['examen_pi_od'] ?? 'No registrado' }}</p>
-            <p><strong>PI OI:</strong> {{ $consulta['examen']['examen_pi_oi'] ?? 'No registrado' }}</p>
-
-            <!-- Autorefractometria -->
-            <p><strong>AR SPH OD:</strong> {{ $consulta['examen']['examen_ar_sph_od'] ?? 'No registrado' }}</p>
-            <p><strong>AR CYL OD:</strong> {{ $consulta['examen']['examen_ar_cyl_od'] ?? 'No registrado' }}</p>
-            <p><strong>AR AX OD:</strong> {{ $consulta['examen']['examen_ar_ax_od'] ?? 'No registrado' }}</p>
-            <p><strong>AR SPH OI:</strong> {{ $consulta['examen']['examen_ar_sph_oi'] ?? 'No registrado' }}</p>
-            <p><strong>AR CYL OI:</strong> {{ $consulta['examen']['examen_ar_cyl_oi'] ?? 'No registrado' }}</p>
-            <p><strong>AR AX OI:</strong> {{ $consulta['examen']['examen_ar_ax_oi'] ?? 'No registrado' }}</p>
-
-            <!-- Queratometría -->
-            <p><strong>QD1 OD:</strong> {{ $consulta['examen']['examen_keratometria_qd1_od'] ?? 'No registrado' }}</p>
-            <p><strong>QD2 OD:</strong> {{ $consulta['examen']['examen_keratometria_qd2_od'] ?? 'No registrado' }}</p>
-            <p><strong>EJE OD:</strong> {{ $consulta['examen']['examen_keratometria_eje_od'] ?? 'No registrado' }}</p>
-            <p><strong>QD1 OI:</strong> {{ $consulta['examen']['examen_keratometria_qd1_oi'] ?? 'No registrado' }}</p>
-            <p><strong>QD2 OI:</strong> {{ $consulta['examen']['examen_keratometria_qd2_oi'] ?? 'No registrado' }}</p>
-            <p><strong>EJE OI:</strong> {{ $consulta['examen']['examen_keratometria_eje_oi'] ?? 'No registrado' }}</p>
+             <!-- Primera parte del examen ocular -->
+        <table width="100%" cellspacing="0" cellpadding="0" style="border: none;">
+            <tr style="border: none;">
+                <!-- Primera tabla -->
+                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
+                    <p class="texto-centrado" style="font-weight: bold;">Agudeza Visual</p>
+                    <table class="exam-table" width="100%" style="border: none;"> 
+                        <thead>
+                            <tr>
+                                <th style="border-color: #000;"></th>
+                                <th class="texto-centrado" style="border-color: #000;">SC</th>
+                                <th class="texto-centrado" style="border-color: #000;">CAE</th>
+                                <th class="texto-centrado" style="border-color: #000;">CC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="texto-centrado" style="border-color: #000;">OD</td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_av_sc_od'] ?? '' }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_av_cae_od'] ?? ''  }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_av_cc_od'] ?? ''  }}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="texto-centrado" style="border-color: #000;">OI</td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_av_sc_oi'] ?? ''  }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_av_cae_oi'] ?? ''  }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_av_cc_oi'] ?? ''  }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+                
+                <!-- Espacio entre tablas -->
+                <td width="4%" style="border: none;"></td>
+                
+                <!-- Segunda tabla -->
+                <td width="48%" valign="top" style="padding-left: 15px; border: none;">
+                    <p class="texto-centrado"><strong>Presión Intraocular: {{ $consulta['examen']['examen_pi_tipo'] ?? 'No registrado' }}</strong></p>
+                    <table class="exam-table" width="100%" style="border: none;"> 
+                        <thead>
+                            <tr>
+                                <th class="texto-centrado" style="border-color: #000;">OD</th>
+                                <th class="texto-centrado" style="border-color: #000;">OI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_pi_od'] ?? ''  }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_pi_oi'] ?? ''  }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <!--Segunda parte del examen ocular-->
+        <table width="100%" cellspacing="0" cellpadding="0" style="border: none;">
+            <tr style="border: none;">
+                <!-- Primera tabla -->
+                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
+                    <p class="texto-centrado" style="font-weight: bold;">Autorefractometría</p>
+                    <table class="exam-table" width="100%"> 
+                        <thead>
+                            <tr>
+                                <th style="border-color: #000;"></th>
+                                <th class="texto-centrado" style="border-color: #000;">Sph</th>
+                                <th class="texto-centrado" style="border-color: #000;">Cyl</th>
+                                <th class="texto-centrado" style="border-color: #000;">Ax</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="texto-centrado" style="border-color: #000;">OD</td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_ar_sph_od'] ?? ''  }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_ar_cyl_od'] ?? ''  }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_ar_ax_od'] ?? ''  }}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="texto-centrado" style="border-color: #000;">OI</td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_ar_sph_oi'] ?? ''  }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_ar_cyl_oi'] ?? ''  }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_ar_ax_oi'] ?? ''  }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+                
+                <!-- Espacio entre tablas -->
+                <td width="4%" style="border: none;"></td>
+                
+                <!-- Segunda tabla -->
+                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
+                    <p class="texto-centrado" style="font-weight: bold;">Keratometría</p>
+                    <table class="exam-table" width="100%"> 
+                        <thead>
+                            <tr>
+                                <th style="border-color: #000;"></th>
+                                <th class="texto-centrado" style="border-color: #000;">QD1</th>
+                                <th class="texto-centrado" style="border-color: #000;">QD2</th>
+                                <th class="texto-centrado" style="border-color: #000;">EJE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="texto-centrado" style="border-color: #000;">OD</td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_keratometria_qd1_od'] ?? '' }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_keratometria_qd2_od'] ?? '' }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_keratometria_eje_od'] ?? '' }}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="texto-centrado" style="border-color: #000;">OI</td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_keratometria_qd1_oi'] ?? '' }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_keratometria_qd2_oi'] ?? '' }}</p>
+                                </td>
+                                <td style="border-color: #000;">
+                                    <p>{{ $consulta['examen']['examen_keratometria_eje_oi'] ?? '' }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>           
     </div>
     @endif
+    <div class="page-break"></div>
 
     <!-- BIOMICROSCOPIA (AMBOS) -->
     <div class="section">
         <div class="section-title">BIOMICROSCOPIA</div>
-        @if(!empty($consulta['biomicroscopia_movoculares_od']))
-        <p><strong>Movimiento Ocular OD:</strong> {{ is_array($consulta['biomicroscopia_movoculares_od']) ? implode(', ', $consulta['biomicroscopia_movoculares_od']) : $consulta['biomicroscopia_movoculares_od'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_parpados_od']))
-        <p><strong>Párpados OD:</strong> {{ is_array($consulta['biomicroscopia_parpados_od']) ? implode(', ', $consulta['biomicroscopia_parpados_od']) : $consulta['biomicroscopia_parpados_od'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_cornea_od']))
-        <p><strong>Cornea OD:</strong> {{ is_array($consulta['biomicroscopia_cornea_od']) ? implode(', ', $consulta['biomicroscopia_cornea_od']) : $consulta['biomicroscopia_cornea_od'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_corneaconj_od']))
-        <p><strong>Conjuntiva OD:</strong> {{ is_array($consulta['biomicroscopia_corneaconj_od']) ? implode(', ', $consulta['biomicroscopia_corneaconj_od']) : $consulta['biomicroscopia_corneaconj_od'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_ca_od']))
-        <p><strong>Cámara Anterior OD:</strong> {{ is_array($consulta['biomicroscopia_ca_od']) ? implode(', ', $consulta['biomicroscopia_ca_od']) : $consulta['biomicroscopia_ca_od'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_iris_od']))
-        <p><strong>Iris OD:</strong> {{ is_array($consulta['biomicroscopia_iris_od']) ? implode(', ', $consulta['biomicroscopia_iris_od']) : $consulta['biomicroscopia_iris_od'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_cristalino_od']))
-        <p><strong>Cristalino OD:</strong> {{ is_array($consulta['biomicroscopia_cristalino_od']) ? implode(', ', $consulta['biomicroscopia_cristalino_od']) : $consulta['biomicroscopia_cristalino_od'] }}</p>
-        @endif
-
-        @if(!empty($consulta['biomicroscopia_movoculares_oi']))
-        <p><strong>Movimiento Ocular OI:</strong> {{ is_array($consulta['biomicroscopia_movoculares_oi']) ? implode(', ', $consulta['biomicroscopia_movoculares_oi']) : $consulta['biomicroscopia_movoculares_oi'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_parpados_oi']))
-        <p><strong>Párpados OI:</strong> {{ is_array($consulta['biomicroscopia_parpados_oi']) ? implode(', ', $consulta['biomicroscopia_parpados_oi']) : $consulta['biomicroscopia_parpados_oi'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_cornea_oi']))
-        <p><strong>Cornea OI:</strong> {{ is_array($consulta['biomicroscopia_cornea_oi']) ? implode(', ', $consulta['biomicroscopia_cornea_oi']) : $consulta['biomicroscopia_cornea_oi'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_corneaconj_oi']))
-        <p><strong>Conjuntiva OI:</strong> {{ is_array($consulta['biomicroscopia_corneaconj_oi']) ? implode(', ', $consulta['biomicroscopia_corneaconj_oi']) : $consulta['biomicroscopia_corneaconj_oi'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_ca_oi']))
-        <p><strong>Cámara Anterior OI:</strong> {{ is_array($consulta['biomicroscopia_ca_oi']) ? implode(', ', $consulta['biomicroscopia_ca_oi']) : $consulta['biomicroscopia_ca_oi'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_iris_oi']))
-        <p><strong>Iris OI:</strong> {{ is_array($consulta['biomicroscopia_iris_oi']) ? implode(', ', $consulta['biomicroscopia_iris_oi']) : $consulta['biomicroscopia_iris_oi'] }}</p>
-        @endif
-        @if(!empty($consulta['biomicroscopia_cristalino_oi']))
-        <p><strong>Cristalino OI:</strong> {{ is_array($consulta['biomicroscopia_cristalino_oi']) ? implode(', ', $consulta['biomicroscopia_cristalino_oi']) : $consulta['biomicroscopia_cristalino_oi'] }}</p>
-        @endif
+        <table class="exam-table"> 
+            <thead>
+                <tr>
+                    <th style="border-color: #000;"></th>
+                    <th class="texto-centrado" style="border-color: #000;">OD</th>
+                    <th class="texto-centrado" style="border-color: #000;">OI</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="border-color: #000;">Movimientos Oculares</td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_movoculares_od']) ? implode(', ', $consulta['biomicroscopia_movoculares_od']) : $consulta['biomicroscopia_movoculares_od'] }}</p>
+                    </td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_movoculares_oi']) ? implode(', ', $consulta['biomicroscopia_movoculares_oi']) : $consulta['biomicroscopia_movoculares_oi'] }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border-color: #000;">Párpados</td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_parpados_od']) ? implode(', ', $consulta['biomicroscopia_parpados_od']) : $consulta['biomicroscopia_parpados_od'] }}</p>
+                    </td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_parpados_oi']) ? implode(', ', $consulta['biomicroscopia_parpados_oi']) : $consulta['biomicroscopia_parpados_oi'] }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border-color: #000;">Cornea</td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_cornea_od']) ? implode(', ', $consulta['biomicroscopia_cornea_od']) : $consulta['biomicroscopia_cornea_od'] }}</p>
+                    </td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_cornea_oi']) ? implode(', ', $consulta['biomicroscopia_cornea_oi']) : $consulta['biomicroscopia_cornea_oi'] }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border-color: #000;">Conjuntiva</td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_corneaconj_od']) ? implode(', ', $consulta['biomicroscopia_corneaconj_od']) : $consulta['biomicroscopia_corneaconj_od'] }}</p>
+                    </td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_corneaconj_oi']) ? implode(', ', $consulta['biomicroscopia_corneaconj_oi']) : $consulta['biomicroscopia_corneaconj_oi'] }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border-color: #000;">Cámara Anterior</td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_ca_od']) ? implode(', ', $consulta['biomicroscopia_ca_od']) : $consulta['biomicroscopia_ca_od'] }}</p>
+                    </td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_ca_oi']) ? implode(', ', $consulta['biomicroscopia_ca_oi']) : $consulta['biomicroscopia_ca_oi'] }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border-color: #000;">Iris</td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_iris_od']) ? implode(', ', $consulta['biomicroscopia_iris_od']) : $consulta['biomicroscopia_iris_od'] }}</p>
+                    </td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_iris_oi']) ? implode(', ', $consulta['biomicroscopia_iris_oi']) : $consulta['biomicroscopia_iris_oi'] }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border-color: #000;">Cristalino</td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_cristalino_od']) ? implode(', ', $consulta['biomicroscopia_cristalino_od']) : $consulta['biomicroscopia_cristalino_od'] }}</p>
+                    </td>
+                    <td style="border-color: #000;">
+                        <p>{{ is_array($consulta['biomicroscopia_cristalino_oi']) ? implode(', ', $consulta['biomicroscopia_cristalino_oi']) : $consulta['biomicroscopia_cristalino_oi'] }}</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>        
     </div>
 
     <!-- FONDO DE OJO (AMBOS) -->
     <div class="section">
         <div class="section-title">FONDO DE OJO</div>   
         
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
-            <tr>
+        <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px; border: none;">
+            <tr style="border:none;">
                 <!-- Ojo Derecho -->
-                <td width="50%" align="center" valign="top">
-                    <div style="position: relative; width: 200px; height: 200px; margin: 0 auto; border: 1px solid #f0f0f0; overflow: hidden;">
+                <td width="50%" align="center" valign="top" style="border: none;">
+                    <div style="position: relative; width: 200px; height: 200px; margin: 0 auto; border: none; overflow: hidden;">
                         <img src="{{ public_path('img/fondo_ojo_derecho.png') }}" 
                             style="width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" 
                             alt="Ojo Derecho">
@@ -234,7 +523,7 @@
                 </td>
                 
                 <!-- Ojo Izquierdo -->
-                <td width="50%" align="center" valign="top">
+                <td width="50%" align="center" valign="top" style="border: none;">
                     <div style="position: relative; width: 200px; height: 200px; margin: 0 auto; border: 1px solid #f0f0f0; overflow: hidden;">
                         <img src="{{ public_path('img/fondo_ojo_izquierdo.png') }}" 
                             style="width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" 
@@ -270,100 +559,209 @@
         <!-- Tabla de resultados -->
         <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
             <tr>
-                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">Estructura</th>
-                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">OD</th>
-                <th style="border: 1px solid #ddd; padding: 5px; text-align: left;">OI</th>
+                <th style="border: 1px solid #000; padding: 5px; text-align: center">
+                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #0000FF; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px;"></div>Vítreo</span>
+                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #FF0000; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Mácula</span>
+                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #00AA00; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Retina Periférica</span>
+                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #800080; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Disco Óptico</span>
+                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #FFA500; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Vasos Sanguíneos</span>
+                </th>
+                <th style="border: 1px solid #000; padding: 5px; text-align: center;">OD</th>
+                <th style="border: 1px solid #000; padding: 5px; text-align: center;">OI</th>
             </tr>
             <tr>
-                <td style="border: 1px solid #ddd; padding: 5px;">Vítreo</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_vitreo_od'] ?? '-' }}</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_vitreo_oi'] ?? '-' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">Vítreo</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_vitreo_od'] ?? '' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_vitreo_oi'] ?? '' }}</td>
             </tr>
             <tr>
-                <td style="border: 1px solid #ddd; padding: 5px;">Mácula</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_macula_od'] ?? '-' }}</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_macula_oi'] ?? '-' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">Mácula</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_macula_od'] ?? '' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_macula_oi'] ?? '' }}</td>
             </tr>
             <tr>
-                <td style="border: 1px solid #ddd; padding: 5px;">Retina Periférica</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_retina_p_od'] ?? '-' }}</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_retina_p_oi'] ?? '-' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">Retina Periférica</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_retina_p_od'] ?? '' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_retina_p_oi'] ?? '' }}</td>
             </tr>
             <tr>
-                <td style="border: 1px solid #ddd; padding: 5px;">Disco Óptico</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_disco_o_od'] ?? '-' }}</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_disco_o_oi'] ?? '-' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">Disco Óptico</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_disco_o_od'] ?? '' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_disco_o_oi'] ?? '' }}</td>
             </tr>
             <tr>
-                <td style="border: 1px solid #ddd; padding: 5px;">Vasos Sanguíneos</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_vasos_od'] ?? '-' }}</td>
-                <td style="border: 1px solid #ddd; padding: 5px;">{{ $consulta['fondo_ojo_vasos_oi'] ?? '-' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">Vasos Sanguíneos</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_vasos_od'] ?? '' }}</td>
+                <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_vasos_oi'] ?? '' }}</td>
             </tr>
         </table>
 
+        <table width="100%" cellspacing="0" cellpadding="0" style="border: none;">
+            <tr style="border: none;">
+                <!-- Primera tabla -->
+                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
+                    <table class="exam-table" width="100%" style="border: none;">
+                        <thead>
+                            <tr>
+                                <th class="texto-centrado" style="border-color: #000;">Dilatación Pupilar OD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border-color: #000;">
+                                    <p>{{ is_array($consulta['f_o_dilat_pup_od']) ? implode(', ', $consulta['f_o_dilat_pup_od']) : $consulta['f_o_dilat_pup_od'] ?? '' }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+                
+                <!-- Espacio entre tablas -->
+                <td width="4%" style="border: none;"></td>
+                
+                <!-- Segunda tabla -->
+                <td width="48%" valign="top" style="padding-left: 15px; border: none;">
+                    <table class="exam-table" width="100%" style="border: none;"> 
+                        <thead>
+                            <tr>
+                                <th class="texto-centrado" style="border-color: #000;">Dilatación Pupilar OI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border-color: #000;">
+                                    <p>{{ is_array($consulta['f_o_dilat_pup_oi']) ? implode(', ', $consulta['f_o_dilat_pup_oi']) : $consulta['f_o_dilat_pup_oi'] ?? '' }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <table width="100%" cellspacing="0" cellpadding="0" style="border: none;">
+            <tr style="border: none;">
+                <!-- Primera tabla -->
+                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
+                    <table class="exam-table" width="100%" style="border: none;">
+                        <thead>
+                            <tr>
+                                <th class="texto-centrado" style="border-color: #000;">LOCS tres OD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border-color: #000;">
+                                    <p>{{ is_array($consulta['f_o_locs_tres_od']) ? implode(', ', $consulta['f_o_locs_tres_od']) : $consulta['f_o_locs_tres_od'] ?? '' }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+                
+                <!-- Espacio entre tablas -->
+                <td width="4%" style="border: none;"></td>
+                
+                <!-- Segunda tabla -->
+                <td width="48%" valign="top" style="padding-left: 15px; border: none;">
+                    <table class="exam-table" width="100%" style="border: none;"> 
+                        <thead>
+                            <tr>
+                                <th class="texto-centrado" style="border-color: #000;">LOCS tres OI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border-color: #000;">
+                                    <p>{{ is_array($consulta['f_o_locs_tres_oi']) ? implode(', ', $consulta['f_o_locs_tres_oi']) : $consulta['f_o_locs_tres_oi'] ?? '' }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <table width="100%" cellspacing="0" cellpadding="0" style="border: none;">
+            <tr style="border: none;">
+                <!-- Primera tabla -->
+                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
+                    <table class="exam-table" width="100%" style="border: none;">
+                        <thead>
+                            <tr>
+                                <th class="texto-centrado" style="border-color: #000;">Fundoscopia OD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border-color: #000;">
+                                    <p>{{ is_array($consulta['f_o_fundoscopia_od']) ? implode(', ', $consulta['f_o_fundoscopia_od']) : $consulta['f_o_fundoscopia_od'] ?? '' }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+                
+                <!-- Espacio entre tablas -->
+                <td width="4%" style="border: none;"></td>
+                
+                <!-- Segunda tabla -->
+                <td width="48%" valign="top" style="padding-left: 15px; border: none;">
+                    <table class="exam-table" width="100%" style="border: none;">
+                        <thead>
+                            <tr>
+                                <th class="texto-centrado" style="border-color: #000;">Fundoscopia OI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border-color: #000;">
+                                    <p>{{ is_array($consulta['f_o_fundoscopia_oi']) ? implode(', ', $consulta['f_o_fundoscopia_oi']) : $consulta['f_o_fundoscopia_oi'] ?? '' }}</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
         <!-- Campos adicionales del fondo de ojo -->
-        @if(!empty($consulta['f_o_dilat_pup_od']))
-        <p><strong>Dilatación Pupilar OD:</strong> {{ is_array($consulta['f_o_dilat_pup_od']) ? implode(', ', $consulta['f_o_dilat_pup_od']) : $consulta['f_o_dilat_pup_od'] }}</p>
-        @endif
-        @if(!empty($consulta['f_o_dilat_pup_oi']))
-        <p><strong>Dilatación Pupilar OI:</strong> {{ is_array($consulta['f_o_dilat_pup_oi']) ? implode(', ', $consulta['f_o_dilat_pup_oi']) : $consulta['f_o_dilat_pup_oi'] }}</p>
-        @endif
-        @if(!empty($consulta['f_o_locs_tres_od']))
-        <p><strong>Clasificación LOCS III OD:</strong> {{ is_array($consulta['f_o_locs_tres_od']) ? implode(', ', $consulta['f_o_locs_tres_od']) : $consulta['f_o_locs_tres_od'] }}</p>
-        @endif
-        @if(!empty($consulta['f_o_locs_tres_oi']))
-        <p><strong>Clasificación LOCS III OI:</strong> {{ is_array($consulta['f_o_locs_tres_oi']) ? implode(', ', $consulta['f_o_locs_tres_oi']) : $consulta['f_o_locs_tres_oi'] }}</p>
-        @endif
-        @if(!empty($consulta['f_o_conclusion']))
-        <p><strong>Conclusión:</strong> {{ is_array($consulta['f_o_conclusion']) ? implode(', ', $consulta['f_o_conclusion']) : $consulta['f_o_conclusion'] }}</p>
-        @endif
-        @if(!empty($consulta['f_o_plan']))
-        <p><strong>Plan:</strong> {{ is_array($consulta['f_o_plan']) ? implode(', ', $consulta['f_o_plan']) : $consulta['f_o_plan'] }}</p>
-        @endif
+        <strong>Conclusión:</strong>
+        <p class="texto-parrafo">{{ is_array($consulta['f_o_conclusion']) ? implode(', ', $consulta['f_o_conclusion']) : $consulta['f_o_conclusion'] ?? '' }}</p>
+        <strong style="margin-top: 10px;">Plan:</strong>
+        <p class="texto-parrafo">{{ is_array($consulta['f_o_plan']) ? implode(', ', $consulta['f_o_plan']) : $consulta['f_o_plan'] ?? '' }}</p>
     </div>
+
+    <div class="page-break"></div>
 
     <!-- DIAGNOSTICO (AMBOS) -->
     <div class="section">
         <div class="section-title">DIAGNOSTICO</div>
-        @if(!empty($consulta['impresion_diagnostica']))
-        <p><strong>Diagnóstico:</strong> {{ is_array($consulta['impresion_diagnostica']) ? implode(', ', $consulta['impresion_diagnostica']) : $consulta['impresion_diagnostica'] }}</p>
-        @endif
+        <p class="texto-parrafo">{{ is_array($consulta['impresion_diagnostica']) ? implode(', ', $consulta['impresion_diagnostica']) : $consulta['impresion_diagnostica'] ?? '' }}</p>
     </div>
 
     <!-- Tratamiento (AMBOS) -->
     <div class="section">
         <div class="section-title">TRATAMIENTO</div>
-        @if(!empty($consulta['tratamiento']))
-        <p><strong>Tratamiento:</strong> {{ is_array($consulta['tratamiento']) ? implode(', ', $consulta['tratamiento']) : $consulta['tratamiento'] }}</p>
-        @endif
+        <p class="texto-parrafo">{{ is_array($consulta['tratamiento']) ? implode(', ', $consulta['tratamiento']) : $consulta['tratamiento'] ?? '' }}</p>
     </div>
 
     <!-- Plan (AMBOS) -->
     <div class="section">
         <div class="section-title">PLAN</div>
-        @if(!empty($consulta['plan']))
-        <p><strong>Plan:</strong> {{ is_array($consulta['plan']) ? implode(', ', $consulta['plan']) : $consulta['plan'] }}</p>
-        @endif
+        <p class="texto-parrafo">{{ is_array($consulta['plan']) ? implode(', ', $consulta['plan']) : $consulta['plan'] ?? '' }}</p>
     </div>
 
     <!-- Comentarios (AMBOS) -->
     <div class="section">
         <div class="section-title">COMENTARIOS</div>
-        @if(!empty($consulta['comentario']))
-        <p><strong>Comentario:</strong> {{ is_array($consulta['comentario']) ? implode(', ', $consulta['comentario']) : $consulta['comentario'] }}</p>
-        @endif
+        <p class="texto-parrafo">{{ is_array($consulta['comentario']) ? implode(', ', $consulta['comentario']) : $consulta['comentario'] ?? '' }}</p>
     </div>
 
     <!-- Firmas (SIEMPRE) -->
-    <div class="signature-area">
-        <div>
-            <p>_________________________</p>
-            <p>Dr. {{ $medico['name'] ?? 'Nombre del Médico' }}</p>
-            <p>Médico Oftalmólogo</p>
-        </div>
-        <div>
-            <p>_________________________</p>
-            <p>Paciente</p>
+    <div class="footer" style="display: block;">
+        <div style="margin-top: 50px; display: block; text-align: right;">
+            __________________________<br>
+            Lic. Médico
         </div>
     </div>
 </body>

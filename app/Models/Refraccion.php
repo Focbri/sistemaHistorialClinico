@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\User; // Asegúrate de importar el modelo User
 
 class Refraccion extends Model
 {
@@ -48,10 +50,15 @@ class Refraccion extends Model
         // Campos adicionales
         'instrucciones',
         'adiciones',
+        'medico_id',
     ];
 
     public function consulta()
     {
         return $this->belongsTo(Consulta::class);
+    }
+        public function medico(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'medico_id');
     }
 }

@@ -173,7 +173,7 @@
             <div class="exam-title">Examen Previo</div>
             <div class="exam-content">
                 <div class="exam-subtitle">Distancia</div>
-                <table class="exam-table">
+                <table class="exam-table"> 
                     <thead>
                         <tr>
                             <th></th>
@@ -310,9 +310,9 @@
         </div>
     </div>
 
-    <div class="footer">
-        <div class="signature-line"></div>
-        <p>Firma del Especialista</p>
+    <div style="margin-top: 50px; text-align: right;">
+        <div>__________________________</div>
+        <div>Lic. Médico</div>
     </div>
 </body>
 </html>

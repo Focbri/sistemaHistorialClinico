@@ -141,7 +141,6 @@
     <div class="footer">
         <div style="margin-top: 30px;">
             __________________________<br>
-            {{ $cirugia->user->name ?? 'Médico Responsable' }}<br>
             Lic. Médico Cirujano
         </div>
     </div>

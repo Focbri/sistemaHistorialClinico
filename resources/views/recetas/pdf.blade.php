@@ -76,8 +76,7 @@
 
     <div style="margin-top: 50px; text-align: right;">
         <div>__________________________</div>
-        <div>{{ $medico->name ?? 'Médico' }}</div>
-        <div>Lic. Médico Cirujano</div>
+        <div>Lic. Médico</div>
     </div>
 </body>
 </html>
