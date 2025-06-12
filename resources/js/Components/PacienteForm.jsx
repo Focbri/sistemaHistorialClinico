@@ -29,17 +29,24 @@ const PacienteForm = ({ data, setData, pacienteEncontrado, setPacienteEncontrado
                 setData(prev => ({
                     ...prev,
                     paciente_id: result.paciente.id,
-                    tipo_documento: result.paciente.tipo_documento,
-                    dni: result.paciente.dni,
-                    nombres: result.paciente.nombres,
-                    apellido_paterno: result.paciente.apellido_paterno,
-                    apellido_materno: result.paciente.apellido_materno,
-                    fecha_nacimiento: result.paciente.fecha_nacimiento,
-                    sexo: result.paciente.sexo,
-                    telefono: result.paciente.telefono,
-                    tipo_consulta: result.tieneConsultaInicial ? 'evolucion' : 'inicio',
-                    edad: result.paciente.edad,
-                    foto_perfil: result.paciente.foto_perfil || '', 
+                    dni: result.paciente.dni || result.paciente.carnet_extranjeria || '',
+                    nombres: result.paciente.nombres || '',
+                    apellido_paterno: result.paciente.apellido_paterno || '',
+                    apellido_materno: result.paciente.apellido_materno || '',
+                    telefono: result.paciente.telefono || '',
+                    email: result.paciente.email || '',
+                    fecha_nacimiento: result.paciente.fecha_nacimiento || '',
+                    edad: result.paciente.edad || '',
+                    sexo: result.paciente.sexo || '',
+                    peso: result.paciente.peso || '',
+                    estado_civil: result.paciente.estado_civil || '',
+                    ocupacion: result.paciente.ocupacion || '',
+                    direccion: result.paciente.direccion || '',
+                    procedencia: result.paciente.procedencia || '',
+                    acompañante: result.paciente.acompañante || '',
+                    referido: result.paciente.referido || '',
+                    foto_perfil: result.paciente.foto_perfil || '',
+                    tipo_consulta: result.tieneConsultaInicial ? 'evolucion' : 'inicio'
                 }));
                 
                 setPacienteEncontrado && setPacienteEncontrado(true);
@@ -52,6 +59,8 @@ const PacienteForm = ({ data, setData, pacienteEncontrado, setPacienteEncontrado
             const errorMessage = error.response?.data?.message || error.message || 'Error al buscar paciente';
             alert(errorMessage);
             setPacienteEncontrado && setPacienteEncontrado(false);
+            console.log('Datos recibidos del paciente:', result.paciente);
+console.log('Foto de perfil:', result.paciente.foto_perfil);
         } finally {
             setBuscando(false);
         }

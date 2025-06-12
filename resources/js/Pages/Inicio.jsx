@@ -6,9 +6,9 @@ export default function Inicio({auth}) {
     const isMedico = ['medico', 'medico_externo'].includes(auth.user.role);
     const isAdmin = ['admin'].includes(auth.user.role);
     const isMedicoExterno = auth.user.role === 'medico_externo';
-    const isRecepcionista = auth.user.role === 'recepcionista';
-    const isInvitado = auth.user.role === 'invitado';
-    
+    const isRecepcionistaAdmin = ['admin', 'recepcionista'].includes(auth.user.role);
+    const isMedicoAdmin = ['admin', 'medico'].includes(auth.user.role);
+
     return (
         <AuthenticatedLayout
             user={auth.user} 
@@ -41,7 +41,7 @@ export default function Inicio({auth}) {
                                 </Link>
                                 
                                 {/* Reportes - Solo visible si no es médico_externo */}
-                                {[1, 2].includes(auth.user.id) && (
+                                {isMedicoAdmin &&(
                                     <Link 
                                         href={route('dashboard.index')} 
                                         className="bg-purple-100 hover:bg-purple-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
@@ -87,6 +87,7 @@ export default function Inicio({auth}) {
                                 )}
                                 
                                 {/* Calendario de Citas */}
+                                {isRecepcionistaAdmin && (
                                 <Link 
                                     href={route('citas.index')} 
                                     className="bg-teal-100 hover:bg-teal-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
@@ -95,6 +96,7 @@ export default function Inicio({auth}) {
                                     <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Calendario de Citas</h2>
                                     <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Agendar Citas</p>
                                 </Link>
+                                )}
                                 
                                 {/* Fármacos */}
                                 <Link 

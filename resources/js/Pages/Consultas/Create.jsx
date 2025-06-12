@@ -145,14 +145,10 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
     }
     }, [recetaData]);
 
-    useEffect(() => {
-        console.log('Initial props:', { dniProp, pacienteProp });
-    if (dniProp && !pacienteEncontrado) {
-        setData('dni', dniProp);
-        buscarPaciente();
-    }
-    
-     if (pacienteProp && !pacienteEncontrado) {
+useEffect(() => {
+    console.log('Initial props:', { dniProp, pacienteProp });
+    if (pacienteProp) {
+        // If we have patientProp, set the data directly
         setData(prev => ({
             ...prev,
             paciente_id: pacienteProp.id,
@@ -176,6 +172,10 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         }));
         setPacienteEncontrado(true);
         verificarTipoConsulta(pacienteProp.id);
+    } else if (dniProp && !pacienteEncontrado) {
+        // Only search if we have a DNI and no patient data
+        setData('dni', dniProp);
+        buscarPaciente();
     }
 }, [dniProp, pacienteProp]);
 
@@ -375,8 +375,9 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         }
     }, [data.paciente_id]);
     
-    const buscarPaciente = async () => {
-    if (!data.dni) return;
+const buscarPaciente = async () => {
+    // Skip if we already have patient data or no DNI
+    if (pacienteProp || !data.dni) return;
     
     try {
         const response = await fetch('/consultas/buscar-paciente', {
@@ -384,11 +385,15 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest' // Add this header
             },
             body: JSON.stringify({ dni: data.dni.trim() }),
         });
 
-        if (!response.ok) throw new Error('Paciente no encontrado');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Paciente no encontrado');
+        }
 
         const result = await response.json();
         
@@ -411,7 +416,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                 procedencia: result.paciente.procedencia || '',
                 acompañante: result.paciente.acompañante || '',
                 referido: result.paciente.referido || '',
-                foto_perfil: result.paciente.foto_perfil || null 
+                foto_perfil: result.paciente.foto_perfil || '', 
             }));
             
             setPacienteEncontrado(true);
@@ -432,7 +437,10 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         }
     } catch (error) {
         console.error('Error al buscar paciente:', error);
-        alert(error.message);
+        // Only show alert if we were actually trying to search (no patientProp)
+        if (!pacienteProp) {
+            alert(error.message);
+        }
         setPacienteEncontrado(false);
     }
 };
@@ -530,20 +538,6 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
             </div>
         );
     });
-    // Función para verificar si ya existe una consulta de inicio
-    const verificarConsultaInicio = async (pacienteId) => {
-        try {
-            const response = await fetch(`/consultas/verificar-inicio/${pacienteId}`);
-            if (!response.ok) {
-                throw new Error('Error al verificar consulta de inicio');
-            }
-            const result = await response.json();
-            return result.existe;
-        } catch (error) {
-            console.error(error);
-            return false;
-        }
-    };
 
     const [previewImages, setPreviewImages] = useState([]); // Para previsualizar imágenes
     const [previewArchivos, setPreviewArchivos] = useState([]); // Para mostrar nombres de archivos
@@ -824,23 +818,26 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                     {/* Columna 1: Imagen del paciente - ocupa 1 parte */}
                                     <div className='flex flex-col items-center justify-center col-span-1'>
                                     <div className='w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-2 overflow-hidden'>
-    {data.foto_perfil ? (
-        <img 
-            src={data.foto_perfil.startsWith('http') 
-                ? data.foto_perfil 
-                : `${window.location.origin}/${data.foto_perfil}`}
-            alt="Foto del paciente"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-                console.error('Error cargando imagen:', e.target.src);
-                e.target.onerror = null;
-                e.target.src = '';
-                e.target.parentElement.classList.add('bg-gray-200');
-            }}
-        />
-    ) : (
-        <span className="text-gray-500">Sin foto</span>
-    )}
+  {data.foto_perfil ? (
+    <img 
+  src={
+        data.foto_perfil.startsWith('http') 
+          ? data.foto_perfil 
+          : data.foto_perfil.startsWith('storage/')
+            ? `${window.location.origin}/${data.foto_perfil}`
+            : `${window.location.origin}/storage/${data.foto_perfil}`
+      }
+  alt="Foto del paciente"
+  className="w-full h-full object-cover"
+  onError={(e) => {
+    e.target.onerror = null;
+    e.target.src = '';
+    e.target.parentElement.classList.add('bg-gray-200');
+  }}
+/>
+  ) : (
+    <span className="text-gray-500">Sin foto</span>
+  )}
 </div>
                                 </div>
                                     {/* Columna 2: Datos concatenados del paciente - ocupa 2 partes */}
@@ -932,12 +929,13 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
                                     <div className="w-full md:w-64 bg-[#005b96] p-4 flex-shrink-0">
                                         <div className='flex items-center justify-end'>                                        
                                         <PacienteForm
-                                            data={data}
-                                            setData={setData}
-                                            pacienteEncontrado={pacienteEncontrado}
-                                            setPacienteEncontrado={setPacienteEncontrado} // ¡Esta es la prop que faltaba!
-                                            errors={errors}
-                                        />
+    data={data}
+    setData={setData}
+    pacienteEncontrado={pacienteEncontrado}
+    setPacienteEncontrado={setPacienteEncontrado}
+    errors={errors}
+    onBuscarPaciente={buscarPaciente} // Nueva prop
+/>
                                         </div>
                                         <div className="sticky top-4 space-y-2">
                                             <h3 className="text-2xl text-center mb-2">

@@ -1491,9 +1491,9 @@ protected function normalizarUrlImagen($path)
         return $path;
     }
 
-    // Limpiar cualquier prefijo existente
+   // Eliminar cualquier prefijo existente de storage o barras
+    $path = str_replace(['storage/', 'public/'], '', $path);
     $path = ltrim($path, '/');
-    $path = ltrim($path, 'storage/');
 
     // Devolver ruta relativa consistente
     return 'storage/' . $path;

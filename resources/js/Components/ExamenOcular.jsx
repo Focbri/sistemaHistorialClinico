@@ -357,7 +357,7 @@ const ExamenOcular = ({ data, setData, readOnly = false, edadPaciente }) => {
                 {/* Keratometria */}
                 <div className='flex flex-col justify-center items-center w-full p-4 gap-2 border border-gray-200 rounded-md'>
                     <div className='flex justify-center items-center w-full gap-4'>
-                        <h4 className='text-xl uppercase'>Keratometria</h4>
+                        <h4 className='text-xl uppercase'>Queratometria</h4>
                     </div>
                     <div className='grid grid-cols-4 gap-1'>
                         <label></label>

@@ -38,8 +38,9 @@
             border-left: 4px solid #0066cc;
         }
         .patient-info p {
-            margin: 5px 0;
             display: flex;
+            align-items: center;  /* Alinea verticalmente el contenido */
+            min-height: 25px;     /* Altura mínima para evitar desbordamiento */
         }
         .patient-info strong {
             min-width: 80px;
@@ -48,7 +49,7 @@
         }
         .exam-container {
             display: flex;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             gap: 20px;
             flex-wrap: wrap;
         }
@@ -121,6 +122,7 @@
             border-radius: 6px;
             min-height: 80px;
             background-color: #f8f9fa;
+            margin-bottom: 16px ;
         }
         .notes-title {
             font-weight: bold;
@@ -159,80 +161,19 @@
 <body>
     <div class="header">
         <h1>Examen de Refracción</h1>
-        <p>Código: {{ $codigoRefraccion }} | Fecha: {{ $fechaActual }}</p>
     </div>
-
     <div class="patient-info">
-        <p><strong>Paciente:</strong> {{ $paciente->nombres }} {{ $paciente->apellido_paterno }} {{ $paciente->apellido_materno }}</p>
-        <p><strong>DNI:</strong> {{ $paciente->dni }} | <strong>Edad:</strong> {{ \Carbon\Carbon::parse($paciente->fecha_nacimiento)->age }} años</p>
+        <p style="vertical-align: middle;"><strong style="vertical-align: middle;">Paciente:</strong> {{ $paciente->nombres }} {{ $paciente->apellido_paterno }} {{ $paciente->apellido_materno }}</p>
+        <p style="vertical-align: middle;"><strong style="vertical-align: middle;">DNI:</strong> {{ $paciente->dni }} </p>
+        <p style="vertical-align: middle;"><strong style="vertical-align: middle;">Edad:</strong> {{ $paciente->edad }} años</p>
     </div>
+    @php
+        // Asegurarnos que la edad es un número válido
+        $edadPaciente = is_numeric($paciente->edad) ? (int)$paciente->edad : 0;
+        $mostrarCerca = $edadPaciente >= 30;
+    @endphp
 
     <div class="exam-container">
-        <!-- Columna Examen Previo -->
-        <div class="exam-column">
-            <div class="exam-title">Examen Previo</div>
-            <div class="exam-content">
-                <div class="exam-subtitle">Distancia</div>
-                <table class="exam-table"> 
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>Esfera</th>
-                            <th>Cilindro</th>
-                            <th>Eje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>OD</td>
-                            <td>{{ $refraccion->exam_old_distancia_esfera_od ?? '-' }}</td>
-                            <td>{{ $refraccion->exam_old_distancia_cilindro_od ?? '-' }}</td>
-                            <td>{{ $refraccion->exam_old_distancia_eje_od ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td>OI</td>
-                            <td>{{ $refraccion->exam_old_distancia_esfera_oi ?? '-' }}</td>
-                            <td>{{ $refraccion->exam_old_distancia_cilindro_oi ?? '-' }}</td>
-                            <td>{{ $refraccion->exam_old_distancia_eje_oi ?? '-' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="dip-field">DIP: {{ $refraccion->exam_old_distancia_dip ?? '-' }}</div>
-
-                @if($refraccion->exam_old_cerca_esfera_od || $refraccion->exam_old_cerca_esfera_oi || 
-                $refraccion->exam_old_cerca_cilindro_od || $refraccion->exam_old_cerca_cilindro_oi ||
-                $refraccion->exam_old_cerca_eje_od || $refraccion->exam_old_cerca_eje_oi ||
-                $refraccion->exam_old_cerca_dip)
-                <div class="exam-subtitle">Cerca</div>
-                <table class="exam-table">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>Esfera</th>
-                            <th>Cilindro</th>
-                            <th>Eje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>OD</td>
-                            <td>{{ $refraccion->exam_old_cerca_esfera_od ?? '-' }}</td>
-                            <td>{{ $refraccion->exam_old_cerca_cilindro_od ?? '-' }}</td>
-                            <td>{{ $refraccion->exam_old_cerca_eje_od ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td>OI</td>
-                            <td>{{ $refraccion->exam_old_cerca_esfera_oi ?? '-' }}</td>
-                            <td>{{ $refraccion->exam_old_cerca_cilindro_oi ?? '-' }}</td>
-                            <td>{{ $refraccion->exam_old_cerca_eje_oi ?? '-' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="dip-field">DIP: {{ $refraccion->exam_old_cerca_dip ?? '-' }}</div>
-                @endif
-            </div>
-        </div>
-
         <!-- Columna Examen Actual -->
         <div class="exam-column">
             <div class="exam-title">Examen Actual</div>
@@ -245,6 +186,7 @@
                             <th>Esfera</th>
                             <th>Cilindro</th>
                             <th>Eje</th>
+                            <th>DIP</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -253,6 +195,7 @@
                             <td>{{ $refraccion->exam_new_distancia_esfera_od ?? '-' }}</td>
                             <td>{{ $refraccion->exam_new_distancia_cilindro_od ?? '-' }}</td>
                             <td>{{ $refraccion->exam_new_distancia_eje_od ?? '-' }}</td>
+                            <td rowspan="2">{{ $refraccion->exam_new_distancia_dip ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td>OI</td>
@@ -262,12 +205,8 @@
                         </tr>
                     </tbody>
                 </table>
-                <div class="dip-field">DIP: {{ $refraccion->exam_new_distancia_dip ?? '-' }}</div>
 
-                @if($refraccion->exam_new_cerca_esfera_od || $refraccion->exam_new_cerca_esfera_oi || 
-                $refraccion->exam_new_cerca_cilindro_od || $refraccion->exam_new_cerca_cilindro_oi ||
-                $refraccion->exam_new_cerca_eje_od || $refraccion->exam_new_cerca_eje_oi ||
-                $refraccion->exam_new_cerca_dip)
+                @if($mostrarCerca)
                 <div class="exam-subtitle">Cerca</div>
                 <table class="exam-table">
                     <thead>
@@ -276,6 +215,7 @@
                             <th>Esfera</th>
                             <th>Cilindro</th>
                             <th>Eje</th>
+                            <th>DIP</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -284,6 +224,7 @@
                             <td>{{ $refraccion->exam_new_cerca_esfera_od ?? '-' }}</td>
                             <td>{{ $refraccion->exam_new_cerca_cilindro_od ?? '-' }}</td>
                             <td>{{ $refraccion->exam_new_cerca_eje_od ?? '-' }}</td>
+                            <td rowspan="2">{{ $refraccion->exam_new_cerca_dip ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td>OI</td>
@@ -293,12 +234,10 @@
                         </tr>
                     </tbody>
                 </table>
-                <div class="dip-field">DIP: {{ $refraccion->exam_new_cerca_dip ?? '-' }}</div>
                 @endif
             </div>
         </div>
     </div>
-
     <div class="notes-section">
         <div class="notes-box">
             <div class="notes-title">Instrucciones</div>
@@ -309,7 +248,6 @@
             <div>{{ $refraccion->adiciones ?? 'Ninguna' }}</div>
         </div>
     </div>
-
     <div style="margin-top: 50px; text-align: right;">
         <div>__________________________</div>
         <div>Lic. Médico</div>

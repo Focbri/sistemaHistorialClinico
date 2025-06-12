@@ -4,145 +4,226 @@
     <meta charset="UTF-8">
     <title>Reporte de Cirugía</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; }
-        .header { text-align: center; margin-bottom: 5px; }
-        .title { font-size: 20px; font-weight: bold; }
-        .section { margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        th, td { border: 1px solid #ddd; padding: 4px; text-align: left; }
-        .footer { margin-top: 20px; text-align: right; }
-        .vertical-center { vertical-align: middle; }
+        @page {
+            margin: 1cm;
+            size: A4 portrait;
+        }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            line-height: 1.25;
+            margin: 0;
+            padding: 0 10px 60px;
+            font-size: 11pt;
+            color: #333;
+        }
+        .header { 
+            margin-bottom: 8px;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 5px;
+        }
+        .title { 
+            font-size: 14pt; 
+            font-weight: bold;
+            margin: 0;
+            color: #0066cc;
+            text-align: center;
+        }
+        .section { 
+            margin-bottom: 8px; 
+        }
+        .section-title { 
+            font-weight: bold; 
+            color: #0066cc;
+            border-bottom: 1px solid #0066cc;
+            display: inline-block;
+            margin-bottom: 8px;
+            padding-bottom: 1px;
+            font-size: 12pt;
+            margin-top: 10px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 4px 0;
+            font-size: 10pt;
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 6px 5px; 
+            text-align: left; 
+            vertical-align: top;
+        }
+        .table-header th {
+            background-color: #f0f8ff;
+            font-weight: bold;
+            color: #0066cc;
+            vertical-align: middle;
+        }
+        .footer-info {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 6px 0;
+            background-color: #f8f8f8;
+            border-top: 1px solid #ddd;
+            font-size: 9pt;
+            text-align: center;
+        }
+        .signature {
+            margin-top: 12px;
+            text-align: right;
+        }
+        .compact-text {
+            font-size: 10pt;
+            line-height: 1.3;
+            padding: 5px;
+        }
+        .no-border {
+            border: none !important;
+        }
+        .logo {
+            height: 50px;
+        }
+        .text-box {
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 6px;
+            min-height: 80px;
+            background-color: #f9f9f9;
+        }
+        .highlight {
+            background-color: #fff;;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body>
-    <img src="{{ public_path('img/logoVisualOsf.png') }}" alt="Logo" style="width: 100px; height: auto;">
+    <!-- Encabezado -->
     <div class="header">
-        <div class="title">INFORME OPERATORIO</div>
-    </div>
-    <div class="section">
-        <table>
-            <!--REPORTE OPERATORIO - 3 columnas como solicitado -->
+        <table style="border: none;">
             <tr>
-                <td width="25%" style="vertical-align: middle; text-align: center;" rowspan="4">
-                    <strong>REPORTE OPERATORIO</strong>
+                <td style="width: 25%; text-align: left; border: none; vertical-align: middle;">
+                    <img src="{{ public_path('img/logoVisualOsf.png') }}" alt="Logo" class="logo">
                 </td>
-                <td width="25%" style="vertical-align: top;">
-                    <strong>NUMERO DE HCL</strong>
+                <td style="width: 50%; text-align: center; border: none; vertical-align: middle;">
+                    <h1 class="title">INFORME OPERATORIO</h1>
                 </td>
-                <td width="50%" style="vertical-align: top;">
-                    {{ $cirugia->codigo_historial }}
+                <td style="width: 25%; text-align: right; border: none; vertical-align: middle; font-size: 10pt; background-color: #fff;">
+                    <span class="highlight">Fecha: {{ \Carbon\Carbon::parse($cirugia->created_at)->format('d/m/Y') }}</span>
                 </td>
             </tr>
-            <tr>
-                <td style="vertical-align: top;">
-                    <strong>FECHA</strong>
-                </td>
-                <td style="vertical-align: top;">
-                    {{ date('d/m/Y', strtotime($cirugia->fecha_cirugia)) }}
-                </td>
-            </tr>
-            <tr>
-                <td style="vertical-align: top;">
-                    <strong>HORA INICIO</strong>
-                </td>
-                <td style="vertical-align: top;">
-                    {{ date('H:i', strtotime($cirugia->hora_inicio)) }}
-                </td>
-            </tr>
-            <tr>
-                <td style="vertical-align: top;">
-                    <strong>HORA DE TERMINO</strong>
-                </td>
-                <td style="vertical-align: top;">
-                    {{ date('H:i', strtotime($cirugia->hora_fin)) }}
-                </td>
-            </tr>
-            
-            <!--INFO. PACIENTE-->
-            <tr>
-                <td><strong>APELLIDOS:</strong> {{ $cirugia->paciente->apellido_paterno }} {{ $cirugia->paciente->apellido_materno }}</td>
-                <td colspan="2"><strong>NOMBRES:</strong> {{ $cirugia->paciente->nombres }}</td>
-            </tr>
-            
-            <!--CIRUGIA-->
-            <tr>
-                <td><strong>DIAGNÓSTICO PRE-OPERATORIO</strong></td>
-                <td colspan="2">{{ $cirugia->diagnostico_preoperatorio }}</td>
-            </tr>
-            @if($cirugia->diagnostico_postoperatorio)
-            <tr>
-                <td><strong>DIAGNÓSTICO POST-OPERATORIO</strong></td>
-                <td colspan="2">{{ $cirugia->diagnostico_postoperatorio }}</td>
-            </tr>
-            @endif
-            <tr>
-                <td width="25%"><strong>CIRUGÍA</strong></td>
-                <td colspan="2">{{ $cirugia->cirugia }}</td>
-            </tr>
-            
-            <!--EQUIPO QUIRÚRGICO - CORREGIDO PARA COLUMNAS DE IGUAL ANCHO -->
-            <tr>
-                <td style="vertical-align: middle; text-align: center;">
-                    <strong>CIRUJANOS</strong>
-                </td>            
-                <td style="vertical-align: top; width: 37.5%;">
-                    <strong>CIRUJANO PRINCIPAL</strong><br>
-                    {{ $cirugia->cirujano_principal }}
-                </td>            
-                <td style="vertical-align: top; width: 37.5%;">
-                    @if($cirugia->cirujano_ayudante)
-                    <strong>CIRUJANO AYUDANTE</strong><br>
-                    {{ $cirugia->cirujano_ayudante }}
-                    @endif
-                </td>
-            </tr>
-            <tr>
-                <td style="vertical-align: middle; text-align: center;">
-                    <strong>ANESTESISTA</strong>
-                </td>
-                <td style="vertical-align: top;">
-                    <strong>ANESTESIOLOGO</strong><br>
-                    {{ $cirugia->anestesiologo }}
-                </td>            
-                <td style="vertical-align: top;">
-                    @if($cirugia->tipo_anestesia)
-                    <strong>TIPO DE ANESTESIA</strong><br>
-                    {{ $cirugia->tipo_anestesia }}
-                    @endif
-                </td>
-            </tr>
-            <tr>
-                <td style="vertical-align: middle; text-align: center;">
-                    <strong>PERSONAL DE ENFERMERÍA</strong>
-                </td>
-                <td colspan="2" style="vertical-align: top;">
-                    @if(!empty($personalEnfermeria))
-                        @foreach($personalEnfermeria as $enfermero)
-                            • {{ $enfermero }}<br>
-                        @endforeach
-                    @endif
-                </td>
-            </tr>
-            
-            <!--HALLAZOS Y PROCEDIMIENTO-->
-            <tr>
-                <td>
-                    <strong>HALLAZGOS</strong>
-                </td>
-                <td colspan="2">{{ $cirugia->hallazgos }}</td>
-            </tr>
-            <tr>
-                <td><strong>PROCEDIMIENTO</strong></td>
-                <td colspan="2">{{ $cirugia->procedimiento }}</td>
-            </tr>       
         </table>
     </div>
 
-    <div class="footer">
-        <div style="margin-top: 30px;">
-            __________________________<br>
-            Lic. Médico Cirujano
-        </div>
+    <!-- Información del paciente -->
+    <div class="section">
+        <div class="section-title">Datos del Paciente</div>
+        <table>
+            <tr>
+                <td style="width: 15%; border: none;"><strong>Paciente:</strong></td>
+                <td style="width: 35%; border: none;">{{ $cirugia->paciente->apellido_paterno }} {{ $cirugia->paciente->apellido_materno }}, {{ $cirugia->paciente->nombres }}</td>
+                <td style="width: 15%; border: none;"><strong>H. Clínica:</strong></td>
+                <td style="width: 35%; border: none;">{{ $cirugia->codigo_historial }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Datos de la cirugía -->
+    <div class="section">
+        <div class="section-title">Datos Quirúrgicos</div>
+        <table class="table-header">
+            <tr>
+                <th style="width: 15%;">Fecha</th>
+                <th style="width: 20%;">Horario</th>
+                <th style="width: 25%;">Procedimiento</th>
+                <th style="width: 20%;">Diagnóstico Pre-operatorio</th>
+                <th style="width: 20%;">Diagnóstico Post-operatorio</th>
+            </tr>
+            <tr>
+                <td>{{ date('d/m/Y', strtotime($cirugia->fecha_cirugia)) }}</td>
+                <td>{{ date('H:i', strtotime($cirugia->hora_inicio)) }} - {{ date('H:i', strtotime($cirugia->hora_fin)) }}</td>
+                <td>{{ $cirugia->cirugia }}</td>
+                <td>{{ $cirugia->diagnostico_preoperatorio }}</td>
+                <td>{{ $cirugia->diagnostico_postoperatorio ?? 'N/A' }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Equipo quirúrgico -->
+    <div class="section">
+        <div class="section-title">Equipo Quirúrgico</div>
+        <table class="table-header">
+            <tr>
+                <th style="width: 25%;">Rol</th>
+                <th style="width: 25%;">Nombre</th>
+                <th style="width: 25%;">Rol</th>
+                <th style="width: 25%;">Detalle</th>
+            </tr>
+            <tr>
+                <td><strong>Cirujano Principal</strong></td>
+                <td>{{ $cirugia->cirujano_principal }}</td>
+                <td><strong>Anestesista</strong></td>
+                <td>{{ $cirugia->anestesiologo }}</td>
+            </tr>
+            <tr>
+                <td><strong>Cirujano Ayudante</strong></td>
+                <td>{{ $cirugia->cirujano_ayudante ?? 'N/A' }}</td>
+                <td><strong>Tipo Anestesia</strong></td>
+                <td>{{ $cirugia->tipo_anestesia ?? 'N/A' }}</td>
+            </tr>
+            @if(!empty($personalEnfermeria))
+            <tr>
+                <td colspan="4">
+                    <strong style="margin-right: 4px;">Personal de Enfermería:</strong> 
+                    @foreach($personalEnfermeria as $enfermero)
+                    {{ $enfermero }} &nbsp;
+                    @endforeach
+                </td>
+            </tr>
+            @endif
+        </table>
+    </div>
+
+    <!-- Hallazgos y procedimiento -->
+    <div class="section">
+        <table class="no-border">
+            <tr>
+                <td style="width: 50%; vertical-align: top; padding-right: 5px; border: none;">
+                    <div class="section-title">Hallazgos</div>
+                    <div class="text-box compact-text">
+                        {{ $cirugia->hallazgos }}
+                    </div>
+                </td>
+                <td style="width: 50%; vertical-align: top; padding-left: 5px; border: none;">
+                    <div class="section-title">Procedimiento</div>
+                    <div class="text-box compact-text">
+                        {{ $cirugia->procedimiento }}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Firma -->
+    <div class="signature" style="margin-top: 96px;">
+        <div style="border-top: 1px solid #0066cc; width: 250px; margin-left: auto;"></div>
+        <p style="margin: 3px 0 0 0; font-size: 10pt; color: #666;">Lic. {{ $cirugia->cirujano_principal }}</p>
+        <p style="margin: 0; font-size: 9pt; color: #999;">Médico Cirujano</p>
+    </div>
+
+    <!-- Información de contacto (footer) -->
+    <div class="footer-info">
+        <span>
+            <img src="{{ public_path('img/ubicacion.png') }}" alt="Ubicación" style="width: 10px; height: 10px; vertical-align: middle;">
+            Av Gral José María Egúsquiza, Córdova 835
+        </span>
+        <span style="margin: 0 8px; color: #ccc;">|</span>
+        <span>
+            <img src="{{ public_path('img/phone.png') }}" alt="Teléfono" style="width: 10px; height: 10px; vertical-align: middle;">
+            +51 999 495 085
+        </span>
     </div>
 </body>
 </html>

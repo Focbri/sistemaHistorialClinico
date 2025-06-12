@@ -116,7 +116,7 @@
                         <p><strong>Peso:</strong> {{ $paciente['peso'] ?? '' }} kg</p>
                     </td>
                     <td style="width: 30%;  vertical-align: top; border: none">
-                        <p><strong>{{ $paciente['tipo_documento'] }}:</strong> {{ $paciente['dni'] ?? 'No especificado' }}</p>
+                        <p><strong style="text-transform: uppercase;">{{ $paciente['tipo_documento'] }}:</strong> {{ $paciente['dni'] ?? 'No especificado' }}</p>
                         <p><strong>Sexo:</strong> {{ $paciente['sexo'] ?? '' }}</p>
                     </td>
                 </tr>
@@ -148,10 +148,10 @@
             <table class="exam-table" width="100%" style="border-color: red;"> 
                 <thead>
                     <tr>
-                        <th class="texto-centrado" style="border-color: #000;">HTA</th>
-                        <th class="texto-centrado" style="border-color: #000;">DM</th>
-                        <th class="texto-centrado" style="border-color: #000;">Alergias</th>
-                        <th class="texto-centrado" style="border-color: #000;">Otros</th>
+                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">HTA</th>
+                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">DM</th>
+                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Alergias</th>
+                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Otros</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -178,10 +178,10 @@
             <table class="exam-table" width="100%"> 
                 <thead>
                     <tr>
-                        <th class="texto-centrado" style="border-color: #000;">Inicio</th>
-                        <th class="texto-centrado" style="border-color: #000;">Signos</th>
-                        <th class="texto-centrado" style="border-color: #000;">Enfermedad</th>
-                        <th class="texto-centrado" style="border-color: #000;">Otros</th>
+                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Inicio</th>
+                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Signos</th>
+                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Enfermedad</th>
+                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Otros</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -239,10 +239,10 @@
                     <table class="exam-table" width="100%" style="border: none;"> 
                         <thead>
                             <tr>
-                                <th style="border-color: #000;"></th>
-                                <th class="texto-centrado" style="border-color: #000;">SC</th>
-                                <th class="texto-centrado" style="border-color: #000;">CAE</th>
-                                <th class="texto-centrado" style="border-color: #000;">CC</th>
+                                <th style="border-color: #000; background-color: #f2f2f2;"></th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">SC</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">CAE</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">CC</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -283,8 +283,8 @@
                     <table class="exam-table" width="100%" style="border: none;"> 
                         <thead>
                             <tr>
-                                <th class="texto-centrado" style="border-color: #000;">OD</th>
-                                <th class="texto-centrado" style="border-color: #000;">OI</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">OD</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">OI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -310,10 +310,10 @@
                     <table class="exam-table" width="100%"> 
                         <thead>
                             <tr>
-                                <th style="border-color: #000;"></th>
-                                <th class="texto-centrado" style="border-color: #000;">Sph</th>
-                                <th class="texto-centrado" style="border-color: #000;">Cyl</th>
-                                <th class="texto-centrado" style="border-color: #000;">Ax</th>
+                                <th style="border-color: #000; background-color: #f2f2f2;"></th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Sph</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Cyl</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Ax</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -350,14 +350,14 @@
                 
                 <!-- Segunda tabla -->
                 <td width="48%" valign="top" style="padding-right: 15px; border: none;">
-                    <p class="texto-centrado" style="font-weight: bold;">Keratometría</p>
+                    <p class="texto-centrado" style="font-weight: bold;">Queratometría</p>
                     <table class="exam-table" width="100%"> 
                         <thead>
                             <tr>
-                                <th style="border-color: #000;"></th>
-                                <th class="texto-centrado" style="border-color: #000;">QD1</th>
-                                <th class="texto-centrado" style="border-color: #000;">QD2</th>
-                                <th class="texto-centrado" style="border-color: #000;">EJE</th>
+                                <th style="border-color: #000; background-color: #f2f2f2;"></th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">QD1</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">QD2</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">EJE</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -400,9 +400,9 @@
         <table class="exam-table"> 
             <thead>
                 <tr>
-                    <th style="border-color: #000;"></th>
-                    <th class="texto-centrado" style="border-color: #000;">OD</th>
-                    <th class="texto-centrado" style="border-color: #000;">OI</th>
+                    <th style="border-color: #000; width: 30%; background-color: #f2f2f2;"></th>
+                    <th class="texto-centrado" style="border-color: #000; width: 35%; background-color: #f2f2f2;">OD</th>
+                    <th class="texto-centrado" style="border-color: #000; width: 35%; background-color: #f2f2f2;">OI</th>
                 </tr>
             </thead>
             <tbody>
@@ -559,15 +559,15 @@
         <!-- Tabla de resultados -->
         <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
             <tr>
-                <th style="border: 1px solid #000; padding: 5px; text-align: center">
+                <th style="border: 1px solid #000; padding: 5px; text-align: center; background-color: #f2f2f2;">
                     <span style="display:inline-block; margin-right: 8px"><div style="background-color: #0000FF; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px;"></div>Vítreo</span>
                     <span style="display:inline-block; margin-right: 8px"><div style="background-color: #FF0000; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Mácula</span>
                     <span style="display:inline-block; margin-right: 8px"><div style="background-color: #00AA00; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Retina Periférica</span>
                     <span style="display:inline-block; margin-right: 8px"><div style="background-color: #800080; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Disco Óptico</span>
                     <span style="display:inline-block; margin-right: 8px"><div style="background-color: #FFA500; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Vasos Sanguíneos</span>
                 </th>
-                <th style="border: 1px solid #000; padding: 5px; text-align: center;">OD</th>
-                <th style="border: 1px solid #000; padding: 5px; text-align: center;">OI</th>
+                <th style="border: 1px solid #000; padding: 5px; text-align: center; background-color: #f2f2f2;">OD</th>
+                <th style="border: 1px solid #000; padding: 5px; text-align: center; background-color: #f2f2f2;">OI</th>
             </tr>
             <tr>
                 <td style="border: 1px solid #000; padding: 5px;">Vítreo</td>
@@ -603,7 +603,7 @@
                     <table class="exam-table" width="100%" style="border: none;">
                         <thead>
                             <tr>
-                                <th class="texto-centrado" style="border-color: #000;">Dilatación Pupilar OD</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Dilatación Pupilar OD</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -624,7 +624,7 @@
                     <table class="exam-table" width="100%" style="border: none;"> 
                         <thead>
                             <tr>
-                                <th class="texto-centrado" style="border-color: #000;">Dilatación Pupilar OI</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Dilatación Pupilar OI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -646,7 +646,7 @@
                     <table class="exam-table" width="100%" style="border: none;">
                         <thead>
                             <tr>
-                                <th class="texto-centrado" style="border-color: #000;">LOCS tres OD</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">LOCS tres OD</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -667,7 +667,7 @@
                     <table class="exam-table" width="100%" style="border: none;"> 
                         <thead>
                             <tr>
-                                <th class="texto-centrado" style="border-color: #000;">LOCS tres OI</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">LOCS tres OI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -689,7 +689,7 @@
                     <table class="exam-table" width="100%" style="border: none;">
                         <thead>
                             <tr>
-                                <th class="texto-centrado" style="border-color: #000;">Fundoscopia OD</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Fundoscopia OD</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -710,7 +710,7 @@
                     <table class="exam-table" width="100%" style="border: none;">
                         <thead>
                             <tr>
-                                <th class="texto-centrado" style="border-color: #000;">Fundoscopia OI</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Fundoscopia OI</th>
                             </tr>
                         </thead>
                         <tbody>

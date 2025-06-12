@@ -212,7 +212,9 @@ public function generarPDFReceta($id)
                 ];
             }),
             'fechaActual' => now()->format('d/m/Y'),
-            'codigoReceta' => 'REC-'.str_pad($receta->id, 6, '0', STR_PAD_LEFT)
+            'codigoReceta' => 'REC-'.str_pad($receta->id, 6, '0', STR_PAD_LEFT),
+            'created_at' => $receta->created_at,
+            'updated_at' => $receta->updated_at
         ];
 
         // 5. Generar PDF
