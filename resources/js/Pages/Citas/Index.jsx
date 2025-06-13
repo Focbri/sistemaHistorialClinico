@@ -681,84 +681,123 @@ const handleDelete = () => {
         </div>
 
         {activeTab === 'lista' ? (
-          <div className="overflow-x-auto bg-white rounded-lg shadow">
-            <div className="mb-6">
-              <AdvancedFilters
-                initialFilters={filters}
-                onApplyFilters={handleApplyFilters}
-                onResetFilters={handleResetFilters}
-                disabledSections={{
-                  all: activeTab === 'calendario',
-                  terms: true // Deshabilitar en vista de calendario
-                }}
-                exportEnabled={activeTab === 'lista'}
-                showActiveFilters={true}
-              />
+  <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="mb-6 p-4 md:p-6">
+      <AdvancedFilters
+        initialFilters={filters}
+        onApplyFilters={handleApplyFilters}
+        onResetFilters={handleResetFilters}
+        disabledSections={{
+          all: activeTab === 'calendario',
+          terms: true
+        }}
+        exportEnabled={activeTab === 'lista'}
+        showActiveFilters={true}
+      />
+    </div>
+    
+    {/* Versión para desktop (se muestra en pantallas medianas/grandes) */}
+    <div className="hidden md:block">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {citas.map(cita => (
+            <tr key={cita.id}>
+              <td className="px-6 py-4 whitespace-nowrap">{cita.paciente.dni}</td>
+              <td className="px-6 py-4 whitespace-nowrap">{cita.paciente.nombres} {cita.paciente.apellido_paterno}</td>
+              <td className="px-6 py-4 whitespace-nowrap">{formatFecha(cita.fecha_hora)}</td>
+              <td className="px-6 py-4 whitespace-nowrap">{cita.medico.name}</td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-2 py-1 text-xs rounded-lg ${
+                  cita.estado === 'programada' ? 'bg-blue-100 text-blue-800' :
+                  cita.estado === 'completada' ? 'bg-green-100 text-green-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {cita.estado}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                <button onClick={() => openViewModal(cita)} className="text-blue-600 hover:text-blue-900">
+                  Ver
+                </button>
+                <button onClick={() => openEditModal(cita)} className="text-yellow-600 hover:text-yellow-900">
+                  Editar
+                </button>
+                <button onClick={() => openDeleteModal(cita)} className="text-red-600 hover:text-red-900">
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    
+    {/* Versión para móvil (se muestra en pantallas pequeñas) */}
+    <div className="md:hidden">
+      <div className="divide-y divide-gray-200">
+        {citas.map(cita => (
+          <div key={cita.id} className="p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-medium text-gray-900">
+                  {cita.paciente.nombres} {cita.paciente.apellido_paterno}
+                </p>
+                <p className="text-sm text-gray-500">{cita.paciente.dni}</p>
+              </div>
+              <span className={`px-2 py-1 text-xs rounded-md ${
+                cita.estado === 'programada' ? 'bg-blue-100 text-blue-800' :
+                cita.estado === 'completada' ? 'bg-green-100 text-green-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {cita.estado}
+              </span>
             </div>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {citas.map(cita => (
-                  <tr key={cita.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {cita.paciente.dni}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {cita.paciente.nombres} {cita.paciente.apellido_paterno}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {formatFecha(cita.fecha_hora)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {cita.medico.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        cita.estado === 'programada' ? 'bg-blue-100 text-blue-800' :
-                        cita.estado === 'completada' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {cita.estado}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                      <button 
-                        onClick={() => openViewModal(cita)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Ver
-                      </button>
-                      <button 
-                        onClick={() => openEditModal(cita)}
-                        className="text-yellow-600 hover:text-yellow-900"
-                      >
-                        Editar
-                      </button>
-                      <button 
-                        onClick={() => openDeleteModal(cita)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* Agrega la paginación al final de la tabla */}
-          <div className="mt-4 px-6 py-3">
-            <Pagination links={citas.links} />
+            
+            <div className="mt-2 text-sm">
+              <p><span className="font-medium">Fecha:</span> {formatFecha(cita.fecha_hora)}</p>
+              <p><span className="font-medium">Médico:</span> {cita.medico.name}</p>
+            </div>
+            
+            <div className="mt-3 flex space-x-3 border-t pt-3">
+              <button 
+                onClick={() => openViewModal(cita)}
+                className="text-blue-600 hover:text-blue-900 text-sm"
+              >
+                Ver
+              </button>
+              <button 
+                onClick={() => openEditModal(cita)}
+                className="text-yellow-600 hover:text-yellow-900 text-sm"
+              >
+                Editar
+              </button>
+              <button 
+                onClick={() => openDeleteModal(cita)}
+                className="text-red-600 hover:text-red-900 text-sm"
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
-          </div>          
+        ))}
+      </div>
+    </div>
+    
+    {/* Paginación */}
+    <div className="mt-4 px-4 py-3 md:px-6">
+      <Pagination links={citas.links} />
+    </div>
+  </div>         
         ) : (
           <div className="bg-white p-4 rounded-lg shadow">
              <Calendar
@@ -819,214 +858,220 @@ const handleDelete = () => {
                 )}
                 
                 <form onSubmit={handleSubmit}>
-                  <div className="mb-4">
-                    <label className="block text-gray-700 mb-2">DNI del Paciente</label>
-                    <div className="flex">
-                      <input
-                        type="number"
-                        value={data.dni}
-                        onChange={(e) => {
-                          setData('dni', e.target.value);
-                          if (e.target.value.length !== 8) {
-                            setPacienteEncontrado(false);
-                          }
-                        }}
-                        className="flex-1 p-2 border rounded-l"
-                        placeholder="Ingrese DNI (8 dígitos)"
-                        maxLength="8"
-                        disabled={buscandoPaciente}
-                      />
-                      <button
-                        type="button"
-                        onClick={buscarPaciente}
-                        disabled={!data.dni || data.dni.length !== 8 || buscandoPaciente}
-                        className={`ml-2 px-4 py-2 rounded-r ${
-                          buscandoPaciente 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-blue-500 hover:bg-blue-600 text-white'
-                        }`}
-                      >
-                        {buscandoPaciente ? (
-                          <span className="flex items-center">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Buscando...
-                          </span>
-                        ) : 'Buscar'}
-                      </button>
-                    </div>
-                    {data.dni && data.dni.length !== 8 && (
-                      <p className="text-red-500 text-xs mt-1">El DNI debe tener 8 dígitos</p>
-                    )}
-                  </div>
+  <div className="mb-4">
+    <label className="block text-gray-700 text-sm font-medium mb-1">DNI del Paciente</label>
+    <div className="flex flex-col sm:flex-row gap-2">
+      <input
+        type="number"
+        value={data.dni}
+        onChange={(e) => {
+          setData('dni', e.target.value);
+          if (e.target.value.length !== 8) {
+            setPacienteEncontrado(false);
+          }
+        }}
+        className="flex-1 p-2 border rounded sm:rounded-r-none"
+        placeholder="Ingrese DNI (8 dígitos)"
+        maxLength="8"
+        disabled={buscandoPaciente}
+      />
+      <button
+        type="button"
+        onClick={buscarPaciente}
+        disabled={!data.dni || data.dni.length !== 8 || buscandoPaciente}
+        className={`px-4 py-2 rounded sm:rounded-l-none ${
+          buscandoPaciente 
+            ? 'bg-gray-400 cursor-not-allowed' 
+            : 'bg-blue-500 hover:bg-blue-600 text-white'
+        }`}
+      >
+        {buscandoPaciente ? (
+          <span className="flex items-center justify-center">
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Buscando...
+          </span>
+        ) : 'Buscar'}
+      </button>
+    </div>
+    {data.dni && data.dni.length !== 8 && (
+      <p className="text-red-500 text-xs mt-1">El DNI debe tener 8 dígitos</p>
+    )}
+  </div>
 
-                  {pacienteEncontrado && pacienteInfo ? (
-                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold text-green-800">Paciente encontrado:</h4>
-                          <p className="text-gray-800">
-                            {pacienteInfo.nombres} {pacienteInfo.apellido_paterno} {pacienteInfo.apellido_materno}
-                          </p>
-                          <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                            <div>
-                              <span className="font-medium">DNI:</span> {pacienteInfo.dni}
-                            </div>
-                            <div>
-                              <span className="font-medium">Teléfono:</span> {pacienteInfo.telefono}
-                            </div>
-                            <div>
-                              <span className="font-medium">Edad:</span> {pacienteInfo.edad}
-                            </div>
-                            <div>
-                              <span className="font-medium">Nacimiento:</span> {pacienteInfo.fecha_nacimiento}
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPacienteEncontrado(false);
-                            setPacienteInfo(null);
-                            setData('dni', '');
-                            setData('paciente_id', '');
-                          }}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    busquedaRealizada && data.dni && data.dni.length === 8 && !pacienteEncontrado && !buscandoPaciente && (
-                      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold text-yellow-800">Paciente no encontrado</h4>
-                            <p className="text-gray-800 mt-2">
-                              No se encontró un paciente con DNI {data.dni} en el sistema.
-                            </p>
-                            <div className="mt-4">
-                              <a
-                                href={route('pacientes.create', { dni: data.dni })}
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block"
-                              >
-                                Registrar Nuevo Paciente
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  )}
+  {pacienteEncontrado && pacienteInfo ? (
+    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+      <div className="flex justify-between items-start">
+        <div className="w-full">
+          <div className="flex justify-between items-center">
+            <h4 className="font-semibold text-green-800 text-sm">Paciente encontrado:</h4>
+            <button
+              type="button"
+              onClick={() => {
+                setPacienteEncontrado(false);
+                setPacienteInfo(null);
+                setData('dni', '');
+                setData('paciente_id', '');
+              }}
+              className="text-gray-500 hover:text-gray-700 ml-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-gray-800 text-sm mt-1">
+            {pacienteInfo.nombres} {pacienteInfo.apellido_paterno} {pacienteInfo.apellido_materno}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-2 text-xs">
+            <div>
+              <span className="font-medium">DNI:</span> {pacienteInfo.dni}
+            </div>
+            <div>
+              <span className="font-medium">Teléfono:</span> {pacienteInfo.telefono}
+            </div>
+            <div>
+              <span className="font-medium">Edad:</span> {pacienteInfo.edad}
+            </div>
+            <div>
+              <span className="font-medium">Nacimiento:</span> {pacienteInfo.fecha_nacimiento}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    busquedaRealizada && data.dni && data.dni.length === 8 && !pacienteEncontrado && !buscandoPaciente && (
+      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="flex justify-between items-start">
+          <div>
+            <h4 className="font-semibold text-yellow-800 text-sm">Paciente no encontrado</h4>
+            <p className="text-gray-800 text-xs mt-1">
+              No se encontró un paciente con DNI {data.dni} en el sistema.
+            </p>
+            <div className="mt-3">
+              <a
+                href={route('pacientes.create', { dni: data.dni })}
+                className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block text-sm"
+              >
+                Registrar Nuevo Paciente
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  )}
 
-                  <div className='flex justify-center gap-2'>
-                    <div className="mb-4 w-1/2">
-                      <label className="block text-gray-700 mb-2">Médico</label>
-                      <select
-                      value={data.medico_id}
-                      onChange={(e) => setData('medico_id', e.target.value)}
-                      className="w-full p-2 border rounded"
-                      required
-                    >
-                      <option value="">Seleccione un médico</option>
-                      {medicos.map(medico => (
-                        <option key={medico.id} value={medico.id}>
-                          {medico.name} {medico.role === 'medico_externo' ? '(Externo)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                    </div>
+  <div className='flex flex-col sm:flex-row gap-2'>
+    <div className="mb-4 w-full sm:w-1/2">
+      <label className="block text-gray-700 text-sm font-medium mb-1">Médico</label>
+      <select
+        value={data.medico_id}
+        onChange={(e) => setData('medico_id', e.target.value)}
+        className="w-full p-2 border rounded text-sm"
+        required
+      >
+        <option value="">Seleccione un médico</option>
+        {medicos.map(medico => (
+          <option key={medico.id} value={medico.id}>
+            {medico.name} {medico.role === 'medico_externo' ? '(Externo)' : ''}
+          </option>
+        ))}
+      </select>
+    </div>
 
-                    <div className="mb-4 w-1/2">
-                      <label className="block text-gray-700 mb-2">Fecha y Hora</label>
-                      <input
-  type="datetime-local"
-  value={formatDateTimeWithoutSeconds(data.fecha_hora)}
-  onChange={(e) => {
-    const newDate = e.target.value;
-    setData('fecha_hora', newDate);
-    
-    // Validación en tiempo real
-    const now = new Date();
-    const selectedDate = new Date(newDate);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const twoMonthsLater = new Date(today);
-    twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
-    
-    const selectedDateOnly = new Date(
-      selectedDate.getFullYear(), 
-      selectedDate.getMonth(), 
-      selectedDate.getDate()
-    );
+    <div className="mb-4 w-full sm:w-1/2">
+      <label className="block text-gray-700 text-sm font-medium mb-1">Fecha y Hora</label>
+      <input
+        type="datetime-local"
+        value={formatDateTimeWithoutSeconds(data.fecha_hora)}
+        onChange={(e) => {
+          const newDate = e.target.value;
+          setData('fecha_hora', newDate);
+          
+          const now = new Date();
+          const selectedDate = new Date(newDate);
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const twoMonthsLater = new Date(today);
+          twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
+          
+          const selectedDateOnly = new Date(
+            selectedDate.getFullYear(), 
+            selectedDate.getMonth(), 
+            selectedDate.getDate()
+          );
 
-    if (selectedDateOnly < today) {
-      setErrorMessage('No se pueden programar citas para fechas pasadas');
-      return;
-    }
+          if (selectedDateOnly < today) {
+            setErrorMessage('No se pueden programar citas para fechas pasadas');
+            return;
+          }
 
-    if (selectedDateOnly > twoMonthsLater) {
-      setErrorMessage('Solo se pueden programar citas hasta 2 meses en el futuro');
-      return;
-    }
+          if (selectedDateOnly > twoMonthsLater) {
+            setErrorMessage('Solo se pueden programar citas hasta 2 meses en el futuro');
+            return;
+          }
 
-                          // Validación de disponibilidad con médico
-                          if (data.medico_id) {
-                            const validation = verificarDisponibilidad();
-                            if (!validation.isValid) {
-                              setErrorMessage(validation.message);
-                            } else {
-                              setErrorMessage('');
-                            }
-                          }
-                        }}
-                          className="w-full p-2 border rounded"
-                          required
-                          step="60"
-                          min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                          max={format(new Date(new Date().setMonth(new Date().getMonth() + 2)), "yyyy-MM-dd'T'23:59")}
-                        />
-                    </div>
-                  </div>
+          if (data.medico_id) {
+            const validation = verificarDisponibilidad();
+            if (!validation.isValid) {
+              setErrorMessage(validation.message);
+            } else {
+              setErrorMessage('');
+            }
+          }
+        }}
+        className="w-full p-2 border rounded text-sm"
+        required
+        step="60"
+        min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+        max={format(new Date(new Date().setMonth(new Date().getMonth() + 2)), "yyyy-MM-dd'T'23:59")}
+      />
+    </div>
+  </div>
 
-                  <div className="mb-4">
-                    <label className="block text-gray-700 mb-2">Motivo</label>
-                    <textarea
-                      value={data.motivo}
-                      onChange={(e) => setData('motivo', e.target.value)}
-                      className="w-full p-2 border rounded"
-                      rows="3"
-                      required
-                    />
-                  </div>
+  <div className="mb-4">
+    <label className="block text-gray-700 text-sm font-medium mb-1">Motivo</label>
+    <textarea
+      value={data.motivo}
+      onChange={(e) => setData('motivo', e.target.value)}
+      className="w-full p-2 border rounded text-sm"
+      rows="3"
+      required
+    />
+  </div>
 
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowModal(false);
-                        reset();
-                        setPacienteEncontrado(false);
-                        setPacienteInfo(null);
-                        setErrorMessage('');
-                      }}
-                      className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!pacienteEncontrado || processing}
-                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300"
-                    >
-                      {processing ? 'Guardando...' : 'Guardar Cita'}
-                    </button>
-                  </div>
-                </form>
+  {errorMessage && (
+    <div className="mb-4 p-2 bg-red-50 text-red-600 text-xs rounded">
+      {errorMessage}
+    </div>
+  )}
+
+  <div className="flex flex-col sm:flex-row justify-end gap-2">
+    <button
+      type="button"
+      onClick={() => {
+        setShowModal(false);
+        reset();
+        setPacienteEncontrado(false);
+        setPacienteInfo(null);
+        setErrorMessage('');
+      }}
+      className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-sm sm:text-base"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      disabled={!pacienteEncontrado || processing}
+      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300 text-sm sm:text-base"
+    >
+      {processing ? 'Guardando...' : 'Guardar Cita'}
+    </button>
+  </div>
+</form>
               </div>
             </div>
           </div>
@@ -1132,7 +1177,7 @@ const handleDelete = () => {
                     </select>
                   </div>
 
-                  <div className="mb-4 w-1/2">
+                  <div className="mb-4 sm:w-1/2">
                     <label className="block text-gray-700 mb-2">Fecha y Hora</label>
                     <input
                       type="datetime-local"

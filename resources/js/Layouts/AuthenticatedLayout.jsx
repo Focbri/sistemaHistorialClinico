@@ -203,7 +203,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             href={route('inicio')}
                             active={route().current('inicio')}
                         >
-                            Dashboard
+                            Inicio
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             href={route('pacientes.index')}
@@ -248,18 +248,21 @@ export default function AuthenticatedLayout({ header, children }) {
                         )}
                     </div>
 
+                    <hr />
                     <div className="pb-1">                        
 
-                        <div className="mt-3 space-y-1">
+                        <div className="mt-1 space-y-1">
                             <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#fff" d="M12 4a4 4 0 0 1 4 4a4 4 0 0 1-4 4a4 4 0 0 1-4-4a4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4"/></svg>
+                                <span className='mt-1 ml-1'>Perfil</span>
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout')}
                                 as="button"
                             >
-                                Log Out
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#fff" d="M16 13v-2H7V8l-5 4l5 4v-3z"/><path fill="#fff" d="M20 3h-9c-1.103 0-2 .897-2 2v4h2V5h9v14h-9v-4H9v4c0 1.103.897 2 2 2h9c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2"/></svg>
+                                <span className='mt-1 ml-1'>Salir</span>
                             </ResponsiveNavLink>
                         </div>
                     </div>

@@ -59,88 +59,87 @@ export default function ConsultasIndex({ auth, consultas, links, filters }) {
     }
 };
     //FILTRO
-
-const handleApplyFilters = async (appliedFilters) => {
-    try {
-        setLoading(true);
-        setError(null);
-        
-        // Mapear los filtros al formato esperado por el backend
-        const params = {
-            dni: searchDni || undefined,
-            startDate: appliedFilters.startDate || undefined,
-            endDate: appliedFilters.endDate || undefined,
-            sex: appliedFilters.sex || undefined,
-            minAge: appliedFilters.minAge || undefined,
-            maxAge: appliedFilters.maxAge || undefined,
-            procedencia: appliedFilters.procedencia || undefined,
-            // Puedes agregar más filtros aquí si es necesario
-        };
-        
-        router.get(route('consultas.index'), params, {
-            preserveState: true,
-            replace: true,
-            only: ['consultas', 'filters']
-        });
-        
-    } catch (error) {
-        console.error('Error al aplicar filtros:', error);
-        setError('Error al aplicar los filtros');
-    } finally {
-        setLoading(false);
-    }
-};
-    // Función para manejar el reset de filtros
-const handleResetFilters = async () => {
-    try {
-        setLoading(true);
-        setError(null);
-        
-        // Solo mantener el DNI si estaba en la búsqueda
-        await router.get(route('consultas.index'), 
-            { dni: searchDni || undefined }, 
-            {
+    const handleApplyFilters = async (appliedFilters) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            // Mapear los filtros al formato esperado por el backend
+            const params = {
+                dni: searchDni || undefined,
+                startDate: appliedFilters.startDate || undefined,
+                endDate: appliedFilters.endDate || undefined,
+                sex: appliedFilters.sex || undefined,
+                minAge: appliedFilters.minAge || undefined,
+                maxAge: appliedFilters.maxAge || undefined,
+                procedencia: appliedFilters.procedencia || undefined,
+                // Puedes agregar más filtros aquí si es necesario
+            };
+            
+            router.get(route('consultas.index'), params, {
                 preserveState: true,
                 replace: true,
                 only: ['consultas', 'filters']
-            }
-        );
-        
-    } catch (error) {
-        console.error('Error al resetear filtros:', error);
-        setError('Error al resetear los filtros');
-    } finally {
-        setLoading(false);
-    }
-};
+            });
+            
+        } catch (error) {
+            console.error('Error al aplicar filtros:', error);
+            setError('Error al aplicar los filtros');
+        } finally {
+            setLoading(false);
+        }
+    };
+        // Función para manejar el reset de filtros
+    const handleResetFilters = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            // Solo mantener el DNI si estaba en la búsqueda
+            await router.get(route('consultas.index'), 
+                { dni: searchDni || undefined }, 
+                {
+                    preserveState: true,
+                    replace: true,
+                    only: ['consultas', 'filters']
+                }
+            );
+            
+        } catch (error) {
+            console.error('Error al resetear filtros:', error);
+            setError('Error al resetear los filtros');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-const descargarPDFConsulta = async (consultaId) => {
-    try {
-        setPdfNotificationMessage('Generando PDF de consulta...');
-        setShowPdfNotification(true);
-        
-        // Primero verificar si la consulta existe
-        const response = await fetch(route('consultas.show', consultaId));
-        if (!response.ok) {
-            throw new Error('Consulta no encontrada');
+    const descargarPDFConsulta = async (consultaId) => {
+        try {
+            setPdfNotificationMessage('Generando PDF de consulta...');
+            setShowPdfNotification(true);
+            
+            // Primero verificar si la consulta existe
+            const response = await fetch(route('consultas.show', consultaId));
+            if (!response.ok) {
+                throw new Error('Consulta no encontrada');
+            }
+            
+            // Luego descargar el PDF
+            const pdfWindow = window.open(route('consultas.pdf', { consulta: consultaId }), '_blank');
+            
+            if (!pdfWindow || pdfWindow.closed) {
+                // Fallback para navegadores que bloquean popups
+                window.location.href = route('consultas.pdf', { consulta: consultaId });
+            }
+            
+            setPdfNotificationMessage('PDF generado con éxito');
+        } catch (error) {
+            console.error('Error:', error);
+            setPdfNotificationMessage(error.message || 'Error al generar el PDF');
+        } finally {
+            setTimeout(() => setShowPdfNotification(false), 5000);
         }
-        
-        // Luego descargar el PDF
-        const pdfWindow = window.open(route('consultas.pdf', { consulta: consultaId }), '_blank');
-        
-        if (!pdfWindow || pdfWindow.closed) {
-            // Fallback para navegadores que bloquean popups
-            window.location.href = route('consultas.pdf', { consulta: consultaId });
-        }
-        
-        setPdfNotificationMessage('PDF generado con éxito');
-    } catch (error) {
-        console.error('Error:', error);
-        setPdfNotificationMessage(error.message || 'Error al generar el PDF');
-    } finally {
-        setTimeout(() => setShowPdfNotification(false), 5000);
-    }
-};
+    };
 
     const descargarPDFCirugia = async (cirugiaId) => {
         try {
@@ -293,251 +292,383 @@ const descargarPDFConsulta = async (consultaId) => {
                 </div>
             )}
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 bg-white border-b border-gray-200">
-                            {/* Barra de búsqueda y botones de creación */}
-                            <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0 mb-6">
-                                <form onSubmit={handleSearch} className="flex items-center w-full md:w-auto">
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar por DNI del paciente"
-                                        value={searchDni}
-                                        maxLength={12}
-                                        minLength={0}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            if (/^[-0-9.]*$/.test(value)) { // Validar con regex
-                                                setSearchDni( e.target.value);
-                                            }
-                                        }}
-                                        className="px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 bg-blue-500 text-white rounded-r hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        Buscar
-                                    </button>
-                                </form>
-                                {isAdminMedico && ( 
-                                <div className="flex space-x-2">
-                                    <Link
-                                        href={route('cirugias.create')}
-                                        className="px-4 py-2 flex justify-center items-center gap-2 text-white bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                    >
-                                        <span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 16 16"><path fill="#fff" d="M7.5 4a.5.5 0 0 1 .5.5V7h2.5a.5.5 0 0 1 0 1H8v2.5a.5.5 0 0 1-1 0V8H4.5a.5.5 0 0 1 0-1H7V4.5a.5.5 0 0 1 .5-.5"></path><path fill="#fff" fillRule="evenodd" d="M0 6.4c0-2.24 0-3.36.436-4.22A4.03 4.03 0 0 1 2.186.43c.856-.436 1.98-.436 4.22-.436h2.2c2.24 0 3.36 0 4.22.436c.753.383 1.36.995 1.75 1.75c.436.856.436 1.98.436 4.22v2.2c0 2.24 0 3.36-.436 4.22a4.03 4.03 0 0 1-1.75 1.75c-.856.436-1.98.436-4.22.436h-2.2c-2.24 0-3.36 0-4.22-.436a4.03 4.03 0 0 1-1.75-1.75C0 11.964 0 10.84 0 8.6zM6.4 1h2.2c1.14 0 1.93 0 2.55.051c.605.05.953.142 1.22.276a3.02 3.02 0 0 1 1.31 1.31c.134.263.226.611.276 1.22c.05.617.051 1.41.051 2.55v2.2c0 1.14 0 1.93-.051 2.55c-.05.605-.142.953-.276 1.22a3 3 0 0 1-1.31 1.31c-.263.134-.611.226-1.22.276c-.617.05-1.41.051-2.55.051H6.4c-1.14 0-1.93 0-2.55-.05c-.605-.05-.953-.143-1.22-.277a3 3 0 0 1-1.31-1.31c-.134-.263-.226-.61-.276-1.22c-.05-.617-.051-1.41-.051-2.55v-2.2c0-1.14 0-1.93.051-2.55c.05-.605.142-.953.276-1.22a3.02 3.02 0 0 1 1.31-1.31c.263-.134.611-.226 1.22-.276C4.467 1.001 5.26 1 6.4 1" clipRule="evenodd"></path></svg>
-                                        </span>
-                                        <span>Cirugía</span>
-                                    </Link>
-                                    <Link
-                                        href={route('consultas.create')}
-                                        className="px-4 py-2 flex justify-center items-center gap-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    >
-                                        <span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 16 16"><path fill="#fff" d="M7.5 4a.5.5 0 0 1 .5.5V7h2.5a.5.5 0 0 1 0 1H8v2.5a.5.5 0 0 1-1 0V8H4.5a.5.5 0 0 1 0-1H7V4.5a.5.5 0 0 1 .5-.5"></path><path fill="#fff" fillRule="evenodd" d="M0 6.4c0-2.24 0-3.36.436-4.22A4.03 4.03 0 0 1 2.186.43c.856-.436 1.98-.436 4.22-.436h2.2c2.24 0 3.36 0 4.22.436c.753.383 1.36.995 1.75 1.75c.436.856.436 1.98.436 4.22v2.2c0 2.24 0 3.36-.436 4.22a4.03 4.03 0 0 1-1.75 1.75c-.856.436-1.98.436-4.22.436h-2.2c-2.24 0-3.36 0-4.22-.436a4.03 4.03 0 0 1-1.75-1.75C0 11.964 0 10.84 0 8.6zM6.4 1h2.2c1.14 0 1.93 0 2.55.051c.605.05.953.142 1.22.276a3.02 3.02 0 0 1 1.31 1.31c.134.263.226.611.276 1.22c.05.617.051 1.41.051 2.55v2.2c0 1.14 0 1.93-.051 2.55c-.05.605-.142.953-.276 1.22a3 3 0 0 1-1.31 1.31c-.263.134-.611.226-1.22.276c-.617.05-1.41.051-2.55.051H6.4c-1.14 0-1.93 0-2.55-.05c-.605-.05-.953-.143-1.22-.277a3 3 0 0 1-1.31-1.31c-.134-.263-.226-.61-.276-1.22c-.05-.617-.051-1.41-.051-2.55v-2.2c0-1.14 0-1.93.051-2.55c.05-.605.142-.953.276-1.22a3.02 3.02 0 0 1 1.31-1.31c.263-.134.611-.226 1.22-.276C4.467 1.001 5.26 1 6.4 1" clipRule="evenodd"></path></svg>
-                                        </span>
-                                        <span>Consulta</span>
-                                    </Link>
-                                </div>
-                                )}
-                            </div>
-                            <AdvancedFilters
-                                initialFilters={{
-                                    sex: filters.sex || '',
-                                    minAge: filters.minAge || '',
-                                    maxAge: filters.maxAge || '',
-                                    startDate: filters.startDate || '',
-                                    endDate: filters.endDate || '',
-                                    procedencia: filters.procedencia || '',
-                                    activeFilters: {
-                                        sex: !!filters.sex,
-                                        age: !!(filters.minAge || filters.maxAge),
-                                        dateRange: !!(filters.startDate || filters.endDate),
-                                        procedencia: !!filters.procedencia,
-                                        terms: false
-                                    }
-                                }}
-                                onApplyFilters={handleApplyFilters}
-                                onResetFilters={handleResetFilters}
-                                disabledSections={{ 
-                                    terms: true // Deshabilitar la sección de términos si no la usas
-                                }}
-                                showActiveFilters={true}
-                            />
-
-                            {/* Tabla de consultas */}
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full border border-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-    {consultas.data.length > 0 ? (
-        consultas.data.map((item) => {
-            const horasTranscurridas = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60);
-            const puedeEditar = ['admin', 'medico'].includes(auth.user.role) || horasTranscurridas <= 48;
-            
-            return (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4 text-sm text-gray-900">{item.codigo_historial}</td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                        {item.tipo_consulta ? (
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                                item.tipo_consulta === 'inicio' ? 'bg-blue-100 text-blue-800' :
-                                item.tipo_consulta === 'evolucion' ? 'bg-green-100 text-green-800' :
-                                'bg-gray-100 text-gray-800'
-                            }`}>
-                                {item.tipo_consulta === 'inicio' ? 'C. Inicio' : 
-                                item.tipo_consulta === 'evolucion' ? 'C. Evolución' : 'Cirugía'}
-                            </span>
-                        ) : (
-                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                                Cirugía
-                            </span>
-                        )}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                        {item.paciente.nombres} {item.paciente.apellido_paterno}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                        {item.paciente.dni}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                        {new Date(item.created_at).toLocaleDateString()}
-                    </td>
-                    {/*ACCIONES */}
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                        <div className="flex items-center space-x-2">
-                            <Link
-                                href={item.tipo_consulta ? 
-                                    route('consultas.show', item.id) : 
-                                    route('cirugias.show', item.id)}
-                                className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M12 9a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5a5 5 0 0 1 5-5a5 5 0 0 1 5 5a5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"></path></svg>
-                            </Link>
-                            {puedeEditar && isAdminMedico ? (
-                                <Link
-                                    href={item.tipo_consulta ? 
-                                    route('consultas.edit', item.id) : 
-                                    route('cirugias.edit', item.id)}
-                                    className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
-                                </Link>
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        alert(`No puedes editar esta consulta porque han pasado ${Math.floor(horasTranscurridas)} horas desde su creación.\n\nSolo los administradores y médicos pueden editar consultas después de 48 horas.`);
-                                    }}
-                                    className="px-3 py-1 text-white bg-gray-400 rounded cursor-not-allowed"
-                                    title="No puedes editar después de 48 horas"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
-                                </button>
-                            )}
-                            {isAdmin && (
-                                <button
-                                    onClick={() => openDeleteModal(item.id, !item.tipo_consulta)}
-                                    className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zM9 17h2V8H9zm4 0h2V8h-2zM7 6v13z"></path></svg>
-                                </button>
-                            )}
-                            {isAdminMedico && (
-            <>
-                {item.tipo_consulta ? (
-                    // Es una consulta - mostrar botones relacionados con consulta
-                    <>
+<div className="py-4 md:py-12">
+    <div className="mx-auto px-2 sm:px-4 md:max-w-7xl md:px-6 lg:px-8">
+        <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+            <div className="p-4 md:p-6 bg-white border-b border-gray-200">
+                {/* Barra de búsqueda y botones de creación */}
+                <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0 mb-4 md:mb-6">
+                    <form onSubmit={handleSearch} className="flex items-center w-full">
+                        <input
+                            type="text"
+                            placeholder="Buscar por DNI"
+                            value={searchDni}
+                            maxLength={12}
+                            minLength={0}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (/^[-0-9.]*$/.test(value)) {
+                                    setSearchDni(e.target.value);
+                                }
+                            }}
+                            className="px-3 py-2 text-sm md:text-base border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+                        />
                         <button
-                            onClick={() => descargarPDFConsulta(item.id)}
-                            className="px-3 py-1 flex justify-center items-center text-white bg-green-500 rounded hover:bg-green-600 disabled:bg-green-300"
-                            title="Descargar PDF de consulta"
-                            disabled={showPdfNotification && pdfNotificationMessage.includes('Generando')}
+                            type="submit"
+                            className="px-3 py-2 text-sm md:text-base bg-blue-500 text-white rounded-r hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
-                                <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
-                            </svg>
-                            <span className="ml-1">Consulta</span>
+                            <span className="md:hidden">🔍</span>
+                            <span className="hidden md:inline">Buscar</span>
                         </button>
-                        
-                        {item.receta && (
-                            <button
-                                onClick={() => descargarPDFReceta(item.id)}
-                                className="px-3 py-1 flex justify-center items-center bg-purple-500 text-white rounded hover:bg-purple-600"
+                    </form>
+                    {isAdminMedico && (
+                        <div className="flex space-x-2 overflow-x-auto sm:overflow-x-visible pb-2 md:pb-0">
+                            <Link
+                                href={route('cirugias.create')}
+                                className="px-3 py-2 text-sm md:text-base flex justify-center items-center gap-1 md:gap-2 text-white bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 whitespace-nowrap"
                             >
-                                <span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
+                                <span className="text-xs md:text-base">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 16 16"><path fill="#fff" d="M7.5 4a.5.5 0 0 1 .5.5V7h2.5a.5.5 0 0 1 0 1H8v2.5a.5.5 0 0 1-1 0V8H4.5a.5.5 0 0 1 0-1H7V4.5a.5.5 0 0 1 .5-.5"></path><path fill="#fff" fillRule="evenodd" d="M0 6.4c0-2.24 0-3.36.436-4.22A4.03 4.03 0 0 1 2.186.43c.856-.436 1.98-.436 4.22-.436h2.2c2.24 0 3.36 0 4.22.436c.753.383 1.36.995 1.75 1.75c.436.856.436 1.98.436 4.22v2.2c0 2.24 0 3.36-.436 4.22a4.03 4.03 0 0 1-1.75 1.75c-.856.436-1.98.436-4.22.436h-2.2c-2.24 0-3.36 0-4.22-.436a4.03 4.03 0 0 1-1.75-1.75C0 11.964 0 10.84 0 8.6zM6.4 1h2.2c1.14 0 1.93 0 2.55.051c.605.05.953.142 1.22.276a3.02 3.02 0 0 1 1.31 1.31c.134.263.226.611.276 1.22c.05.617.051 1.41.051 2.55v2.2c0 1.14 0 1.93-.051 2.55c-.05.605-.142.953-.276 1.22a3 3 0 0 1-1.31 1.31c-.263.134-.611.226-1.22.276c-.617.05-1.41.051-2.55.051H6.4c-1.14 0-1.93 0-2.55-.05c-.605-.05-.953-.143-1.22-.277a3 3 0 0 1-1.31-1.31c-.134-.263-.226-.61-.276-1.22c-.05-.617-.051-1.41-.051-2.55v-2.2c0-1.14 0-1.93.051-2.55c.05-.605.142-.953.276-1.22a3.02 3.02 0 0 1 1.31-1.31c.263-.134.611-.226 1.22-.276C4.467 1.001 5.26 1 6.4 1" clipRule="evenodd"></path></svg>
                                 </span>
-                                <span>Receta</span>
-                            </button>
-                        )}
-                        
-                        {item.refraccion && (
-                            <button
-                                onClick={() => descargarPDFRefraccion(item.id)}
-                                className="px-3 py-1 flex justify-center items-center text-white bg-teal-500 rounded hover:bg-teal-600"
-                                title="Descargar examen de refracción"
+                                <span className="text-xs md:text-sm">Cirugía</span>
+                            </Link>
+                            <Link
+                                href={route('consultas.create')}
+                                className="px-3 py-2 text-sm md:text-base flex justify-center items-center gap-1 md:gap-2 text-white bg-green-500 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
-                                    <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
-                                </svg>
-                                <span className="ml-1">Refracción</span>
-                            </button>
-                        )}
-                    </>
-                ) : (
-                    // Es una cirugía - mostrar solo botón de cirugía
-                    <button
-                        onClick={() => descargarPDFCirugia(item.id)}
-                        className="px-3 py-1 flex justify-center items-center text-white bg-indigo-500 rounded hover:bg-indigo-600"
-                    >
-                        <span>
-                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
-                        </span>
-                        <span>Cirugía</span>
-                    </button>
-                            )}
-                        </>
-                            )}
+                                <span className="text-xs md:text-base">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 16 16"><path fill="#fff" d="M7.5 4a.5.5 0 0 1 .5.5V7h2.5a.5.5 0 0 1 0 1H8v2.5a.5.5 0 0 1-1 0V8H4.5a.5.5 0 0 1 0-1H7V4.5a.5.5 0 0 1 .5-.5"></path><path fill="#fff" fillRule="evenodd" d="M0 6.4c0-2.24 0-3.36.436-4.22A4.03 4.03 0 0 1 2.186.43c.856-.436 1.98-.436 4.22-.436h2.2c2.24 0 3.36 0 4.22.436c.753.383 1.36.995 1.75 1.75c.436.856.436 1.98.436 4.22v2.2c0 2.24 0 3.36-.436 4.22a4.03 4.03 0 0 1-1.75 1.75c-.856.436-1.98.436-4.22.436h-2.2c-2.24 0-3.36 0-4.22-.436a4.03 4.03 0 0 1-1.75-1.75C0 11.964 0 10.84 0 8.6zM6.4 1h2.2c1.14 0 1.93 0 2.55.051c.605.05.953.142 1.22.276a3.02 3.02 0 0 1 1.31 1.31c.134.263.226.611.276 1.22c.05.617.051 1.41.051 2.55v2.2c0 1.14 0 1.93-.051 2.55c-.05.605-.142.953-.276 1.22a3 3 0 0 1-1.31 1.31c-.263.134-.611.226-1.22.276c-.617.05-1.41.051-2.55.051H6.4c-1.14 0-1.93 0-2.55-.05c-.605-.05-.953-.143-1.22-.277a3 3 0 0 1-1.31-1.31c-.134-.263-.226-.61-.276-1.22c-.05-.617-.051-1.41-.051-2.55v-2.2c0-1.14 0-1.93.051-2.55c.05-.605.142-.953.276-1.22a3.02 3.02 0 0 1 1.31-1.31c.263-.134.611-.226 1.22-.276C4.467 1.001 5.26 1 6.4 1" clipRule="evenodd"></path></svg>
+                                </span>
+                                <span className="text-xs md:text-sm">Consulta</span>
+                            </Link>
                         </div>
-                    </td>
-                </tr>
-            );
-        })
-    ) : (
-        <tr>
-            <td colSpan="6" className="px-4 py-4 text-center text-sm text-gray-500">
-                No se encontraron consultas.
-            </td>
-        </tr>
-    )}
-</tbody>
-                                </table>
-                            </div>
+                    )}
+                </div>
 
-                            {/* Paginación */}
-                            <div className="mt-4">
-                            <Pagination 
-                                links={consultas.links} 
-                                preserveState
-                                only={['consultas', 'filters']}
-                            />
-                    </div>
+                <AdvancedFilters
+                    initialFilters={{
+                        sex: filters.sex || '',
+                        minAge: filters.minAge || '',
+                        maxAge: filters.maxAge || '',
+                        startDate: filters.startDate || '',
+                        endDate: filters.endDate || '',
+                        procedencia: filters.procedencia || '',
+                        activeFilters: {
+                            sex: !!filters.sex,
+                            age: !!(filters.minAge || filters.maxAge),
+                            dateRange: !!(filters.startDate || filters.endDate),
+                            procedencia: !!filters.procedencia,
+                            terms: false
+                        }
+                    }}
+                    onApplyFilters={handleApplyFilters}
+                    onResetFilters={handleResetFilters}
+                    disabledSections={{ terms: true }}
+                    showActiveFilters={true}
+                />
+
+                {/* Tabla de consultas - Versión móvil */}
+                <div className="md:hidden mt-4">
+                    {consultas.data.length > 0 ? (
+                        <div className="space-y-3">
+                            {consultas.data.map((item) => {
+                                const horasTranscurridas = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60);
+                                const puedeEditar = ['admin', 'medico'].includes(auth.user.role) || horasTranscurridas <= 48;
+                                
+                                return (
+                                    <div key={item.id} className="border rounded-lg p-3 shadow-sm">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <div className="font-medium text-gray-900">
+                                                    {item.paciente.nombres} {item.paciente.apellido_paterno}
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    DNI: {item.paciente.dni}
+                                                </div>
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-full text-xs ${
+                                                item.tipo_consulta === 'inicio' ? 'bg-blue-100 text-blue-800' :
+                                                item.tipo_consulta === 'evolucion' ? 'bg-green-100 text-green-800' :
+                                                'bg-purple-100 text-purple-800'
+                                            }`}>
+                                                {item.tipo_consulta ? 
+                                                    (item.tipo_consulta === 'inicio' ? 'C. Inicio' : 'C. Evolución') : 
+                                                    'Cirugía'}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="mt-2 text-sm">
+                                            <div>Código: {item.codigo_historial}</div>
+                                            <div>Fecha: {new Date(item.created_at).toLocaleDateString()}</div>
+                                        </div>
+                                        
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <Link
+                                                href={item.tipo_consulta ? 
+                                                    route('consultas.show', item.id) : 
+                                                    route('cirugias.show', item.id)}
+                                                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                title="Ver"
+                                            >
+                                                Ver
+                                            </Link>
+                                            
+                                            {puedeEditar && isAdminMedico ? (
+                                                <Link
+                                                    href={item.tipo_consulta ? 
+                                                        route('consultas.edit', item.id) : 
+                                                        route('cirugias.edit', item.id)}
+                                                    className="px-2 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                                    title="Editar"
+                                                >
+                                                    Editar
+                                                </Link>
+                                            ) : (
+                                                <button
+                                                    onClick={() => {
+                                                        alert(`No puedes editar esta consulta porque han pasado ${Math.floor(horasTranscurridas)} horas desde su creación.\n\nSolo los administradores y médicos pueden editar consultas después de 48 horas.`);
+                                                    }}
+                                                    className="px-2 py-1 text-xs bg-gray-400 text-white rounded cursor-not-allowed"
+                                                    title="No puedes editar después de 48 horas"
+                                                >
+                                                    Editar
+                                                </button>
+                                            )}
+                                            
+                                            {isAdmin && (
+                                                <button
+                                                    onClick={() => openDeleteModal(item.id, !item.tipo_consulta)}
+                                                    className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                                                    title="Eliminar"
+                                                >
+                                                    Eliminar
+                                                </button>
+                                            )}
+                                            
+                                            {isAdminMedico && (
+                                                <>
+                                                    {item.tipo_consulta ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => descargarPDFConsulta(item.id)}
+                                                                className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300"
+                                                                title="Descargar PDF de consulta"
+                                                                disabled={showPdfNotification && pdfNotificationMessage.includes('Generando')}
+                                                            >
+                                                                Consulta
+                                                            </button>
+                                                            
+                                                            {item.receta && (
+                                                                <button
+                                                                    onClick={() => descargarPDFReceta(item.id)}
+                                                                    className="px-2 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600"
+                                                                >
+                                                                    Receta
+                                                                </button>
+                                                            )}
+                                                            
+                                                            {item.refraccion && (
+                                                                <button
+                                                                    onClick={() => descargarPDFRefraccion(item.id)}
+                                                                    className="px-2 py-1 text-xs bg-teal-500 text-white rounded hover:bg-teal-600"
+                                                                    title="Descargar examen de refracción"
+                                                                >
+                                                                    Refracción
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => descargarPDFCirugia(item.id)}
+                                                            className="px-2 py-1 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600"
+                                                        >
+                                                            Cirugía
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    </div>
+                    ) : (
+                        <div className="px-4 py-4 text-center text-sm text-gray-500">
+                            No se encontraron consultas.
+                        </div>
+                    )}
+                </div>
+
+                {/* Tabla de consultas - Versión desktop */}
+                <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full border border-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {consultas.data.length > 0 ? (
+                                consultas.data.map((item) => {
+                                    const horasTranscurridas = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60);
+                                    const puedeEditar = ['admin', 'medico'].includes(auth.user.role) || horasTranscurridas <= 48;
+                                    
+                                    return (
+                                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-4 text-sm text-gray-900">{item.codigo_historial}</td>
+                                            <td className="px-4 py-4 text-sm text-gray-900">
+                                                {item.tipo_consulta ? (
+                                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                                        item.tipo_consulta === 'inicio' ? 'bg-blue-100 text-blue-800' :
+                                                        item.tipo_consulta === 'evolucion' ? 'bg-green-100 text-green-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                        {item.tipo_consulta === 'inicio' ? 'C. Inicio' : 
+                                                        item.tipo_consulta === 'evolucion' ? 'C. Evolución' : 'Cirugía'}
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                                        Cirugía
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-gray-900">
+                                                {item.paciente.nombres} {item.paciente.apellido_paterno}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-gray-900">
+                                                {item.paciente.dni}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-gray-900">
+                                                {new Date(item.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-gray-900">
+                                                <div className="flex items-center space-x-2">
+                                                    <Link
+                                                        href={item.tipo_consulta ? 
+                                                            route('consultas.show', item.id) : 
+                                                            route('cirugias.show', item.id)}
+                                                        className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
+                                                        title="Ver"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M12 9a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5a5 5 0 0 1 5-5a5 5 0 0 1 5 5a5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"></path></svg>
+                                                    </Link>
+                                                    {puedeEditar && isAdminMedico ? (
+                                                        <Link
+                                                            href={item.tipo_consulta ? 
+                                                            route('consultas.edit', item.id) : 
+                                                            route('cirugias.edit', item.id)}
+                                                            className="px-3 py-1 text-white bg-yellow-500 rounded hover:bg-yellow-600"
+                                                            title="Editar"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
+                                                        </Link>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                alert(`No puedes editar esta consulta porque han pasado ${Math.floor(horasTranscurridas)} horas desde su creación.\n\nSolo los administradores y médicos pueden editar consultas después de 48 horas.`);
+                                                            }}
+                                                            className="px-3 py-1 text-white bg-gray-400 rounded cursor-not-allowed"
+                                                            title="No puedes editar después de 48 horas"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"></path></svg>
+                                                        </button>
+                                                    )}
+                                                    {isAdmin && (
+                                                        <button
+                                                            onClick={() => openDeleteModal(item.id, !item.tipo_consulta)}
+                                                            className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                                            title="Eliminar"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="M7 21q-.825 0-1.412-.587T5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zM9 17h2V8H9zm4 0h2V8h-2zM7 6v13z"></path></svg>
+                                                        </button>
+                                                    )}
+                                                    {isAdminMedico && (
+                                                        <>
+                                                            {item.tipo_consulta ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => descargarPDFConsulta(item.id)}
+                                                                        className="px-3 py-1 flex justify-center items-center text-white bg-green-500 rounded hover:bg-green-600 disabled:bg-green-300"
+                                                                        title="Descargar PDF de consulta"
+                                                                        disabled={showPdfNotification && pdfNotificationMessage.includes('Generando')}
+                                                                    >
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
+                                                                            <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
+                                                                        </svg>
+                                                                        <span className="ml-1 hidden lg:inline">Consulta</span>
+                                                                    </button>
+                                                                    
+                                                                    {item.receta && (
+                                                                        <button
+                                                                            onClick={() => descargarPDFReceta(item.id)}
+                                                                            className="px-3 py-1 flex justify-center items-center bg-purple-500 text-white rounded hover:bg-purple-600"
+                                                                        >
+                                                                            <span>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
+                                                                            </span>
+                                                                            <span className="ml-1 hidden lg:inline">Receta</span>
+                                                                        </button>
+                                                                    )}
+                                                                    
+                                                                    {item.refraccion && (
+                                                                        <button
+                                                                            onClick={() => descargarPDFRefraccion(item.id)}
+                                                                            className="px-3 py-1 flex justify-center items-center text-white bg-teal-500 rounded hover:bg-teal-600"
+                                                                            title="Descargar examen de refracción"
+                                                                        >
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24">
+                                                                                <path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/>
+                                                                            </svg>
+                                                                            <span className="ml-1 hidden lg:inline">Refracción</span>
+                                                                        </button>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => descargarPDFCirugia(item.id)}
+                                                                    className="px-3 py-1 flex justify-center items-center text-white bg-indigo-500 rounded hover:bg-indigo-600"
+                                                                >
+                                                                    <span>
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><path fill="#fff" d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"></path></svg>
+                                                                    </span>
+                                                                    <span className="ml-1 hidden lg:inline">Cirugía</span>
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" className="px-4 py-4 text-center text-sm text-gray-500">
+                                        No se encontraron consultas.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Paginación */}
+                <div className="mt-4">
+                    <Pagination 
+                        links={consultas.links} 
+                        preserveState
+                        only={['consultas', 'filters']}
+                    />
                 </div>
             </div>
+        </div>
+    </div>
+</div>
         </AuthenticatedLayout>
     );
 }

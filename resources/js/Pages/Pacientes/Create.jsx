@@ -198,8 +198,8 @@ useEffect(() => {
         >
             <Head title="Crear Nuevo Paciente" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+            <div className="py-6 sm:py-12">
+                <div className="mx-auto sm:max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <form onSubmit={handleSubmit} encType="multipart/form-data">
@@ -252,59 +252,58 @@ useEffect(() => {
                                 </div>
 
                                 {/* SECCIÓN DE DATOS PERSONALES */}
-                                <div className='mb-8'>
-                                    <h3 className="text-2xl uppercase font-semibold leading-tight text-gray-800 border-b">Datos Personales</h3>
+                                <div className='mb-6 sm:mb-8'>
+                                    <h3 className="text-xl sm:text-2xl uppercase font-semibold leading-tight text-gray-800 border-b">Datos Personales</h3>
                                 </div>
-                                <div className='grid grid-cols-2 gap-12'>
+                                <div className='flex flex-col sm:grid sm:grid-cols-2 sm:gap-12'>
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Apellido Paterno*</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Apellido Paterno*</label>
                                             <input required
                                                 type="text"
                                                 value={data.apellido_paterno}
                                                 onChange={(e) => setData('apellido_paterno', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.apellido_paterno && <p className="text-sm text-red-500">{errors.apellido_paterno}</p>}
+                                            {errors.apellido_paterno && <p className="text-xs sm:text-sm text-red-500">{errors.apellido_paterno}</p>}
                                         </div>                                           
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Apellido Materno*</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Apellido Materno*</label>
                                             <input required
                                                 type="text"
                                                 value={data.apellido_materno}
                                                 onChange={(e) => setData('apellido_materno', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.apellido_materno && <p className="text-sm text-red-500">{errors.apellido_materno}</p>}
+                                            {errors.apellido_materno && <p className="text-xs sm:text-sm text-red-500">{errors.apellido_materno}</p>}
                                         </div>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Nombres*</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Nombres*</label>
                                             <input required
                                                 type="text"
                                                 value={data.nombres}
                                                 onChange={(e) => setData('nombres', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.nombres && <p className="text-sm text-red-500">{errors.nombres}</p>}
+                                            {errors.nombres && <p className="text-xs sm:text-sm text-red-500">{errors.nombres}</p>}
                                         </div>
                                     </div>
-                                    {/*SEGUNDO BLOQUE DE DATOS PERSONALES*/ }
                                     
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Fecha Nacimiento*</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Fecha Nacimiento*</label>
                                             <input required
                                                 type="date"
                                                 value={data.fecha_nacimiento || ''}
                                                 onChange={(e) => setData('fecha_nacimiento', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.fecha_nacimiento && <p className="text-sm text-red-500">{errors.fecha_nacimiento}</p>}
+                                            {errors.fecha_nacimiento && <p className="text-xs sm:text-sm text-red-500">{errors.fecha_nacimiento}</p>}
                                         </div>
 
-                                        <div className='grid grid-cols-2'>
-                                            <div className="mb-4 mr-4">
-                                                <label className="block text-sm uppercase font-medium text-gray-700">Edad</label>
+                                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                                            <div className="mb-4">
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Edad</label>
                                                 <input required
                                                     type="number"
                                                     min={0}
@@ -316,80 +315,81 @@ useEffect(() => {
                                                             setData('edad', e.target.value);
                                                         }
                                                     }}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                                 />
-                                                {errors.edad && <p className="text-sm text-red-500">{errors.edad}</p>}
+                                                {errors.edad && <p className="text-xs sm:text-sm text-red-500">{errors.edad}</p>}
                                             </div>
 
                                             <div className="mb-4">
-                                                <label className="block text-sm uppercase font-medium text-gray-700">Peso Kg</label>
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Peso Kg</label>
                                                 <input
                                                     type="number"
                                                     value={data.peso || ''}
                                                     onChange={(e) => {
                                                         const value = e.target.value;
-                                                        // Validación opcional para decimales
                                                         if (value === '' || /^\d*\.?\d*$/.test(value)) {
                                                             setData('peso', value);
                                                         }
                                                     }}
                                                     step="0.01"
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                                 />
-                                                {errors.peso && <p className="text-sm text-red-500">{errors.peso}</p>}
+                                                {errors.peso && <p className="text-xs sm:text-sm text-red-500">{errors.peso}</p>}
                                             </div> 
 
-                                            <div className="mr-4">
-                                                <label className="block text-sm uppercase font-medium text-gray-700">Género</label>
+                                            <div className="mb-4">
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Género</label>
                                                     <select 
                                                         value={data.sexo || ''}
                                                         onChange={(e) => setData('sexo', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                                     >
                                                         <option value="">Seleccione...</option>
                                                         <option value="M">Masculino</option>
                                                         <option value="F">Femenino</option>
                                                     </select>
-                                                    {errors.sexo && <p className="text-sm text-red-500">{errors.sexo}</p>}
+                                                    {errors.sexo && <p className="text-xs sm:text-sm text-red-500">{errors.sexo}</p>}
                                             </div>
 
                                             <div className="mb-4">
-                                                <label className="block text-sm uppercase font-medium text-gray-700">Tipo de Documento*</label>
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Tipo de Documento*</label>
                                                 <select 
                                                     value={tipoDocumento}
                                                     onChange={handleTipoDocumentoChange}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                                 >
                                                     <option value="dni">DNI</option>
                                                     <option value="ce">Carnet de Extranjería</option>
                                                 </select>
                                             </div>
-                                            <div className="mb-4">
-                                                <label className="block text-sm uppercase font-medium text-gray-700">
-                                                    {tipoDocumento === 'dni' ? 'DNI*' : 'Carnet de Extranjería*'}
-                                                </label>
-                                                <input required
-                                                    type="text"
-                                                    value={data.dni}
-                                                    onChange={handleDocumentoChange}
-                                                    maxLength={tipoDocumento === 'dni' ? 8 : 12}
-                                                    placeholder={tipoDocumento === 'dni' ? 'Ingrese 8 dígitos' : 'Ingrese hasta 12 dígitos'}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                />
-                                                {errors.dni && <p className="text-sm text-red-500">{errors.dni}</p>}
-                                            </div>
-                                        </div>                                            
+                                        </div>
+                                            
+                                        <div className="mb-4">
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">
+                                                {tipoDocumento === 'dni' ? 'DNI*' : 'Carnet de Extranjería*'}
+                                            </label>
+                                            <input required
+                                                type="text"
+                                                value={data.dni}
+                                                onChange={handleDocumentoChange}
+                                                maxLength={tipoDocumento === 'dni' ? 8 : 12}
+                                                placeholder={tipoDocumento === 'dni' ? 'Ingrese 8 dígitos' : 'Ingrese hasta 12 dígitos'}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+                                            />
+                                            {errors.dni && <p className="text-xs sm:text-sm text-red-500">{errors.dni}</p>}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <hr className='my-8'/>
-                                <div className='grid grid-cols-2 gap-12'>
+                                <hr className='my-6 sm:my-8'/>
+                                <div className='flex flex-col sm:grid sm:grid-cols-2 sm:gap-12'>
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                        <label className="block text-sm uppercase font-medium text-gray-700">Estado Civil</label>
+                                        <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Estado Civil</label>
                                             <select
                                                 value={data.estado_civil}
                                                 onChange={(e) => setData('estado_civil', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             >
                                                 <option value="">Seleccione...</option>
                                                 <option value="soltero">Soltero</option>
@@ -397,27 +397,26 @@ useEffect(() => {
                                                 <option value="divorciado">Divorciado</option>
                                                 <option value="viudo">Viudo</option>
                                             </select>
-                                            {errors.estado_civil && <p className="text-sm text-red-500">{errors.estado_civil}</p>}
-
+                                            {errors.estado_civil && <p className="text-xs sm:text-sm text-red-500">{errors.estado_civil}</p>}
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Ocupación</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Ocupación</label>
                                             <input
                                                 type="text"
                                                 value={data.ocupacion}
                                                 onChange={(e) => setData('ocupacion', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.ocupacion && <p className="text-sm text-red-500">{errors.ocupacion}</p>}
+                                            {errors.ocupacion && <p className="text-xs sm:text-sm text-red-500">{errors.ocupacion}</p>}
                                         </div>
 
-                                        <div className="mr-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Distrito de Procedencia</label>
+                                        <div className="mb-4">
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Distrito de Procedencia</label>
                                                 <select 
                                                     value={data.procedencia}
                                                     onChange={(e) => setData('procedencia', e.target.value)}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                                 >
                                                     <option value="">Seleccione...</option>
                                                     <option value="Ancon">Ancon</option>
@@ -464,56 +463,56 @@ useEffect(() => {
                                                     <option value="Villa El Salvador">Villa El Salvador</option>
                                                     <option value="Villa María del Triunfo">Villa María del Triunfo</option>
                                                 </select>
-                                                {errors.referido && <p className="text-sm text-red-500">{errors.referido}</p>}
+                                                {errors.referido && <p className="text-xs sm:text-sm text-red-500">{errors.referido}</p>}
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Domicilio*</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Domicilio*</label>
                                             <input required
                                                 type="text"
                                                 value={data.direccion}
                                                 onChange={(e) => setData('direccion', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.direccion && <p className="text-sm text-red-500">{errors.direccion}</p>}
+                                            {errors.direccion && <p className="text-xs sm:text-sm text-red-500">{errors.direccion}</p>}
                                         </div>
                                     </div>
 
                                     <div className='flex flex-col'>
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Teléfono/Celular*</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Teléfono/Celular*</label>
                                             <input required
-                                                type="number"                                                
+                                                type="tel"                                                
                                                 value={data.telefono}
                                                 max={9999999999}
-                                                maxLength={9}
+                                                maxLength={10}
                                                 onChange={(e) => {
                                                     if (e.target.value.length <= 10) {
                                                         setData('telefono', e.target.value);
                                                     }
                                                 }}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.telefono && <p className="text-sm text-red-500">{errors.telefono}</p>}
+                                            {errors.telefono && <p className="text-xs sm:text-sm text-red-500">{errors.telefono}</p>}
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Acompañante</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Acompañante</label>
                                             <input 
                                                 type="text"
                                                 value={data.acompañante}
                                                 onChange={(e) => setData('acompañante', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.acompañante && <p className="text-sm text-red-500">{errors.acompañante}</p>}
+                                            {errors.acompañante && <p className="text-xs sm:text-sm text-red-500">{errors.acompañante}</p>}
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Referido</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Referido</label>
                                                 <select
                                                     value={data.referido}
                                                     onChange={(e) => setData('referido', e.target.value)}
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm max-h-10"                                                    
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"                                                    
                                                 >
                                                     <option value="">Seleccione...</option>
                                                     <option value="Recomendación de un amigo o familiar">Recomendación de un amigo o familiar</option>
@@ -529,34 +528,34 @@ useEffect(() => {
                                                     <option value="Correo electrónico">Correo electrónico</option>
                                                     <option value="Eventos o ferias">Eventos o ferias</option>
                                                 </select>
-                                                {errors.referido && <p className="text-sm text-red-500">{errors.referido}</p>}
+                                                {errors.referido && <p className="text-xs sm:text-sm text-red-500">{errors.referido}</p>}
                                         </div>
 
                                         <div className="mb-4">
-                                            <label className="block text-sm uppercase font-medium text-gray-700">Correo*</label>
+                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Correo*</label>
                                             <input required
                                                 type="email"
                                                 value={data.email}
                                                 onChange={(e) => setData('email', e.target.value)}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
                                             />
-                                            {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+                                            {errors.email && <p className="text-xs sm:text-sm text-red-500">{errors.email}</p>}
                                         </div>
                                     </div>          
                                 </div>                    
                                 
                                 {/* BOTONES DE ACCIÓN */}
-                                <div className="flex items-center justify-end mt-8 space-x-4">
+                                <div className="flex flex-col-reverse sm:flex-row items-center justify-end mt-3 sm:mt-8 space-y-3 gap-4 sm:gap-0 sm:space-y-0 sm:space-x-4">
                                     <Link
                                         href={route('pacientes.index')}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-center"
                                     >
                                         Cancelar
                                     </Link>
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                     >
                                         {processing ? 'Guardando...' : 'Guardar Paciente'}
                                     </button>

@@ -195,19 +195,20 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
         return () => clearInterval(interval);
     }, []);
 
-    return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Panel de Estadísticas CIE10
-                </h2>
-            }
-        >
-            <Head title="Dashboard" />
+return (
+    <AuthenticatedLayout
+        header={
+            <h2 className="text-lg sm:text-xl font-semibold leading-tight text-gray-800 px-4 sm:px-0">
+                Panel de Estadísticas CIE10
+            </h2>
+        }
+    >
+        <Head title="Dashboard" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
-                    {/* Componente de filtros reutilizable */}
+        <div className="py-4 sm:py-8">
+            <div className="mx-auto sm:max-w-7xl sm:px-6 lg:px-8">
+                {/* Componente de filtros reutilizable - Ajustado para móvil */}
+                <div className="bg-white shadow rounded-lg overflow-hidden sm:overflow-visible">
                     <AdvancedFilters 
                         onApplyFilters={handleApplyFilters}
                         onResetFilters={handleResetFilters}
@@ -220,79 +221,82 @@ export default function Dashboard({ auth, topCie10: initialTopCie10 }) {
                         initialFilters={{
                             // Puedes establecer valores iniciales si es necesario
                         }}
+                        mobileView={true} // Asegúrate que tu componente AdvancedFilters soporte esta prop
                     />
+                </div>
 
-                    {/* Tarjeta de Resultados */}
-                    <div className="bg-white shadow rounded-lg overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h3 className="text-lg font-medium text-gray-900">Términos CIE10 más utilizados</h3>
-                                {lastUpdated && (
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        Última actualización: {lastUpdated}
-                                    </p>
-                                )}
+                {/* Tarjeta de Resultados - Optimizada para móvil */}
+                <div className="bg-white shadow rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h3 className="text-base sm:text-lg font-medium text-gray-900">Términos CIE10 más utilizados</h3>
+                            {lastUpdated && (
+                                <p className="mt-1 text-xs sm:text-sm text-gray-500">
+                                    Última actualización: {lastUpdated}
+                                </p>
+                            )}
+                        </div>
+                        {Object.keys(topCie10).length > 0 && (
+                            <button 
+                                onClick={exportToExcel}
+                                className="inline-flex items-center justify-center px-3 py-1 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                            >
+                                <svg className="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                                Exportar
+                            </button>
+                        )}
+                    </div>
+                    
+                    <div className="px-2 sm:px-6 py-3 sm:py-4">
+                        {loading ? (
+                            <div className="flex justify-center items-center py-8 sm:py-12">
+                                <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-indigo-500"></div>
                             </div>
-                            {Object.keys(topCie10).length > 0 && (
-                                <button 
-                                    onClick={exportToExcel}
-                                    className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                >
-                                    <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                    Exportar a Excel
-                                </button>
-                            )}
-                        </div>
-                        
-                        <div className="px-6 py-4">
-                            {loading ? (
-                                <div className="flex justify-center items-center py-12">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-                                </div>
-                            ) : Object.keys(topCie10).length === 0 ? (
-                                <div className="text-center py-12">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <h3 className="mt-2 text-sm font-medium text-gray-900">No hay datos disponibles</h3>
-                                    <p className="mt-1 text-sm text-gray-500">Intente ajustar los filtros o actualizar la página.</p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Código CIE10
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Frecuencia
-                                                </th>
+                        ) : Object.keys(topCie10).length === 0 ? (
+                            <div className="text-center py-8 sm:py-12">
+                                <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay datos disponibles</h3>
+                                <p className="mt-1 text-xs sm:text-sm text-gray-500">Ajuste los filtros o actualice la página.</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                {/* Tabla optimizada para móvil */}
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Código
+                                            </th>
+                                            <th scope="col" className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Frecuencia
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {Object.entries(topCie10).map(([code, count]) => (
+                                            <tr key={code} className="hover:bg-gray-50">
+                                                <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap sm:whitespace-normal text-xs sm:text-sm font-medium text-gray-900">
+                                                    {code}
+                                                </td>
+                                                <td className="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        {count}
+                                                    </span>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {Object.entries(topCie10).map(([code, count]) => (
-                                                <tr key={code} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                        {code}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                            {count}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
-    );
+        </div>
+    </AuthenticatedLayout>
+);
 }
