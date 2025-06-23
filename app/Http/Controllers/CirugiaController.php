@@ -74,6 +74,7 @@ public function edit(Cirugia $cirugia)
 
         Cirugia::create([
             'codigo_historial' => $paciente->codigo_historial,
+            'sede' => $paciente->sede,
             ...$validated
         ]);
 

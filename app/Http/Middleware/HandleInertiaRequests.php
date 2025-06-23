@@ -34,6 +34,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'sedeActual' => fn () => $request->session()->get('sede_actual', 'ate'), // Valor por defecto
         ];
     }
 }

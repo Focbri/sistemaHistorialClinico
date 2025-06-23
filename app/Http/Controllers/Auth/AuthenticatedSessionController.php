@@ -16,7 +16,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(): Response 
     {
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
@@ -27,13 +27,16 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request)
     {
         $request->authenticate();
 
+        // Guardar la sede en la sesión
+        $request->session()->put('sede_actual', $request->sede);
+        
         $request->session()->regenerate();
 
-        return redirect()->route('inicio')->with('success', '¡Bienvenido!');
+        return redirect()->intended(route('inicio'));
     }
 
     /**

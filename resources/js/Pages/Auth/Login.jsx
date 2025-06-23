@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
+import SelectInput from '@/Components/SelectInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Login({ status, canResetPassword }) {
@@ -11,6 +12,7 @@ export default function Login({ status, canResetPassword }) {
         email: '',
         password: '',
         remember: false,
+        sede: '',
     });
 
     const submit = (e) => {
@@ -32,7 +34,23 @@ export default function Login({ status, canResetPassword }) {
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
+                     <div className="mt-4">
+                        <InputLabel htmlFor="sede" value="Sede" />
+                        <SelectInput
+                            id="sede"
+                            name="sede"
+                            value={data.sede}
+                            className="mt-1 block w-full"
+                            onChange={(e) => setData('sede', e.target.value)}
+                            required
+                        >
+                            <option value="">Seleccione una sede</option>
+                            <option value="ate">Ate</option>
+                            <option value="pueblo_libre">Pueblo Libre</option>
+                        </SelectInput>
+                        <InputError message={errors.sede} className="mt-2" />
+                    </div>
+                    <InputLabel htmlFor="email" value="Email" /> 
 
                     <TextInput
                         id="email"

@@ -23,7 +23,8 @@ class ConsultaController extends Controller
 {
     public function index(Request $request){
         // Consultas médicas con relaciones
-        $queryConsultas = Consulta::with(['paciente', 'receta', 'user', 'refraccion'])
+        $queryConsultas = Consulta::with(['paciente', 'receta', 'user', 'refraccion']) 
+            ->where('sede', session('sede_actual')) // Filtro por sede en sesión
             ->when($request->filled('dni'), function($q) use ($request) {
                 $q->whereHas('paciente', function($q) use ($request) {
                     $q->where('dni', 'like', '%'.$request->dni.'%');
@@ -61,6 +62,7 @@ class ConsultaController extends Controller
 
         // Cirugías con relaciones (mantener los mismos filtros)
         $queryCirugias = Cirugia::with(['paciente', 'user'])
+            ->where('sede', session('sede_actual')) // Filtro por sede en sesión
             ->when($request->filled('dni'), function($q) use ($request) {
                 $q->whereHas('paciente', function($q) use ($request) {
                     $q->where('dni', 'like', '%'.$request->dni.'%');
@@ -129,8 +131,9 @@ class ConsultaController extends Controller
             ]),
             'auth' => [
             'user' => Auth::user()
-        ],
-        ]);
+            ],
+            'sedeActual' => session('sede_actual')
+            ]);
     }
     public function create(Request $request){
         $request->validate([
@@ -553,6 +556,7 @@ class ConsultaController extends Controller
                 'user_id' => Auth::id(),
                 'codigo_historial' => $paciente->codigo_historial,
                 'paciente_id' => $request->paciente_id,
+                'sede' => $paciente->sede,
                 'tipo_consulta' => $request->tipo_consulta,
                 'antecedentes_personales_hta' => $request->antecedentes_personales_hta,
                 'antecedentes_personales_alergias' => $request->antecedentes_personales_alergias,

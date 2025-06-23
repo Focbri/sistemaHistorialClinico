@@ -181,7 +181,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-// Rutas de administración
+// Rutas de administración 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(function () {
     Route::resource('users', UserController::class)->names('admin.users');
 });

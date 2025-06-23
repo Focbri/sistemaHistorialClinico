@@ -95,8 +95,9 @@ const TerminoBiomicroscopiaSearch = ({
     }, [query, handleSelectTerm, readOnly]);
 
     return (
-        <div className={`border-[#8FDBF1] border py-1 px-2 relative ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}>
-            <div className="flex gap-2">
+    <div className={`border-[#8FDBF1] border py-1 px-2 relative ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}>
+        <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-grow">
                 <input
                     type="text"
                     value={query}
@@ -105,58 +106,59 @@ const TerminoBiomicroscopiaSearch = ({
                         setQuery(e.target.value);
                         setIsDropdownOpen(e.target.value.trim() !== '');
                     }}
-                    placeholder={readOnly ? "" : "Buscar término..."}
-                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm ${
+                    placeholder={readOnly ? "" : "Buscar..."}
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm sm:text-base ${
                         readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                     }`}
                     onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
                     onFocus={() => query.trim() && !readOnly && setIsDropdownOpen(true)}
                     disabled={readOnly}
                 />
-                {!readOnly && (
-                    <button
-                        type="button"
-                        onClick={handleAddManually}
-                        className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                        disabled={!query.trim()}
-                    >
-                        Agregar
-                    </button>
+                
+                {!readOnly && isDropdownOpen && results.length > 0 && (
+                    <ul className="max-h-40 overflow-y-auto border rounded bg-white z-50 absolute w-full mt-1 text-sm">
+                        {results.map((result, i) => (
+                            <li
+                                key={i}
+                                onClick={() => handleSelectTerm(result)}
+                                className="p-2 hover:bg-gray-100 cursor-pointer truncate"
+                            >
+                                {result}
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </div>
-
-            {!readOnly && isDropdownOpen && results.length > 0 && (
-                <ul className="max-h-40 overflow-y-auto border rounded bg-white z-50 absolute w-[calc(100%-20px)] mt-1">
-                    {results.map((result, i) => (
-                        <li
-                            key={i}
-                            onClick={() => handleSelectTerm(result)}
-                            className="p-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                            {result}
-                        </li>
-                    ))}
-                </ul>
+            
+            {!readOnly && (
+                <button
+                    type="button"
+                    onClick={handleAddManually}
+                    className="px-2 sm:px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm sm:text-base whitespace-nowrap"
+                    disabled={!query.trim()}
+                >
+                    Agregar
+                </button>
             )}
-
-            <div className="mt-2 flex flex-wrap gap-1">
-                {selectedTerms.map((term, i) => (
-                    <div key={i} className="bg-gray-200 rounded-full px-3 py-1 flex items-center">
-                        <span className="mr-1 text-sm truncate max-w-xs">{term}</span>
-                        {!readOnly && (
-                            <button
-                                type="button"
-                                onClick={() => handleRemoveTerm(term)}
-                                className="text-red-500 hover:text-red-700 ml-1"
-                            >
-                                ×
-                            </button>
-                        )}
-                    </div>
-                ))}
-            </div>
         </div>
-    );
-};
 
+        <div className="mt-2 flex flex-wrap gap-1">
+            {selectedTerms.map((term, i) => (
+                <div key={i} className="bg-gray-200 rounded-full px-2 sm:px-3 py-1 flex items-center max-w-full">
+                    <span className="mr-1 text-xs sm:text-sm truncate">{term}</span>
+                    {!readOnly && (
+                        <button
+                            type="button"
+                            onClick={() => handleRemoveTerm(term)}
+                            className="text-red-500 hover:text-red-700 ml-1 text-sm sm:text-base"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+            ))}
+        </div>
+    </div>
+);
+};
 export default TerminoBiomicroscopiaSearch;

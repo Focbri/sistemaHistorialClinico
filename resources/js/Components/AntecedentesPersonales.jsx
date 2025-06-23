@@ -19,7 +19,7 @@ const AntecedentesPersonales = ({
         }
     };
     return (
-        <div className="grid grid-cols-2 gap-4 border border-gray-200 p-4 rounded-md mb-8">    
+        <div className="grid grid-cols-2 gap-4 border border-gray-200 md:p-4 p-1 rounded-md mb-8">    
             {/* Campo HTA */}
             <div className="mb-4">
                 <div className="flex items-center justify-between bg-[#DDE47E] p-2 rounded-md">

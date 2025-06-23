@@ -2,7 +2,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
@@ -10,9 +10,19 @@ export default function AuthenticatedLayout({ header, children }) {
     const { flash } = usePage().props;
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
+    const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+      // Obtener la sede actual de las props
+    const sedeActual = usePage().props.sedeActual;
+    
+    // Función para formatear el nombre de la sede
+    const formatSedeName = (sede) => {
+        const names = {
+            'ate': 'Ate',
+            'pueblo_libre': 'Pueblo Libre'
+        };
+        return names[sede] || sede;
+    };
 
     useEffect(() => {
         if (flash.success) {
@@ -105,6 +115,12 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                            {/* Mostrar la sede actual */}
+                            <div className="mr-4 flex items-center">
+                                <span className="text-white font-medium">
+                                    Sede: {formatSedeName(sedeActual)}
+                                </span>
+                            </div>
                             <div className="relative ms-3">
                                 <Dropdown>
                                     <Dropdown.Trigger>
@@ -135,14 +151,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
-                                            Profile
+                                            Perfil
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            Cerrar sesión
                                         </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
@@ -250,7 +266,11 @@ export default function AuthenticatedLayout({ header, children }) {
 
                     <hr />
                     <div className="pb-1">                        
-
+                         <div className="px-4 py-2 border-b border-gray-200">
+                            <div className="text-white font-medium">
+                                Sede: {formatSedeName(sedeActual)}
+                            </div>
+                        </div>
                         <div className="mt-1 space-y-1">
                             <ResponsiveNavLink href={route('profile.edit')}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#fff" d="M12 4a4 4 0 0 1 4 4a4 4 0 0 1-4 4a4 4 0 0 1-4-4a4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4"/></svg>

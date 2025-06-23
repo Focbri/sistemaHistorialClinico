@@ -18,7 +18,11 @@ class PacienteController extends Controller
 { 
     public function index(Request $request)
 {
-    $query = Paciente::query() 
+    $query = Paciente::query()
+        // Filtro principal por sede del usuario
+         ->where('sede', session('sede_actual')) // Filtro por sede en sesión
+        
+        // Filtros adicionales
         ->when($request->filled('dni'), function($q) use ($request) {
             $q->where('dni', 'like', '%'.$request->dni.'%');
         })
@@ -41,7 +45,7 @@ class PacienteController extends Controller
         })
         ->orderBy('created_at', 'desc');
 
-    $pacientes = $query->paginate(10); // 10 pacientes por página
+    $pacientes = $query->paginate(10);
 
     return Inertia::render('Pacientes/Index', [
         'pacientes' => $pacientes,
@@ -57,6 +61,7 @@ class PacienteController extends Controller
         'auth' => [
             'user' => Auth::user()
         ],
+        'sedeActual' => session('sede_actual')
     ]);
 }
 
@@ -71,73 +76,76 @@ class PacienteController extends Controller
     }
 
     public function store(Request $request)
-    {
-        DB::beginTransaction();
-        
-        try {
-            // Validación de datos
-            $validatedData = $request->validate([
-                'nombres' => 'required|string|max:255',
-                'apellido_paterno' => 'required|string|max:255',
-                'apellido_materno' => 'required|string|max:255',
-                'tipo_documento' => 'required|in:dni,ce',
-                'dni' => [
-                    'required',
-                    'string',
-                    Rule::when($request->tipo_documento === 'dni', 'digits:8'),
-                    Rule::when($request->tipo_documento === 'ce', 'digits_between:9,12'),
-                    Rule::unique('pacientes')->where(function ($query) use ($request) {
-                        return $query->where('tipo_documento', $request->tipo_documento);
-                    })
-                ],
-                'fecha_nacimiento' => 'nullable|date',
-                'edad' => 'nullable|integer|min:0|max:120',
-                'sexo' => 'nullable|in:M,F',
-                'estado_civil' => 'nullable|string|max:50',
-                'ocupacion' => 'nullable|string|max:100',
-                'direccion' => 'nullable|string|max:255',
-                'telefono' => 'nullable|string|max:15',
-                'email' => 'nullable|email|max:255',
-                'acompañante' => 'nullable|string|max:100',
-                'referido' => 'nullable|string|max:100',
-                'peso' => 'nullable|numeric|min:0|max:300',
-                'foto_perfil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            ]);
+{
+    DB::beginTransaction();
+    
+    try {
+        // Validación de datos
+        $validatedData = $request->validate([
+            'nombres' => 'required|string|max:255',
+            'apellido_paterno' => 'required|string|max:255',
+            'apellido_materno' => 'required|string|max:255',
+            'tipo_documento' => 'required|in:dni,ce',
+            'dni' => [
+                'required',
+                'string',
+                Rule::when($request->tipo_documento === 'dni', 'digits:8'),
+                Rule::when($request->tipo_documento === 'ce', 'digits_between:9,12'),
+                Rule::unique('pacientes')->where(function ($query) use ($request) {
+                    return $query->where('tipo_documento', $request->tipo_documento);
+                })
+            ],
+            'fecha_nacimiento' => 'nullable|date',
+            'edad' => 'nullable|integer|min:0|max:120',
+            'sexo' => 'nullable|in:M,F',
+            'estado_civil' => 'nullable|string|max:50',
+            'ocupacion' => 'nullable|string|max:100',
+            'direccion' => 'nullable|string|max:255',
+            'telefono' => 'nullable|string|max:15',
+            'email' => 'nullable|email|max:255',
+            'acompañante' => 'nullable|string|max:100',
+            'referido' => 'nullable|string|max:100',
+            'peso' => 'nullable|numeric|min:0|max:300',
+            'foto_perfil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
 
-            // Crear el paciente con el código generado
-            $paciente = new Paciente();
-            $paciente->fill($validatedData);
+        // Crear el paciente con el código generado
+        $paciente = new Paciente();
+        $paciente->fill($validatedData);
 
-            // Procesar foto de perfil
-            if ($request->hasFile('foto_perfil')) {
-                $file = $request->file('foto_perfil');
-                $filename = time().'_'.$file->getClientOriginalName();
-                
-                // Almacenar en la carpeta pública
-                $path = $file->storeAs(
-                    'pacientes/'.$request->tipo_documento.'_'.$request->dni,
-                    $filename,
-                    'public'
-                );
-                
-                // Guardar solo la ruta relativa
-                $paciente->foto_perfil = $path;
-            }
+        // CAMBIO AQUÍ: Usar la sede de la sesión en lugar de la sede del usuario
+        $paciente->sede = session('sede_actual');
 
-            $paciente->save();
-            DB::commit();
-
-            return redirect()->route('pacientes.index')
-                ->with('success', 'Paciente creado correctamente.');
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error al crear paciente: '.$e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Error al crear el paciente: '.$e->getMessage())
-                ->withInput();
+        // Procesar foto de perfil
+        if ($request->hasFile('foto_perfil')) {
+            $file = $request->file('foto_perfil');
+            $filename = time().'_'.$file->getClientOriginalName();
+            
+            // Almacenar en la carpeta pública
+            $path = $file->storeAs(
+                'pacientes/'.$request->tipo_documento.'_'.$request->dni,
+                $filename,
+                'public'
+            );
+            
+            // Guardar solo la ruta relativa
+            $paciente->foto_perfil = $path;
         }
+
+        $paciente->save();
+        DB::commit();
+
+        return redirect()->route('pacientes.index')
+            ->with('success', 'Paciente creado correctamente.');
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error al crear paciente: '.$e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Error al crear el paciente: '.$e->getMessage())
+            ->withInput();
     }
+}
 
     public function show(Paciente $paciente)
     {

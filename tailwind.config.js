@@ -13,7 +13,7 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                serif: ['Roboto Slab', ...defaultTheme.fontFamily.serif],
+                 sans: ['Roboto Serif', 'serif'],
             },
         },
     },

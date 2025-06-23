@@ -67,7 +67,7 @@ console.log('Foto de perfil:', result.paciente.foto_perfil);
     };
 
     return (
-        <div className="mb-4 items-center flex gap-2">
+        <div className="mb-4 items-center flex gap-0 md:gap-2">
             <input
                 type="text"
                 value={data.dni || ''}

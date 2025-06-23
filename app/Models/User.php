@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<\Database\Factories\UserFactory> */ 
     use HasFactory, Notifiable;
 
     const ROLES = [
@@ -26,6 +26,7 @@ class User extends Authenticatable
         'apellido',
         'email',
         'password',
+        'sede',
         'role', // Agregar el campo 'role'
         'created_by', // Agregar el campo 'user_id'
     ];
@@ -41,6 +42,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => 'string', // Cast para el campo 'role'
+            'sede' => 'string', // Cast para el campo 'sede'
         ];
     }
 
@@ -105,4 +107,10 @@ class User extends Authenticatable
     {
         return $this->role === 'invitado';
     }    
+
+    // En app/Models/User.php
+    public function pacientes()
+    {
+        return $this->hasMany(Paciente::class, 'user_id')->where('sede', $this->sede);
+    }
 }

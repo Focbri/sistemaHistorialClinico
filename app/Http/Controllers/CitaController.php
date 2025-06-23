@@ -13,88 +13,92 @@ use Illuminate\Validation\Rule;
 
 class CitaController extends Controller
 {
-public function index(Request $request){
-        $query = Cita::with(['paciente', 'medico']);
+    public function index(Request $request)
+{
+    $query = Cita::with(['paciente', 'medico'])
+        ->where('sede', session('sede_actual')); // Filtro por sede en sesión
 
-        // Aplicar filtros si existen
-        if ($request->filled('sex')) {
-            $query->whereHas('paciente', function($q) use ($request) {
-                $q->where('sexo', $request->sex);
-            });
-        }
-        
-        if ($request->filled('min_age') || $request->filled('max_age')) {
-            $query->whereHas('paciente', function($q) use ($request) {
-                if ($request->filled('min_age')) {
-                    $q->where('edad', '>=', $request->min_age);
-                }
-                if ($request->filled('max_age')) {
-                    $q->where('edad', '<=', $request->max_age);
-                }
-            });
-        }
-        
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('fecha_hora', [
-                $request->start_date,
-                $request->end_date
-            ]);
-        }
-        
-        if ($request->filled('procedencia')) {
-            $query->whereHas('paciente', function($q) use ($request) {
-                $q->where('procedencia', $request->procedencia);
-            });
-        }
-        
-        if ($request->filled('terms')) {
-            $terms = explode(',', $request->terms);
-            $query->where(function($q) use ($terms) {
-                foreach ($terms as $term) {
-                    $q->orWhere('motivo', 'LIKE', "%{$term}%");
-                }
-            });
-        }
-
-        // Obtener citas filtradas
-        $citas = $query->orderBy('fecha_hora', 'desc')->get();
-
-        // Generar datos del calendario (solo si no hay filtros de fecha)
-        $calendarData = [];
-        if (!$request->filled('start_date') && !$request->filled('end_date')) {
-            $year = $request->input('year', date('Y'));
-            $month = $request->input('month', date('m'));
-            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
-
-            for ($day = 1; $day <= $daysInMonth; $day++) {
-                $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
-                $citasCount = Cita::whereDate('fecha_hora', $date)
-                                ->where('estado', 'programada')
-                                ->count();
-
-                $calendarData[] = [
-                    'day' => $day,
-                    'date' => $date,
-                    'status' => $this->getStatusColor($citasCount),
-                    'citas_count' => $citasCount,
-                ];
+    // Aplicar filtros si existen
+    $query->when($request->filled('sex'), function($q) use ($request) {
+        $q->whereHas('paciente', function($q) use ($request) {
+            $q->where('sexo', $request->sex);
+        });
+    });
+    
+    $query->when($request->filled('min_age') || $request->filled('max_age'), function($q) use ($request) {
+        $q->whereHas('paciente', function($q) use ($request) {
+            if ($request->filled('min_age')) {
+                $q->where('edad', '>=', $request->min_age);
             }
-        }
-
-        return Inertia::render('Citas/Index', [
-            'calendarData' => $calendarData,
-            'currentMonth' => $request->input('month', date('m')),
-            'currentYear' => $request->input('year', date('Y')),
-            'medicos' => User::whereIn('role', ['medico', 'medico_externo'])
-                        ->orderBy('name')
-                        ->get(),
-            'citas' => $citas,
-            'filters' => $request->only(['sex', 'min_age', 'max_age', 'start_date', 'end_date', 'procedencia', 'terms']),
-            'auth' => [
-                'user' => Auth::user()
-            ],
+            if ($request->filled('max_age')) {
+                $q->where('edad', '<=', $request->max_age);
+            }
+        });
+    });
+    
+    $query->when($request->filled('start_date') && $request->filled('end_date'), function($q) use ($request) {
+        $q->whereBetween('fecha_hora', [
+            $request->start_date,
+            $request->end_date
         ]);
+    });
+    
+    $query->when($request->filled('procedencia'), function($q) use ($request) {
+        $q->whereHas('paciente', function($q) use ($request) {
+            $q->where('procedencia', $request->procedencia);
+        });
+    });
+    
+    $query->when($request->filled('terms'), function($q) use ($request) {
+        $terms = explode(',', $request->terms);
+        $q->where(function($q) use ($terms) {
+            foreach ($terms as $term) {
+                $q->orWhere('motivo', 'LIKE', "%{$term}%");
+            }
+        });
+    });
+
+    // Obtener citas filtradas
+    $citas = $query->orderBy('fecha_hora', 'desc')->get();
+
+    // Generar datos del calendario (solo si no hay filtros de fecha)
+    $calendarData = [];
+    if (!$request->filled('start_date') && !$request->filled('end_date')) {
+        $year = $request->input('year', date('Y'));
+        $month = $request->input('month', date('m'));
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+            $citasCount = Cita::where('sede', session('sede_actual')) // Filtro por sede
+                            ->whereDate('fecha_hora', $date)
+                            ->where('estado', 'programada')
+                            ->count();
+
+            $calendarData[] = [
+                'day' => $day,
+                'date' => $date,
+                'status' => $this->getStatusColor($citasCount),
+                'citas_count' => $citasCount,
+            ];
+        }
     }
+
+    return Inertia::render('Citas/Index', [
+        'calendarData' => $calendarData,
+        'currentMonth' => $request->input('month', date('m')),
+        'currentYear' => $request->input('year', date('Y')),
+        'medicos' => User::whereIn('role', ['medico', 'medico_externo'])
+                    ->orderBy('name')
+                    ->get(),
+        'citas' => $citas,
+        'filters' => $request->only(['sex', 'min_age', 'max_age', 'start_date', 'end_date', 'procedencia', 'terms']),
+        'auth' => [
+            'user' => Auth::user()
+        ],
+        'sedeActual' => session('sede_actual') // Añadir sede actual al response
+    ]);
+}
 
     public function store(Request $request)    {
         $request->validate([
@@ -183,7 +187,8 @@ public function index(Request $request){
             'medico_id' => $request->medico_id,
             'fecha_hora' => $fechaHora,
             'motivo' => $request->motivo,
-            'estado' => 'programada'
+            'estado' => 'programada',
+            'sede' => session('sede_actual'), // Añadir la sede de la sesión actual
         ]);
 
         return redirect()->route('citas.index')->with('success', 'Cita creada correctamente');
@@ -383,6 +388,7 @@ public function index(Request $request){
     // Citas programadas paginadas
     $citasProgramadas = Cita::with(['paciente'])
         ->where('medico_id', Auth::id())
+        ->where('sede', session('sede_actual'))
         ->where('estado', 'programada')
         ->orderBy('fecha_hora')
         ->paginate(10); // 10 citas por página
@@ -390,6 +396,7 @@ public function index(Request $request){
     // Citas atendidas paginadas
     $citasAtendidas = Cita::with(['paciente'])
         ->where('medico_id', Auth::id())
+        ->where('sede', session('sede_actual'))
         ->where('estado', 'completada')
         ->orderBy('fecha_hora', 'desc')
         ->paginate(10);

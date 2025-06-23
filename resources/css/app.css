@@ -3,5 +3,5 @@
 @tailwind utilities;
 
 body {
-    font-family: 'Roboto Slab', serif;
+     font-family: 'Roboto Serif', serif; /* Corregido a Roboto Serif */
 }

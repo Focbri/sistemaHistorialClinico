@@ -96,7 +96,7 @@ const TerminoMotivoConsultaSearch = ({
 
     return (
         <div className={`border-[#8FDBF1] border py-1 px-2 relative ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}>
-            <div className="flex gap-2">
+            <div className="flex md:gap-2">
                 <input
                     type="text"
                     value={query}

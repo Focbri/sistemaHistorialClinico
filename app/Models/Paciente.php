@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Consulta;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class Paciente extends Model
 {
@@ -33,6 +34,8 @@ class Paciente extends Model
         'referido',
         'foto_perfil',
         'codigo_historial',
+        //asignar sede
+        'sede', // Agregar el campo 'sede'
     ];
 
 protected static function booted()
@@ -144,21 +147,26 @@ public function getFotoPerfilUrlAttribute()
     }
 
     public function cirugias()
-{
-    return $this->hasMany(Cirugia::class);
-}
+    {
+        return $this->hasMany(Cirugia::class);
+    }
 
-protected static function boot()
-{
-    parent::boot();
+    protected static function boot()
+    {
+        parent::boot();
 
-    static::creating(function ($paciente) {
-        // Usa el facade Auth en lugar del helper auth()
-        if (\Illuminate\Support\Facades\Auth::check()) {
-            $paciente->user_id = \Illuminate\Support\Facades\Auth::id();
-        } else {
-            throw new \Exception('No hay usuario autenticado al crear un paciente');
-        }
-    });
-}
+        static::creating(function ($paciente) {
+            // Usa el facade Auth en lugar del helper auth()
+            if (\Illuminate\Support\Facades\Auth::check()) {
+                $paciente->user_id = \Illuminate\Support\Facades\Auth::id();
+            } else {
+                throw new \Exception('No hay usuario autenticado al crear un paciente');
+            }
+        });
+    }
+
+    public function scopeDeSedeActual($query)
+    {
+        return $query->where('sede', Auth::user()->sede);
+    }
 }

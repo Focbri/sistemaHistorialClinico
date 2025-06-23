@@ -126,163 +126,165 @@ const Cie10Search = React.memo(({
     }, [onSelectResult, selectedTerms, readOnly]);
 
     return (
-        <div className="space-y-3">
-            {/* Barra de búsqueda */}
-            <div className="flex gap-2">
-                <div className="relative flex-1">
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder={readOnly ? "Búsqueda no disponible" : "Buscar CIE-10..."}
-                        className={`w-full rounded-md border-gray-300 shadow-sm ${
-                            readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                        }`}
-                        disabled={readOnly}
-                    />
-                    {isSearching && (
-                        <div className="absolute right-3 top-2.5">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-                        </div>
-                    )}
-                </div>
-                
-                {!readOnly && (
-                    <button
-                        type="button"
-                        onClick={() => setShowManualForm(!showManualForm)}
-                        className={`px-3 py-1 rounded ${
-                            showManualForm ? 'bg-gray-500 text-white' : 'bg-blue-500 text-white'
-                        } hover:opacity-90`}
-                    >
-                        {showManualForm ? 'Cancelar' : '+ Manual'}
-                    </button>
+    <div className="space-y-2 md:space-y-3">
+        {/* Barra de búsqueda */}
+        <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+                <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder={readOnly ? "Búsqueda no disponible" : "Buscar CIE-10..."}
+                    className={`w-full rounded-md border-gray-300 shadow-sm text-sm md:text-base ${
+                        readOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    disabled={readOnly}
+                />
+                {isSearching && (
+                    <div className="absolute right-2 top-2">
+                        <div className="animate-spin rounded-full h-4 w-4 md:h-5 md:w-5 border-b-2 border-blue-500"></div>
+                    </div>
                 )}
             </div>
-
-            {/* Formulario manual */}
-            {showManualForm && !readOnly && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-md">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Código (opcional)
-                        </label>
-                        <input
-                            type="text"
-                            value={codigo}
-                            onChange={(e) => setCodigo(e.target.value)}
-                            placeholder="Ej: E11.9"
-                            className="w-full rounded-md border-gray-300 shadow-sm"
-                        />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Descripción *
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={descripcion}
-                                onChange={(e) => setDescripcion(e.target.value)}
-                                placeholder="Descripción del diagnóstico"
-                                className="flex-1 rounded-md border-gray-300 shadow-sm"
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddManualTerm()}
-                            />
-                            <button
-                                type="button"
-                                onClick={handleAddManualTerm}
-                                disabled={!descripcion.trim()}
-                                className={`px-3 py-1 rounded ${
-                                    descripcion.trim()
-                                        ? 'bg-green-500 text-white hover:bg-green-600'
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }`}
-                            >
-                                Agregar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Resultados de búsqueda */}
-            {searchResults.length > 0 && (
-                <ul className="border border-gray-200 rounded-md max-h-60 overflow-y-auto">
-                    {searchResults.map((result, index) => (
-                        <li
-                            key={`result-${index}`}
-                            onClick={() => handleSelectTerm(result)}
-                            className="p-2 hover:bg-blue-50 cursor-pointer"
-                        >
-                            {result.includes('|') ? (
-                                <>
-                                    <span className="font-mono text-blue-700">
-                                        {result.split('|')[0]}
-                                    </span>
-                                    <span className="ml-2">{result.split('|').slice(1).join('|')}</span>
-                                </>
-                            ) : (
-                                <span>{result}</span>
-                            )}
-                        </li>
-                    ))}
-                </ul>
-            )}
-
-            {/* Términos seleccionados */}
-            <div className="mt-3">
-                <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700">
-                        Términos seleccionados ({selectedTerms.length}/{maxSelections})
-                    </span>
-                </div>
-                
-                {selectedTerms.length > 0 ? (
-                    <ul className="flex flex-wrap gap-2">
-                        {selectedTerms.map((term, index) => {
-                            const { code, description } = parseTerm(term);
-                            return (
-                                <li
-                                    key={`selected-${index}`}
-                                    className="bg-gray-100 rounded-md px-3 py-1 flex items-center group"
-                                >
-                                    {code && (
-                                        <span className="font-mono bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded mr-2 text-sm">
-                                            {code}
-                                        </span>
-                                    )}
-                                    <span className="max-w-xs truncate" title={description}>
-                                        {description}
-                                    </span>
-                                    {!readOnly && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveTerm(index)}
-                                            className="ml-2 text-gray-400 hover:text-red-500"
-                                        >
-                                            ×
-                                        </button>
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                ) : (
-                    <p className="text-gray-400 text-sm italic">
-                        No hay términos seleccionados
-                    </p>
-                )}
-            </div>
-
-            {/* Mensajes de error */}
-            {error && (
-                <div className="text-red-500 text-sm p-2 bg-red-50 rounded-md">
-                    {error}
-                </div>
+            
+            {!readOnly && (
+                <button
+                    type="button"
+                    onClick={() => setShowManualForm(!showManualForm)}
+                    className={`px-2 py-1 md:px-3 rounded text-sm md:text-base ${
+                        showManualForm ? 'bg-gray-500 text-white' : 'bg-blue-500 text-white'
+                    } hover:opacity-90 whitespace-nowrap`}
+                >
+                    {showManualForm ? 'Cancelar' : '+ Manual'}
+                </button>
             )}
         </div>
-    );
+
+        {/* Formulario manual */}
+        {showManualForm && !readOnly && (
+            <div className="grid grid-cols-1 gap-2 p-2 md:p-3 bg-gray-50 rounded-md">
+                <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+                        Código (opcional)
+                    </label>
+                    <input
+                        type="text"
+                        value={codigo}
+                        onChange={(e) => setCodigo(e.target.value)}
+                        placeholder="Ej: E11.9"
+                        className="w-full rounded-md border-gray-300 shadow-sm text-sm md:text-base"
+                    />
+                </div>
+                
+                <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+                        Descripción *
+                    </label>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={descripcion}
+                            onChange={(e) => setDescripcion(e.target.value)}
+                            placeholder="Descripción del diagnóstico"
+                            className="flex-1 rounded-md border-gray-300 shadow-sm text-sm md:text-base"
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddManualTerm()}
+                        />
+                        <button
+                            type="button"
+                            onClick={handleAddManualTerm}
+                            disabled={!descripcion.trim()}
+                            className={`px-2 py-1 rounded text-sm md:text-base ${
+                                descripcion.trim()
+                                    ? 'bg-green-500 text-white hover:bg-green-600'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                        >
+                            Agregar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Resultados de búsqueda */}
+        {searchResults.length > 0 && (
+            <ul className="border border-gray-200 rounded-md max-h-40 md:max-h-60 overflow-y-auto text-sm md:text-base">
+                {searchResults.map((result, index) => (
+                    <li
+                        key={`result-${index}`}
+                        onClick={() => handleSelectTerm(result)}
+                        className="p-1.5 md:p-2 hover:bg-blue-50 cursor-pointer"
+                    >
+                        {result.includes('|') ? (
+                            <div className="flex flex-col md:flex-row">
+                                <span className="font-mono text-blue-700 text-xs md:text-sm">
+                                    {result.split('|')[0]}
+                                </span>
+                                <span className="md:ml-2 text-xs md:text-sm truncate">
+                                    {result.split('|').slice(1).join('|')}
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="text-xs md:text-sm">{result}</span>
+                        )}
+                    </li>
+                ))}
+            </ul>
+        )}
+
+        {/* Términos seleccionados */}
+        <div className="mt-2 md:mt-3">
+            <div className="flex justify-between items-center mb-1 md:mb-2">
+                <span className="text-xs md:text-sm font-medium text-gray-700">
+                    Seleccionados ({selectedTerms.length}/{maxSelections})
+                </span>
+            </div>
+            
+            {selectedTerms.length > 0 ? (
+                <ul className="flex flex-wrap gap-1 md:gap-2">
+                    {selectedTerms.map((term, index) => {
+                        const { code, description } = parseTerm(term);
+                        return (
+                            <li
+                                key={`selected-${index}`}
+                                className="bg-gray-100 rounded-md px-2 py-0.5 md:px-3 md:py-1 flex items-center group text-xs md:text-sm"
+                            >
+                                {code && (
+                                    <span className="font-mono bg-blue-100 text-blue-800 px-1 py-0.5 rounded mr-1 md:mr-2 text-xxs md:text-xs">
+                                        {code}
+                                    </span>
+                                )}
+                                <span className="max-w-[120px] md:max-w-xs truncate" title={description}>
+                                    {description}
+                                </span>
+                                {!readOnly && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveTerm(index)}
+                                        className="ml-1 md:ml-2 text-gray-400 hover:text-red-500 text-xs md:text-sm"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </li>
+                        );
+                    })}
+                </ul>
+            ) : (
+                <p className="text-gray-400 text-xs md:text-sm italic">
+                    No hay términos seleccionados
+                </p>
+            )}
+        </div>
+
+        {/* Mensajes de error */}
+        {error && (
+            <div className="text-red-500 text-xs md:text-sm p-1.5 md:p-2 bg-red-50 rounded-md">
+                {error}
+            </div>
+        )}
+    </div>
+);
 });
 
 export default Cie10Search;

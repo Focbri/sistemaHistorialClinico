@@ -79,6 +79,7 @@ class Consulta extends Model
         'f_o_plan',
         'comentario',
         'ciit_archivos',
+        'sede'
     ];
 
     /**
@@ -252,5 +253,10 @@ public function refraccion()
 public function medico()
 {
     return $this->belongsTo(User::class, 'medico_id');
+}
+
+public function scopeDeSedeActual($query)
+{
+    return $query->where('sede', Auth::user()->sede);
 }
 }

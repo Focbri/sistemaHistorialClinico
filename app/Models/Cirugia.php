@@ -27,7 +27,8 @@ class Cirugia extends Model
         'procedimiento',
         'fecha_cirugia',
         'hora_inicio',
-        'hora_fin'
+        'hora_fin',
+        'sede'
     ];
 
     protected $casts = [
@@ -68,4 +69,8 @@ class Cirugia extends Model
             }*/
         });
     }
+    public function scopeDeSedeActual($query)
+{
+    return $query->where('sede', Auth::user()->sede);
+}
 }

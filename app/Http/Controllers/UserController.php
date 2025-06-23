@@ -12,7 +12,7 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request) 
     {
         // Verificar autenticación y rol
         if (!Auth::check() || Auth::user()->role !== 'admin') {
@@ -24,7 +24,8 @@ class UserController extends Controller
         return Inertia::render('Admin/Users/Index', [
             'auth' => ['user' => Auth::user()],
             'users' => $users,
-            'roles' => User::ROLES
+            'roles' => User::ROLES,
+            'sede' => Auth::user()->sede, // Agregar sede del usuario autenticado
         ]);
     }
 
@@ -53,6 +54,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
             'role' => 'required|in:'.implode(',', array_keys(User::ROLES)),
+            'sede' => 'nullable|string|max:255', // Asegúrate de que el campo sede esté en $fillable
         ]);
 
         User::create([
@@ -61,6 +63,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
+            'sede' => $validated['sede'] ?? $user->sede, // Asignar sede del usuario autenticado si no se proporciona
             'created_by' => Auth::id(), // Asegúrate que created_by esté en $fillable
         ]);
 
@@ -112,6 +115,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'role' => 'required|in:'.implode(',', array_keys(User::ROLES)),
+            'sede' => 'nullable|string|max:255', // Asegúrate de que el campo sede esté en $fillable
         ]);
 
         $updateData = [

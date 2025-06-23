@@ -14,6 +14,8 @@ class Cita extends Model
         'motivo',
         'estado',
         'user_id',
+        'cita',
+        'sede',
     ];
     
     public function paciente()
@@ -45,4 +47,8 @@ public function medico()
             
         });
     }
+    public function scopeDeSedeActual($query)
+{
+    return $query->where('sede', Auth::user()->sede);
+}
 }
