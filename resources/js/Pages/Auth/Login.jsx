@@ -19,6 +19,10 @@ export default function Login({ status, canResetPassword }) {
         e.preventDefault();
 
         post(route('login'), {
+            onSuccess: () => {
+                // Establecer la bandera para indicar que acabamos de iniciar sesión
+                sessionStorage.setItem('justLoggedIn', 'true');
+            },
             onFinish: () => reset('password'),
         });
     };

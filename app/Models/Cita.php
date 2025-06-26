@@ -15,6 +15,8 @@ class Cita extends Model
         'estado',
         'user_id',
         'cita',
+        'cotizacion',
+        'observaciones',
         'sede',
     ];
     

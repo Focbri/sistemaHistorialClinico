@@ -32,6 +32,15 @@ Route::get('/', function () {
 
 // Rutas protegidas por autenticación
 Route::middleware(['auth', 'verified'])->group(function () {
+     Route::post('/citas/generar-reporte-simple', [CitaController::class, 'generarReporteSimple'])
+     ->name('citas.generar-reporte-simple')
+     ->middleware('auth');
+     Route::put('/citas/{cita}/cotizacion', [CitaController::class, 'updateCotizacion'])
+    ->middleware(['auth', 'verified'])
+    ->name('citas.update-cotizacion');
+    Route::put('/citas/{cita}/observaciones', [CitaController::class, 'updateObservaciones'])
+    ->name('citas.update-observaciones')
+    ->middleware(['auth', 'verified']);
     // Menú principal
     Route::get('/inicio', [InicioController::class, 'index'])->name('inicio');
     

@@ -1,4 +1,3 @@
-// routes/api.php (puedes dejarlo vacío o comentado)
 <?php
 
 use Illuminate\Support\Facades\Route;

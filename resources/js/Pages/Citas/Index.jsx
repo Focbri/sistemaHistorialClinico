@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import Calendar from 'react-calendar';
 import { format, parseISO, isSameDay, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -10,6 +10,11 @@ import Pagination from '@/Components/Pagination';
 import axios from 'axios';
 
 export default function CitasIndex({ calendarData: initialCalendarData = [], medicos = [], citas = [] }) {
+
+  const { auth } = usePage().props;
+  // Obtener props de la página
+  const { props } = usePage();
+
   // Estados
   const [currentDate, setCurrentDate] = useState(new Date(2025, 4, 1));
   const [calendarData, setCalendarData] = useState(initialCalendarData);
@@ -27,6 +32,21 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
   const [pacienteInfo, setPacienteInfo] = useState(null);
   const [activeTab, setActiveTab] = useState('calendario');
   const [errorMessage, setErrorMessage] = useState('');
+  // Estados de UI (añade esto junto con los otros estados)
+  const [reportProcessing, setReportProcessing] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(null);
+  const [reportError, setReportError] = useState(null);
+
+  const [showSimpleReportModal, setShowSimpleReportModal] = useState(false);
+
+  const [busquedaRealizada, setBusquedaRealizada] = useState(false);
+  // Función para buscar paciente por DNI
+  const [buscandoPaciente, setBuscandoPaciente] = useState(false);
+
+  const [simpleReportData, setSimpleReportData] = useState({
+  correo_destino: auth.user.email,
+  limite: 100
+});
 
   // Formulario
   const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
@@ -38,6 +58,37 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
     dni: '',
     estado: 'programada'
   });
+
+const handleSimpleReport = async () => {
+  try {
+    setReportProcessing(true);
+    setReportError(null);
+    setReportSuccess(null);
+    
+    const response = await axios.post('/citas/generar-reporte-simple', {
+      correo_destino: simpleReportData.correo_destino,
+      limite: simpleReportData.limite
+    });
+    
+    if (response.data.success) {
+      setReportSuccess(`Reporte enviado a ${simpleReportData.correo_destino} con ${response.data.total_citas} citas`);
+      setTimeout(() => {
+        setShowSimpleReportModal(false);
+        setReportSuccess(null);
+      }, 3000);
+    } else {
+      setReportError(response.data.message || 'Error al enviar el reporte');
+    }
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 
+                        error.message || 
+                        'Error desconocido al generar el reporte';
+    setReportError(errorMessage);
+  } finally {
+    setReportProcessing(false);
+  }
+};
+
 
 //FILTRO
   const [filters, setFilters] = useState({
@@ -57,7 +108,6 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
     terms: false
   }
 });
-
 const handleApplyFilters = async (appliedFilters) => {
   try {
     setLoading(true);
@@ -109,7 +159,6 @@ const handleApplyFilters = async (appliedFilters) => {
     setLoading(false);
   }
 };
-
 const handleResetFilters = async () => {
   try {
     setLoading(true);
@@ -148,7 +197,6 @@ const handleResetFilters = async () => {
     setLoading(false);
   }
 };
-
   // Carga de datos optimizada
 const loadMonthData = async (date) => {
   const year = date.getFullYear();
@@ -198,7 +246,6 @@ const loadMonthData = async (date) => {
     }
   }
 };
-
 // Precarga de datos
   useEffect(() => {
     const loadInitialData = async () => {
@@ -217,7 +264,6 @@ const loadMonthData = async (date) => {
 
     loadInitialData();
   }, [currentDate]);
-
   // Funciones auxiliares
   const getDayColor = (citasCount) => {
     if (citasCount === 0) return 'gray';
@@ -225,7 +271,6 @@ const loadMonthData = async (date) => {
     if (citasCount >= 12) return 'orange';
     return 'green';
   };
-
 const getDayData = useMemo(() => {
   return (date) => {
     try {
@@ -255,7 +300,6 @@ const getDayData = useMemo(() => {
     }
   };
 }, [calendarData, citas]);
-
   // Contenido de los días
 const tileContent = useMemo(() => ({ date, view }) => {
   if (view === 'month') {
@@ -271,7 +315,6 @@ const tileContent = useMemo(() => ({ date, view }) => {
   }
   return null;
 }, [getDayData]);
-
   // Clases CSS para los días
   const tileClassName = useMemo(() => ({ date, view }) => {
     if (view !== 'month') return '';
@@ -290,7 +333,6 @@ const tileContent = useMemo(() => ({ date, view }) => {
 
     return classes.join(' ');
   }, [currentDate, getDayData]);
-
   // Manejo de clic en día
   const handleDayClick = (date) => {
     setData({ 
@@ -302,11 +344,6 @@ const tileContent = useMemo(() => ({ date, view }) => {
     setErrorMessage('');
     setShowModal(true);
   };
-
-  const [busquedaRealizada, setBusquedaRealizada] = useState(false);
-  // Función para buscar paciente por DNI
-  const [buscandoPaciente, setBuscandoPaciente] = useState(false);
-
 const buscarPaciente = async () => {
   if (!data.dni || data.dni.length !== 8) {
     setErrorMessage('El DNI debe tener exactamente 8 dígitos');
@@ -656,13 +693,22 @@ const handleDelete = () => {
 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Gestión de Citas</h1>
-          <button 
-            onClick={() => setShowModal(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-200"
-            disabled={loading}
-          >
-            Nueva Cita
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowSimpleReportModal(true)}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition duration-200"
+              disabled={loading}
+            >
+              Reporte Rápido
+            </button>
+            <button 
+              onClick={() => setShowModal(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-200"
+              disabled={loading}
+            >
+              Nueva Cita
+            </button>
+          </div>
         </div>
 
         <div className="flex border-b mb-6">
@@ -817,6 +863,65 @@ const handleDelete = () => {
             />
           </div>
         )}
+        {/* Modal para Reporte Simple */}
+{showSimpleReportModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div className="p-6">
+        <h2 className="text-xl font-bold mb-4">Reporte Rápido de Citas</h2>
+        
+        <div className="mb-4">
+          <p className="text-gray-600 mb-2">
+            Se enviará un reporte con las últimas 100 citas de esta sede a tu correo electrónico.
+          </p>
+          <p className="text-sm text-gray-500">
+            El reporte incluirá: fecha, paciente, médico y estado de cada cita.
+          </p>
+        </div>
+        
+         <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-medium mb-1">
+            Correo Destino
+          </label>
+          <input
+            type="email"
+            value={simpleReportData.correo_destino}
+            onChange={(e) => setSimpleReportData({
+              ...simpleReportData,
+              correo_destino: e.target.value
+            })}
+            className="w-full p-2 border rounded"
+            required
+          />
+        </div>
+        
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => setShowSimpleReportModal(false)}
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSimpleReport}
+            disabled={reportProcessing}
+            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-purple-300"
+          >
+            {reportProcessing ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Enviando...
+              </span>
+            ) : 'Generar Reporte'}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Modal para nueva cita */}
         {showModal && (

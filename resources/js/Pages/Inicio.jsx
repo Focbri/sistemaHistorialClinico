@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useEffect } from 'react';
 
 export default function Inicio({auth}) {
     // Determinar si el usuario es médico o médico_externo usando el campo role
@@ -8,6 +9,18 @@ export default function Inicio({auth}) {
     const isMedicoExterno = auth.user.role === 'medico_externo';
     const isRecepcionistaAdmin = ['admin', 'recepcionista'].includes(auth.user.role);
     const isMedicoAdmin = ['admin', 'medico'].includes(auth.user.role);
+
+     useEffect(() => {
+        // Verificar si acabamos de iniciar sesión
+        const justLoggedIn = sessionStorage.getItem('justLoggedIn') === 'true';
+        
+        if (justLoggedIn) {
+            // Eliminar el indicador para que no se recargue en futuras visitas
+            sessionStorage.removeItem('justLoggedIn');
+            // Recargar la página
+            window.location.reload();
+        }
+    }, []);
 
     return (
         <AuthenticatedLayout

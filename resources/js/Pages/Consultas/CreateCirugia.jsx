@@ -23,39 +23,53 @@ const BuscadorPacienteDNI = ({ onPacienteSelect, pacienteInicial }) => {
     }
   }, [pacienteInicial]);
 
-  const handleBuscarPaciente = async (dni) => {
-    try {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-      
-      const response = await fetch('/pacientes/buscar-por-dni', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrfToken
-        },
-        body: JSON.stringify({ dni: dni })
-      });
-
-      if (!response.ok) {
-        throw new Error('Paciente no encontrado');
-      }
-
-      const result = await response.json();
-      
-      if (result.success && result.paciente) {
-        setPacienteSeleccionado(result.paciente);
-        onPacienteSelect(result.paciente);
-        setErrorBusqueda(null);
-      } else {
-        throw new Error(result.message || 'Paciente no encontrado');
-      }
-    } catch (error) {
-      console.error('Error al buscar paciente:', error);
-      setPacienteSeleccionado(null);
-      onPacienteSelect(null);
-      setErrorBusqueda(error.message);
+const handleBuscarPaciente = async (dni) => {
+  try {
+    // Obtener el token CSRF de las props de Inertia
+    const csrfToken = document.head.querySelector('meta[name="csrf-token"]').content;
+    
+    if (!csrfToken) {
+      throw new Error('No se pudo obtener el token CSRF');
     }
-  };
+
+    const response = await fetch('/pacientes/buscar-por-dni', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'include', // Importante para incluir cookies
+      body: JSON.stringify({ dni })
+    });
+
+    if (response.status === 419) {
+      // Token CSRF expirado, recargar la página
+      window.location.reload();
+      return;
+    }
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al buscar paciente');
+    }
+
+    if (data.paciente) {
+      setPacienteSeleccionado(data.paciente);
+      onPacienteSelect(data.paciente);
+      setErrorBusqueda(null);
+    } else {
+      throw new Error('Paciente no encontrado');
+    }
+  } catch (error) {
+    console.error('Error al buscar paciente:', error);
+    setPacienteSeleccionado(null);
+    onPacienteSelect(null);
+    setErrorBusqueda(error.message);
+  }
+};
   return (
     <div className="space-y-2">
       <div className="flex gap-2">

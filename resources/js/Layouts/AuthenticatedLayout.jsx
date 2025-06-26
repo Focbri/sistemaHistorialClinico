@@ -6,11 +6,14 @@ import { Link, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
-    const { flash } = usePage().props;
+    const { auth, flash } = usePage().props;
+    const user = auth.user;
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
+
+    const isMedico = ['medico', 'medico_externo'].includes(auth.user.role);
+    const isRecepcionistaAdmin = ['admin', 'recepcionista'].includes(auth.user.role);
 
       // Obtener la sede actual de las props
     const sedeActual = usePage().props.sedeActual;
@@ -54,7 +57,7 @@ export default function AuthenticatedLayout({ header, children }) {
             )}
 
             <nav className=" bg-[#005B96]">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl 2xl:max-w-none px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between 2xl:h-24">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
@@ -82,12 +85,22 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Consultas
                                 </NavLink>
-                                <NavLink
-                                    href={route('citas.index')}
-                                    active={route().current('citas.index')}
-                                >
-                                    Citas
-                                </NavLink>
+                                {isRecepcionistaAdmin && (
+                                    <NavLink
+                                        href={route('citas.index')}
+                                        active={route().current('citas.index')}
+                                    >
+                                        Citas
+                                    </NavLink>
+                                )}
+                                {isMedico && (
+                                    <NavLink
+                                        href={route('citas.asignadas')}
+                                        active={route().current('citas.asignadas')}
+                                    >
+                                        Citas Asignadas
+                                    </NavLink>
+                                )}
                                 <NavLink
                                     href={route('farmacos.index')}
                                     active={route().current('farmacos.index')}

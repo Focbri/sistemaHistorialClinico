@@ -2,7 +2,7 @@
 
 return [
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => 'Visual Ophthalmics',
 
     'env' => env('APP_ENV', 'production'),
 

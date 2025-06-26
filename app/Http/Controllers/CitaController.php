@@ -10,6 +10,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Mail\ReporteCitasMail;
+use App\Mail\ReporteCitasSimpleMail;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Exports\CitasExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CitaController extends Controller
 {
@@ -143,6 +149,7 @@ class CitaController extends Controller
             }
         ],
         'motivo' => 'required|string|max:255',
+        'cotizacion' => 'nullable|string|max:255',
     ]);
 
         try {
@@ -188,6 +195,7 @@ class CitaController extends Controller
             'fecha_hora' => $fechaHora,
             'motivo' => $request->motivo,
             'estado' => 'programada',
+            'cotizacion' => $request->cotizacion,
             'sede' => session('sede_actual'), // Añadir la sede de la sesión actual
         ]);
 
@@ -251,6 +259,7 @@ class CitaController extends Controller
             ],
             'fecha_hora' => 'required|date',
             'motivo' => 'required|string|max:255',
+            'cotizacion' => 'nullable|string|max:255',
             'estado' => 'required|in:programada,completada,cancelada',
         ]);
 
@@ -367,7 +376,6 @@ class CitaController extends Controller
 
         return $calendarData;
     }
-
     protected function getStatusColor($count)
     {
         if ($count === 0) return 'gray';
@@ -375,7 +383,6 @@ class CitaController extends Controller
         if ($count >= 12) return 'orange';    // 75% de capacidad
         return 'green';
     } 
-
     // En CitaController.php
     public function destroy(Cita $cita)
     {
@@ -384,29 +391,28 @@ class CitaController extends Controller
     }
     //CITAS ASIGNADAS PARA MÉDICO
     public function asignadas(Request $request)
-{
-    // Citas programadas paginadas
-    $citasProgramadas = Cita::with(['paciente'])
-        ->where('medico_id', Auth::id())
-        ->where('sede', session('sede_actual'))
-        ->where('estado', 'programada')
-        ->orderBy('fecha_hora')
-        ->paginate(10); // 10 citas por página
+    {
+        // Citas programadas paginadas
+        $citasProgramadas = Cita::with(['paciente'])
+            ->where('medico_id', Auth::id())
+            ->where('sede', session('sede_actual'))
+            ->where('estado', 'programada')
+            ->orderBy('fecha_hora')
+            ->paginate(10); // 10 citas por página
 
-    // Citas atendidas paginadas
-    $citasAtendidas = Cita::with(['paciente'])
-        ->where('medico_id', Auth::id())
-        ->where('sede', session('sede_actual'))
-        ->where('estado', 'completada')
-        ->orderBy('fecha_hora', 'desc')
-        ->paginate(10);
+        // Citas atendidas paginadas
+        $citasAtendidas = Cita::with(['paciente'])
+            ->where('medico_id', Auth::id())
+            ->where('sede', session('sede_actual'))
+            ->where('estado', 'completada')
+            ->orderBy('fecha_hora', 'desc')
+            ->paginate(10);
 
-    return Inertia::render('Citas/Asignadas', [
-        'citas' => $citasProgramadas,
-        'citasAtendidas' => $citasAtendidas
-    ]);
-}
-
+        return Inertia::render('Citas/Asignadas', [
+            'citas' => $citasProgramadas,
+            'citasAtendidas' => $citasAtendidas
+        ]);
+    }
     public function updateStatus(Request $request, Cita $cita)
     {
         $request->validate([
@@ -421,7 +427,6 @@ class CitaController extends Controller
 
         return back()->with('success', 'Estado de la cita actualizado correctamente');
     }
-
     public function filtrar(Request $request)
     {
         $query = Cita::with(['paciente', 'medico']);
@@ -471,4 +476,122 @@ class CitaController extends Controller
         
         return response()->json($query->get());
     }
+
+public function generarReporteSimple(Request $request)
+{
+    Log::info('Generando reporte para sede: ' . session('sede_actual'));
+    Log::info('Usuario solicitante: ' . Auth::user()->email);
+
+    $request->validate([
+        'correo_destino' => 'required|email|max:100',
+        'limite' => 'nullable|integer|min:1|max:1000',
+        'descargar_excel' => 'nullable|boolean'
+    ]);
+
+    try {
+        $sedeActual = session('sede_actual');
+        
+        if (!$sedeActual) {
+            throw new \Exception('No se ha definido una sede en la sesión actual');
+        }
+
+        // Obtener citas de la sede actual
+        $citas = Cita::with(['paciente', 'medico'])
+            ->where('sede', $sedeActual)
+            ->whereDate('fecha_hora', now()->toDateString())
+            ->orderBy('fecha_hora', 'desc')
+            ->get();
+
+        Log::info("Reporte solicitado para sede: {$sedeActual}, citas encontradas: " . $citas->count());
+
+        if ($citas->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No hay citas programadas para la sede ' . $sedeActual . ' en la fecha actual.'
+            ], 200);
+        }
+
+        // Preparar datos para el correo
+        $reporteData = [
+            'total_citas' => $citas->count(),
+            'sede' => session('sede_actual') ?? 'Sede no definida',
+            'fecha_reporte' => now()->format('d/m/Y H:i'),
+            'citas' => $citas->map(function($cita) {
+                $fechaHora = is_string($cita->fecha_hora) 
+                    ? \Carbon\Carbon::parse($cita->fecha_hora)
+                    : $cita->fecha_hora;
+
+                return [
+                    'fecha' => $fechaHora->format('d/m/Y H:i'),
+                    'paciente' => $cita->paciente->nombre_completo ?? 'Paciente no disponible',
+                    'medico' => $cita->medico->name ?? 'Médico no asignado',
+                    'motivo' => $cita->motivo ?? 'No definido',
+                    'estado' => $cita->estado ?? 'No definido',
+                    'cotizacion' => $cita->cotizacion ?? 0,
+                    'observaciones' => $cita->observaciones ?? 'Ninguna',
+                    'dni' => $cita->paciente->dni ?? 'N/A',
+                ];
+            }),
+            'total_cotizacion' => $citas->sum('cotizacion') // Suma total de cotizaciones
+        ];
+
+        // Generar archivo Excel temporal
+        $excelFileName = 'reporte_citas_' . now()->format('Ymd_His') . '.xlsx';
+        $excelPath = storage_path('app/' . $excelFileName);
+        $totalCotizacion = $citas->sum('cotizacion');
+        
+        Excel::store(new CitasExport($citas, $totalCotizacion), $excelFileName);
+
+        // Enviar correo con adjunto
+        Mail::to($request->correo_destino)
+            ->send(new ReporteCitasSimpleMail($reporteData, $excelPath));
+
+        // Eliminar archivo temporal después de enviar
+        if (file_exists($excelPath)) {
+            unlink($excelPath);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reporte de citas enviado correctamente al correo: ' . $request->correo_destino,
+            'total_citas' => $citas->count(),
+            'total_cotizacion' => number_format($reporteData['total_cotizacion'], 2)
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error al generar reporte simple: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al generar el reporte: ' . $e->getMessage()
+        ], 500);
+    }
+}
+public function updateCotizacion(Request $request, Cita $cita)
+{
+    $request->validate([
+        'cotizacion' => 'nullable|numeric|min:0'
+    ]);
+
+    // Convertir el valor a float para asegurar el formato decimal
+    $cotizacion = $request->cotizacion ? (float)$request->cotizacion : null;
+
+    $cita->update([
+        'cotizacion' => $cotizacion
+    ]);
+
+    return back()->with('success', 'Cotización actualizada correctamente');
+}
+
+public function updateObservaciones(Request $request, Cita $cita)
+{
+    $request->validate([
+        'observaciones' => 'nullable|string|max:1000'
+    ]);
+
+    $cita->update([
+        'observaciones' => $request->observaciones
+    ]);
+
+    return back()->with('success', 'Observaciones actualizadas correctamente');
+}
 }

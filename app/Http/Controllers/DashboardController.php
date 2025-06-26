@@ -44,51 +44,71 @@ class DashboardController extends Controller
         }
     }
 
-    protected function getFilteredCie10Data($requestData)
+    protected function getFilteredCie10Data($requestData) 
     {
         $requestData = $requestData instanceof Request ? $requestData->all() : $requestData;
+
+    $validator = Validator::make($requestData, [
+        'sex' => 'nullable|in:M,F',
+        'min_age' => 'nullable|integer|min:0',
+        'max_age' => 'nullable|integer|min:0|gte:min_age',
+        'start_date' => 'nullable|date',
+        'end_date' => 'nullable|date|after_or_equal:start_date',
+        'terms' => 'nullable|array',
+        'terms.*' => 'nullable|string',
+        'procedencia' => 'nullable|string'
+    ]);
+
+    if ($validator->fails()) {
+        throw new \Illuminate\Validation\ValidationException($validator);
+    }
+
+    $validated = $validator->validated();
+    $terms = $requestData['terms'] ?? ($requestData['terms[]'] ?? []);
+    $validated['terms'] = is_array($terms) ? $terms : [$terms];
     
-        $validator = Validator::make($requestData, [
-            'sex' => 'nullable|in:M,F',
-            'min_age' => 'nullable|integer|min:0',
-            'max_age' => 'nullable|integer|min:0|gte:min_age',
-            'terms' => 'nullable|array',
-            'terms.*' => 'nullable|string',
-            'procedencia' => 'nullable|string' // Añadir validación para procedencia
-        ]);
+    $query = Consulta::with('paciente')
+        ->select('id', 'impresion_diagnostica', 'paciente_id', 'created_at')
+        ->whereHas('paciente', function($q) {
+            // Filtro principal por sede de la sesión
+            $q->where('sede', session('sede_actual'));
+        });
 
-        if ($validator->fails()) {
-            throw new \Illuminate\Validation\ValidationException($validator);
+    // Filtro por sexo
+    if (!empty($validated['sex'])) {
+        $query->whereHas('paciente', function($q) use ($validated) {
+            $q->where('sexo', $validated['sex']);
+        });
+    }
+    
+    // Filtro por edad (similar al PacienteController pero con edad directa)
+    if (!empty($validated['min_age']) || !empty($validated['max_age'])) {
+        $query->whereHas('paciente', function($q) use ($validated) {
+            if (!empty($validated['min_age'])) {
+                $q->where('edad', '>=', $validated['min_age']);
+            }
+            if (!empty($validated['max_age'])) {
+                $q->where('edad', '<=', $validated['max_age']);
+            }
+        });
+    }
+    
+    // Filtro por rango de fechas (de la consulta)
+    if (!empty($validated['start_date']) || !empty($validated['end_date'])) {
+        if (!empty($validated['start_date'])) {
+            $query->whereDate('created_at', '>=', $validated['start_date']);
         }
-
-        $validated = $validator->validated();
-        $terms = $requestData['terms'] ?? ($requestData['terms[]'] ?? []); // Maneja ambos formatos
-        $validated['terms'] = is_array($terms) ? $terms : [$terms];
-        
-        $query = Consulta::with('paciente')
-            ->select('id', 'impresion_diagnostica', 'paciente_id');
-
-        // Filtro por sexo
-        if (!empty($validated['sex'])) {
-            $query->whereHas('paciente', function($q) use ($validated) {
-                $q->where('sexo', $validated['sex']);
-            });
+        if (!empty($validated['end_date'])) {
+            $query->whereDate('created_at', '<=', $validated['end_date']);
         }
-        
-        // Filtro por edad
-        if (!empty($validated['min_age']) && !empty($validated['max_age'])) {
-            $query->whereHas('paciente', function($q) use ($validated) {
-                $q->where('edad', '>=', $validated['min_age'])
-                ->where('edad', '<=', $validated['max_age']);
-            });
-        }
-        
-        // Filtro por procedencia (NUEVO)
-        if (!empty($validated['procedencia'])) {
-            $query->whereHas('paciente', function($q) use ($validated) {
-                $q->where('procedencia', $validated['procedencia']);
-            });
-        }
+    }
+    
+    // Filtro por procedencia
+    if (!empty($validated['procedencia'])) {
+        $query->whereHas('paciente', function($q) use ($validated) {
+            $q->where('procedencia', $validated['procedencia']);
+        });
+    }
         
         // Filtro por términos
         if (!empty($validated['terms'])) {

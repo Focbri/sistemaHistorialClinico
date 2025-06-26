@@ -644,6 +644,7 @@ const buscarPaciente = async () => {
 
       const handleSubmit = async (e) => {
         e.preventDefault();
+        e.stopPropagation();
 
         // Solo validar receta si hay medicamentos
         if (data.receta?.medicamentos?.length > 0) {
@@ -710,6 +711,7 @@ const buscarPaciente = async () => {
         post(route('consultas.store'), formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
             },
             onSuccess: () => {
                 // Limpiar estados después del éxito
@@ -756,47 +758,42 @@ const buscarPaciente = async () => {
     
     const actualizarStockBackend = async (medicamentos) => {
     try {
-        // Filtrar solo medicamentos no manuales con farmaco_id válido
         const medicamentosParaStock = medicamentos.filter(m => 
             !m.es_manual && (m.farmaco_id || m.id) && m.cantidad > 0
         );
 
         if (medicamentosParaStock.length === 0) {
             console.log('No hay medicamentos que afecten stock');
-            return true; // No hay nada que actualizar
+            return true;
+        }
+
+        // Obtener el token CSRF actualizado
+        await axios.get('/sanctum/csrf-cookie'); // Esto actualiza el token CSRF
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrfToken) {
+            throw new Error('No se pudo obtener el token CSRF');
         }
 
         const payload = {
             medicamentos: medicamentosParaStock.map(m => ({
                 farmaco_id: m.farmaco_id || m.id,
-                cantidad: Math.max(1, parseInt(m.cantidad) || 1) // Asegurar cantidad válida
+                cantidad: Math.max(1, parseInt(m.cantidad) || 1)
             }))
         };
-
-        console.log('Enviando a /farmacos/stock/actualizar-por-receta:', payload);
 
         const response = await axios.post('/farmacos/stock/actualizar-por-receta', payload, {
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            withCredentials: true
         });
 
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Error en la respuesta del servidor');
-        }
-
-        console.log('Stock actualizado correctamente:', response.data);
-        return true;
+        return response.data.success || false;
     } catch (error) {
-        console.error('Error al actualizar stock:', {
-            error: error.message,
-            response: error.response?.data,
-            request: {
-                url: error.config?.url,
-                data: error.config?.data
-            }
-        });
+        console.error('Error al actualizar stock:', error);
         return false;
     }
 };
