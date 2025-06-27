@@ -211,4 +211,10 @@ protected static function boot()
             
         });
     }
+    public function scopeStockCritico($query)
+{
+    return $query->whereHas('stock', function($q) {
+        $q->whereRaw('visual + insamed + s_p <= 1');
+    });
+}
 }

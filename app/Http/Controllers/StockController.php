@@ -35,18 +35,25 @@ class StockController extends Controller
     }
 
     public function update(Request $request, Farmaco $farmaco)
-    {
-        $validated = $request->validate([
-            'visual' => 'required|integer|min:0',
-            'insamed' => 'required|integer|min:0',
-            's_p' => 'required|integer|min:0'
-        ]);
+{
+    $validated = $request->validate([
+        'visual' => 'required|integer|min:0',
+        'insamed' => 'required|integer|min:0',
+        's_p' => 'required|integer|min:0',
+        'from_dashboard' => 'nullable|boolean' // Nuevo campo para identificar la fuente
+    ]);
 
-        $farmaco->stock()->updateOrCreate([], $validated);
+    $farmaco->stock()->updateOrCreate([], $validated);
 
-        return redirect()->route('farmacos.index')
+    // Redirigir según la fuente de la solicitud
+    if ($request->input('from_dashboard')) {
+        return redirect()->route('dashboard.index')
                ->with('success', 'Stock actualizado exitosamente');
     }
+
+    return redirect()->route('farmacos.index')
+           ->with('success', 'Stock actualizado exitosamente');
+}
 
     public function buscarFarmacos(Request $request)
     {

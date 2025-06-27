@@ -5,3 +5,18 @@
 body {
      font-family: 'Roboto Serif', serif; /* Corregido a Roboto Serif */
 }
+
+/* Animaciones para tarjetas */
+.stat-card {
+  transition: transform 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Ajustes para gráficos */
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}

@@ -36,6 +36,12 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
   const [reportProcessing, setReportProcessing] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(null);
   const [reportError, setReportError] = useState(null);
+  const [reportStatus, setReportStatus] = useState({
+  processing: false,
+  success: null,
+  error: null,
+  message: null
+});
 
   const [showSimpleReportModal, setShowSimpleReportModal] = useState(false);
 
@@ -61,9 +67,12 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
 
 const handleSimpleReport = async () => {
   try {
-    setReportProcessing(true);
-    setReportError(null);
-    setReportSuccess(null);
+    setReportStatus({
+      processing: true,
+      success: null,
+      error: null,
+      message: null
+    });
     
     const response = await axios.post('/citas/generar-reporte-simple', {
       correo_destino: simpleReportData.correo_destino,
@@ -71,24 +80,37 @@ const handleSimpleReport = async () => {
     });
     
     if (response.data.success) {
-      setReportSuccess(`Reporte enviado a ${simpleReportData.correo_destino} con ${response.data.total_citas} citas`);
+      setReportStatus({
+        processing: false,
+        success: true,
+        error: null,
+        message: `Reporte enviado a ${simpleReportData.correo_destino} con ${response.data.total_citas} citas`
+      });
+      
       setTimeout(() => {
         setShowSimpleReportModal(false);
-        setReportSuccess(null);
+        setReportStatus(prev => ({ ...prev, message: null }));
       }, 3000);
     } else {
-      setReportError(response.data.message || 'Error al enviar el reporte');
+      setReportStatus({
+        processing: false,
+        success: false,
+        error: true,
+        message: response.data.message || 'Error al enviar el reporte'
+      });
     }
   } catch (error) {
     const errorMessage = error.response?.data?.message || 
                         error.message || 
                         'Error desconocido al generar el reporte';
-    setReportError(errorMessage);
-  } finally {
-    setReportProcessing(false);
+    setReportStatus({
+      processing: false,
+      success: false,
+      error: true,
+      message: errorMessage
+    });
   }
 };
-
 
 //FILTRO
   const [filters, setFilters] = useState({
@@ -870,6 +892,13 @@ const handleDelete = () => {
       <div className="p-6">
         <h2 className="text-xl font-bold mb-4">Reporte Rápido de Citas</h2>
         
+        {/* Mostrar mensajes de estado */}
+        {reportStatus.message && (
+          <div className={`mb-4 p-3 rounded ${reportStatus.error ? 'bg-red-100 text-red-700' : reportStatus.success ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+            {reportStatus.message}
+          </div>
+        )}
+        
         <div className="mb-4">
           <p className="text-gray-600 mb-2">
             Se enviará un reporte con las últimas 100 citas de esta sede a tu correo electrónico.
@@ -879,7 +908,7 @@ const handleDelete = () => {
           </p>
         </div>
         
-         <div className="mb-4">
+        <div className="mb-4">
           <label className="block text-gray-700 text-sm font-medium mb-1">
             Correo Destino
           </label>
@@ -897,17 +926,25 @@ const handleDelete = () => {
         
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => setShowSimpleReportModal(false)}
+            onClick={() => {
+              setShowSimpleReportModal(false);
+              setReportStatus({
+                processing: false,
+                success: null,
+                error: null,
+                message: null
+              });
+            }}
             className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
           >
             Cancelar
           </button>
           <button
             onClick={handleSimpleReport}
-            disabled={reportProcessing}
+            disabled={reportStatus.processing}
             className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-purple-300"
           >
-            {reportProcessing ? (
+            {reportStatus.processing ? (
               <span className="flex items-center justify-center">
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

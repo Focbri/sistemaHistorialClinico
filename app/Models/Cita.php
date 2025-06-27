@@ -51,6 +51,7 @@ public function medico()
     }
     public function scopeDeSedeActual($query)
 {
-    return $query->where('sede', Auth::user()->sede);
+    // Usa la sede de la sesión en lugar de la del usuario
+        return $query->where('sede', session('sede_actual'));
 }
 }

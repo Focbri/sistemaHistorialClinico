@@ -203,7 +203,7 @@ const AdvancedFilters = ({
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200">
         <h3 className="text-lg font-medium text-gray-900 2xl:text-2xl">Seleccione un Filtro</h3>
       </div>
       <div className="p-6">
@@ -277,7 +277,7 @@ const AdvancedFilters = ({
           
           {/* Sex filter */}
           {!disabledSections.sex && filters.activeFilters.sex && (
-            <div className="space-y-2">
+            <div className="space-y-2 pl-4">
               <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Sexo</label>
               <select
                 name="sex"
@@ -295,7 +295,7 @@ const AdvancedFilters = ({
           {/* Age filter */}
           {!disabledSections.age && filters.activeFilters.age && (
             <>
-              <div className="space-y-2">
+              <div className="space-y-2 pl-4">
                 <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Edad mínima</label>
                 <input
                   type="number"
@@ -307,7 +307,7 @@ const AdvancedFilters = ({
                   min="0"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 px-4">
                 <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Edad máxima</label>
                 <input
                   type="number"
@@ -325,7 +325,7 @@ const AdvancedFilters = ({
           {/* Date range filter */}
           {!disabledSections.dateRange && filters.activeFilters.dateRange && (
             <>
-              <div className="space-y-2">
+              <div className="space-y-2 pl-4">
                 <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Fecha inicial</label>
                 <input
                   type="date"
@@ -349,7 +349,7 @@ const AdvancedFilters = ({
           )}
           
         {!disabledSections.procedencia && filters.activeFilters.procedencia && (
-        <div className="space-y-2">
+        <div className="space-y-2 pl-4">
             <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Procedencia</label>
             <select
             name="procedencia"
@@ -407,7 +407,7 @@ const AdvancedFilters = ({
           
           {/* Terms filter */}
           {!disabledSections.terms && filters.activeFilters.terms && (
-            <div className="col-span-2 space-y-2">
+            <div className="col-span-2 space-y-2 pl-4">
               <label className="block text-sm font-medium text-gray-700 2xl:text-lg">Buscar términos</label>
               <div className="relative">
                 <input

@@ -73,6 +73,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Inicio
                                 </NavLink>
+                                {(user.role === 'admin' || user.role === 'medico') && (
+                                <NavLink
+                                    href={route('dashboard.index')}
+                                    active={route().current('dashboard.index')}
+                                >
+                                    Dashboard
+                                </NavLink>
+                                )}
                                 <NavLink
                                     href={route('pacientes.index')}
                                     active={route().current('pacientes.index')}
@@ -107,14 +115,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Farmacia
                                 </NavLink>
-                                {(user.role === 'admin' || user.role === 'medico') && (
-                                <NavLink
-                                    href={route('dashboard.index')}
-                                    active={route().current('dashboard.index')}
-                                >
-                                    Reportes
-                                </NavLink>
-                                )}
                                 {/* Mostrar opción de "Crear Usuario" solo para administradores */}
                                 {(user.role === 'admin' || user.role === 'root') && (
                                     <NavLink
@@ -234,6 +234,14 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Inicio
                         </ResponsiveNavLink>
+                        {(user.role === 'admin' || user.role === 'medico') && (
+                        <ResponsiveNavLink
+                            href={route('dashboard.index')}
+                            active={route().current('dashboard.index')}
+                        >
+                            Dashboard
+                        </ResponsiveNavLink>
+                        )}
                         <ResponsiveNavLink
                             href={route('pacientes.index')}
                             active={route().current('pacientes.index')}
@@ -258,14 +266,6 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Farmacia
                         </ResponsiveNavLink>
-                        {(user.role === 'admin' || user.role === 'medico') && (
-                        <ResponsiveNavLink
-                            href={route('dashboard.index')}
-                            active={route().current('dashboard.index')}
-                        >
-                            Reportes
-                        </ResponsiveNavLink>
-                        )}
                         {/* Mostrar opción de "Crear Usuario" solo para administradores */}
                         {(user.role === 'admin' || user.role === 'medico') && (
                             <ResponsiveNavLink

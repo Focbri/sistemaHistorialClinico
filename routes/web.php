@@ -49,6 +49,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard.index');
         Route::get('/top-cie10', [DashboardController::class, 'getTopCie10'])->name('dashboard.top-cie10');
     });
+    // Ruta para obtener estadísticas del dashboard
+    Route::get('/dashboard/patient-stats', [DashboardController::class, 'patientStats'])->name('dashboard.patient-stats');
+    Route::get('/dashboard/appointment-stats', [DashboardController::class, 'appointmentStats'])->name('dashboard.appointment-stats');
+    Route::get('/dashboard/farmaco-stats', [DashboardController::class, 'farmacoStats'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.farmaco-stats');
     
     // Perfil de usuario
     Route::prefix('profile')->group(function () {
@@ -188,6 +194,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('{id}/generar-pdf', [RefraccionController::class, 'generarPDF'])
              ->name('refracciones.pdf');
     });
+
+    
 });
 
 // Rutas de administración 

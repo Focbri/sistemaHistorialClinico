@@ -2,11 +2,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Consulta;
+use App\Models\Paciente;
+use App\Models\Cita;
+use App\Models\Farmaco;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
 class DashboardController extends Controller
 {
@@ -16,7 +20,7 @@ class DashboardController extends Controller
             'auth' => [
                 'user' => Auth::user() ?: null
             ],
-            'topCie10' => $this->getFilteredCie10Data([
+            'initialTopCie10' => $this->getFilteredCie10Data([
                 'filter_type' => 'general',
                 'sex' => '',
                 'min_age' => '',
@@ -186,4 +190,217 @@ class DashboardController extends Controller
         
         return response()->json(array_keys($uniqueTerms));
     }
+
+// En patientStats()
+public function patientStats(Request $request)
+{
+    // Obtener parámetros de filtrado
+    $minAge = $request->input('min_age');
+    $maxAge = $request->input('max_age');
+    $procedencia = $request->input('procedencia');
+
+    // Consulta base
+    $query = Paciente::deSedeActual();
+
+    // Aplicar filtros
+    if (!empty($minAge)) {
+        $query->where('edad', '>=', $minAge);
+    }
+
+    if (!empty($maxAge)) {
+        $query->where('edad', '<=', $maxAge);
+    }
+
+    if (!empty($procedencia)) {
+        $query->where('procedencia', $procedencia);
+    }
+
+    // Determinar si se están usando filtros personalizados
+    $customRange = !empty($minAge) || !empty($maxAge);
+
+    // Obtener distribución por género
+    $genderDistribution = (clone $query)
+        ->selectRaw('sexo as gender, COUNT(*) as count')
+        ->groupBy('sexo')
+        ->get()
+        ->pluck('count', 'gender');
+
+    // Obtener distribución por rangos de edad
+    $ageDistribution = [];
+    if ($customRange) {
+        // Usar rango personalizado
+        $rangeLabel = (!empty($minAge) ? $minAge : '0') . '-' . (!empty($maxAge) ? $maxAge : '+');
+        $count = (clone $query)->count();
+        $ageDistribution = [$rangeLabel => $count];
+    } else {
+        // Usar rangos predefinidos
+        $ageDistribution = (clone $query)
+            ->selectRaw('
+                CASE
+                    WHEN edad < 18 THEN "0-17"
+                    WHEN edad BETWEEN 18 AND 30 THEN "18-30"
+                    WHEN edad BETWEEN 31 AND 45 THEN "31-45"
+                    WHEN edad BETWEEN 46 AND 60 THEN "46-60"
+                    ELSE "60+"
+                END as age_range,
+                COUNT(*) as count
+            ')
+            ->groupBy('age_range')
+            ->orderBy('age_range')
+            ->get()
+            ->pluck('count', 'age_range');
+    }
+
+    // Obtener distribución por procedencia
+    $procedenciaDistribution = (clone $query)
+        ->selectRaw('procedencia, COUNT(*) as count')
+        ->whereNotNull('procedencia')
+        ->groupBy('procedencia')
+        ->orderBy('count', 'desc')
+        ->get()
+        ->pluck('count', 'procedencia');
+
+    return response()->json([
+        'data' => [
+            'gender' => $genderDistribution,
+            'age_ranges' => $ageDistribution,
+            'procedencia' => $procedenciaDistribution,
+            'total' => $query->count(),
+            'newThisMonth' => (clone $query)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count(),
+            'custom_range' => $customRange,
+            'min_age' => $minAge,
+            'max_age' => $maxAge
+        ]
+    ]);
+}
+
+public function appointmentStats()
+{
+    $today = now()->format('Y-m-d');
+    
+    if (!Auth::check()) {
+        return response()->json([
+            'data' => [
+                'today' => 0,
+                'total' => 0,
+                'statusDistribution' => [],
+                'doctorAppointments' => [],
+            ]
+        ]);
+    }
+    
+    try {
+        // Citas para hoy
+        $citasHoy = Cita::deSedeActual()
+            ->whereDate('fecha_hora', $today)
+            ->count();
+        
+        // Citas totales (a partir de hoy)
+        $citasTotales = Cita::deSedeActual()
+            ->whereDate('fecha_hora', '>=', $today)
+            ->count();
+        
+        // Distribución por estado (para hoy)
+        $statusDistribution = Cita::deSedeActual()
+            ->whereDate('fecha_hora', $today)
+            ->selectRaw('estado as status, COUNT(*) as count')
+            ->groupBy('estado')
+            ->get()
+            ->pluck('count', 'status');
+        
+        // Obtenemos médicos con citas (alternativa segura)
+        $medicos = User::whereIn('role', ['medico', 'medico_externo'])
+            ->select('id', 'name')
+            ->get();
+        
+        $doctorAppointments = [];
+        
+        foreach ($medicos as $medico) {
+            $citasHoyMedico = Cita::deSedeActual()
+                ->where('medico_id', $medico->id)
+                ->whereDate('fecha_hora', $today)
+                ->count();
+                
+            $citasTotalesMedico = Cita::deSedeActual()
+                ->where('medico_id', $medico->id)
+                ->whereDate('fecha_hora', '>=', $today)
+                ->count();
+                
+            if ($citasHoyMedico > 0 || $citasTotalesMedico > 0) {
+                $doctorAppointments[] = [
+                    'medico' => $medico->name,
+                    'citas_hoy' => $citasHoyMedico,
+                    'citas_totales' => $citasTotalesMedico
+                ];
+            }
+        }
+        
+        // Ordenar por citas de hoy (descendente)
+        usort($doctorAppointments, function($a, $b) {
+            return $b['citas_hoy'] - $a['citas_hoy'];
+        });
+        
+        return response()->json([
+            'data' => [
+                'today' => $citasHoy,
+                'total' => $citasTotales,
+                'statusDistribution' => $statusDistribution,
+                'doctorAppointments' => $doctorAppointments
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error en appointmentStats: ' . $e->getMessage());
+        return response()->json([
+            'error' => 'Error al obtener estadísticas de citas',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+
+public function farmacoStats()
+{
+    try {
+        // Total de fármacos en el sistema
+        $totalFarmacos = Farmaco::count();
+        
+        // Fármacos con stock crítico (total <= 1)
+        $farmacosCriticos = Farmaco::with('stock')
+            ->whereHas('stock', function($query) {
+                $query->whereRaw('(visual + insamed + s_p) <= 1');
+            })
+            ->get()
+            ->map(function($farmaco) {
+                return [
+                    'id' => $farmaco->id,
+                    'nombre_comercial' => $farmaco->nombre_comercial,
+                    'componente_activo' => $farmaco->componente_activo,
+                    'presentacion' => $farmaco->presentacion,
+                    'stock_total' => $farmaco->stock ? 
+                        ($farmaco->stock->visual + $farmaco->stock->insamed + $farmaco->stock->s_p) : 0,
+                    'stock_visual' => $farmaco->stock->visual ?? 0,
+                    'stock_insamed' => $farmaco->stock->insamed ?? 0,
+                    'stock_s_p' => $farmaco->stock->s_p ?? 0,
+                ];
+            });
+        
+        return response()->json([
+            'data' => [
+                'total_farmacos' => $totalFarmacos,
+                'farmacos_criticos' => $farmacosCriticos,
+                'count_criticos' => count($farmacosCriticos)
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error en farmacoStats: ' . $e->getMessage());
+        return response()->json([
+            'error' => 'Error al obtener estadísticas de fármacos',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
 }

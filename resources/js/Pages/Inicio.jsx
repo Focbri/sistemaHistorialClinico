@@ -60,8 +60,8 @@ export default function Inicio({auth}) {
                                         className="bg-purple-100 hover:bg-purple-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
                                     >
                                         <div className="text-5xl mb-4 2xl:text-8xl">📊</div>
-                                        <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Reportes</h2>
-                                        <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Generación de diagnósticos frecuentes</p>
+                                        <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Panel de Control</h2>
+                                        <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Estadísticas clave en tiempo real</p>
                                     </Link>
                                 )}
                                 
