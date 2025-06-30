@@ -15,11 +15,6 @@ use Illuminate\Support\Facades\Auth;
 
 class Consulta extends Model
 {
-    /**
-     * Los atributos que son asignables masivamente.
-     *
-     * @var array
-     */
     use HasFactory;
 
     protected $fillable = [  
@@ -82,11 +77,6 @@ class Consulta extends Model
         'sede'
     ];
 
-    /**
-     * Los atributos que deben ser convertidos a tipos nativos.
-     *
-     * @var array
-     */
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

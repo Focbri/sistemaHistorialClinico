@@ -54,7 +54,6 @@ export default function Inicio({auth}) {
                                 </Link>
                                 
                                 {/* Reportes - Solo visible si no es médico_externo */}
-                                {isMedicoAdmin &&(
                                     <Link 
                                         href={route('dashboard.index')} 
                                         className="bg-purple-100 hover:bg-purple-200 p-6 2xl:p-10 rounded-lg shadow-md transition-all flex flex-col items-center"
@@ -63,7 +62,6 @@ export default function Inicio({auth}) {
                                         <h2 className="text-xl font-semibold text-center 2xl:text-3xl">Panel de Control</h2>
                                         <p className="text-gray-600 mt-2 text-center 2xl:text-xl">Estadísticas clave en tiempo real</p>
                                     </Link>
-                                )}
                                 
                                 {/* Gestión de Usuarios */}
                                 {isAdmin &&(

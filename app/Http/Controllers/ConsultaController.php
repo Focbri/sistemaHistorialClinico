@@ -179,7 +179,7 @@ class ConsultaController extends Controller
     {
         $consulta = Consulta::with([
             'paciente', 
-            'receta', 
+            'receta.medicamentos.farmaco', 
             'user',
             'examen',
             'refraccion'
@@ -187,15 +187,12 @@ class ConsultaController extends Controller
 
         // Usar la misma función de parseo que en edit()
         $parseFiles = function ($jsonData) {
-            if (empty($jsonData)) return [];
-            
+            if (empty($jsonData)) return [];            
             try {
-                $parsed = is_array($jsonData) ? $jsonData : json_decode($jsonData, true);
-                
+                $parsed = is_array($jsonData) ? $jsonData : json_decode($jsonData, true);                
                 return array_map(function ($item) {
                     $path = $item['ruta'] ?? $item['path'] ?? $item;
-                    $name = $item['nombre_original'] ?? $item['name'] ?? basename($path);
-                    
+                    $name = $item['nombre_original'] ?? $item['name'] ?? basename($path);                    
                     return [
                         'path' => str_replace('public/', '', $path),
                         'original_name' => $name,

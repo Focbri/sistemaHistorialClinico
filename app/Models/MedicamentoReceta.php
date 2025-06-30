@@ -42,4 +42,9 @@ class MedicamentoReceta extends Model
     static::addGlobalScope('nombre_scope', function ($builder) {
     });
 }
+
+public function consulta()
+{
+    return $this->hasMany(Consulta::class. 'consulta_id');
+}
 }

@@ -24,6 +24,7 @@ export default function ConsultasShow({ auth, consulta }) {
         diagnostico: false,
         tratamiento: false,
         refraccion: false,
+        recetas: false,
         plan: false,
         examenesIndicados: false,
         evoluciones: false,
@@ -210,6 +211,21 @@ export default function ConsultasShow({ auth, consulta }) {
                                     ) : (
                                         <p className="text-gray-500">No hay historial de diagnósticos</p>
                                     )}
+                                    <div className="mt-2">
+                                        <label className="text-sm font-semibold text-[#333333]">Médico Responsable:</label>
+                                        <p className="text-sm text-[#333333]">
+                                            {consulta?.user?.name || 'No especificado'} {consulta?.user?.apellido || ''}
+                                        </p>
+                                        {consulta?.user?.role && (
+                                            <p className="text-xs text-gray-500">
+                                                ({consulta.user.role === 'medico' ? 'Médico' : 
+                                                consulta.user.role === 'medico_externo' ? 'Médico Externo' : 
+                                                consulta.user.role === 'admin' ? 'Administrador' : 
+                                                consulta.user.role === 'recepcionista' ? 'Recepcionista' : 
+                                                'Invitado'})
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -299,6 +315,13 @@ export default function ConsultasShow({ auth, consulta }) {
                                             </button>
                                             <button
                                                 type="button"
+                                                onClick={() => toggleSection('receta')}
+                                                className={`w-full text-left px-4 py-2 rounded ${expandedSections.recetas ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                            >
+                                                Recetas
+                                            </button>
+                                            <button
+                                                type="button"
                                                 onClick={() => toggleSection('plan')}
                                                 className={`w-full text-left px-4 py-2 rounded ${expandedSections.plan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                             >
@@ -376,6 +399,13 @@ export default function ConsultasShow({ auth, consulta }) {
                                                 className={`w-full text-left px-4 py-2 rounded ${expandedSections.tratamiento ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
                                             >
                                                 Tratamiento
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleSection('recetas')}
+                                                className={`w-full text-left px-4 py-2 rounded ${expandedSections.recetas ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                            >
+                                                Recetas
                                             </button>
                                             <button
                                                 type="button"
@@ -618,77 +648,77 @@ export default function ConsultasShow({ auth, consulta }) {
                                             </div>
                                         )}
                                         {/* 13. Archivos CIIT */}
-{expandedSections.ciitArchivos && (
-  <div className="mb-6 p-4 border border-gray-200 rounded-md">
-    <h4 className="text-lg font-semibold mb-4">Archivos CIIT</h4>
-    <div className="p-4">
-      {ciitArchivos.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {ciitArchivos.map((file, index) => (
-            <div key={index} className="border rounded-md p-3 relative group hover:shadow-md transition-shadow">
-              {file.type === 'image' ? (
-                <img
-                  src={`/storage/${file.path}`}
-                  alt={`Archivo CIIT ${index + 1}`}
-                  className="w-full h-32 object-contain rounded-md mb-2"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '';
-                    e.target.parentElement.classList.add('bg-gray-200');
-                    e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-500">Imagen no disponible</div>';
-                  }}
-                />
-              ) : (
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-md mb-2">
-                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                </div>
-              )}
-              
-              <div className="absolute top-2 right-2 flex space-x-1">
-                <a
-                  href={`/storage/${file.path}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download={file.type !== 'image'}
-                  className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 transition-colors"
-                  title={file.type === 'image' ? "Ver" : "Descargar"}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {file.type === 'image' ? (
-                      <>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </>
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    )}
-                  </svg>
-                </a>
-              </div>
-              
-              <div className="text-sm truncate mt-1">{file.original_name || file.name}</div>
-              <div className="text-xs text-gray-500">
-                {file.type === 'image' ? 'Imagen' : 
-                file.type === 'compressed' ? 'Archivo comprimido' : 'Documento'}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-          <p className="mt-1 text-sm text-gray-600">No hay archivos CIIT adjuntos</p>
-        </div>
-      )}
-    </div>
-  </div>
-)}
+                                        {expandedSections.ciitArchivos && (
+                                        <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                            <h4 className="text-lg font-semibold mb-4">Archivos CIIT</h4>
+                                            <div className="p-4">
+                                            {ciitArchivos.length > 0 ? (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                                {ciitArchivos.map((file, index) => (
+                                                    <div key={index} className="border rounded-md p-3 relative group hover:shadow-md transition-shadow">
+                                                    {file.type === 'image' ? (
+                                                        <img
+                                                        src={`/storage/${file.path}`}
+                                                        alt={`Archivo CIIT ${index + 1}`}
+                                                        className="w-full h-32 object-contain rounded-md mb-2"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = '';
+                                                            e.target.parentElement.classList.add('bg-gray-200');
+                                                            e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-500">Imagen no disponible</div>';
+                                                        }}
+                                                        />
+                                                    ) : (
+                                                        <div className="flex flex-col h-full">
+                                                        <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-md mb-2">
+                                                            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                            </svg>
+                                                        </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="absolute top-2 right-2 flex space-x-1">
+                                                        <a
+                                                        href={`/storage/${file.path}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        download={file.type !== 'image'}
+                                                        className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 transition-colors"
+                                                        title={file.type === 'image' ? "Ver" : "Descargar"}
+                                                        >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            {file.type === 'image' ? (
+                                                            <>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </>
+                                                            ) : (
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                            )}
+                                                        </svg>
+                                                        </a>
+                                                    </div>
+                                                    
+                                                    <div className="text-sm truncate mt-1">{file.original_name || file.name}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {file.type === 'image' ? 'Imagen' : 
+                                                        file.type === 'compressed' ? 'Archivo comprimido' : 'Documento'}
+                                                    </div>
+                                                    </div>
+                                                ))}
+                                                </div>
+                                            ) : (
+                                                <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                                                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                                <p className="mt-1 text-sm text-gray-600">No hay archivos CIIT adjuntos</p>
+                                                </div>
+                                            )}
+                                            </div>
+                                        </div>
+                                        )}
                                         {/* 14. Exámenes Indicados */}
                                         {expandedSections.examenesIndicados && (
                                             <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -770,11 +800,9 @@ export default function ConsultasShow({ auth, consulta }) {
                                         )}
                                     </>
                                 )}
-
-                                {/* Similar structure for 'evolucion' type */}
+                                {/* Secciones para consultas de evolución */}
                                 {consulta?.tipo_consulta === 'evolucion' && (
                                     <>
-                                        {/* Secciones para consultas de evolución */}
                                         {/* 1. Evoluciones */}
                                         {expandedSections.evoluciones && (
                                             <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -783,8 +811,7 @@ export default function ConsultasShow({ auth, consulta }) {
                                                     <p className="whitespace-pre-wrap">{consulta.evoluciones || 'No se han registrado evoluciones'}</p>
                                                 </div>
                                             </div>
-                                        )}
-                                        
+                                        )}                                        
                                         {/* 2. Examen Ocular */}
                                         {expandedSections.examenOcular && (
                                             <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -891,6 +918,90 @@ export default function ConsultasShow({ auth, consulta }) {
                                                 </div>
                                             </div>
                                         )}
+                                        {/* 12. Receta */}
+                                        {/* 12. Receta */}
+{expandedSections.recetas && (
+    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+        <h4 className="text-lg font-semibold mb-4">Recetas Médicas</h4>
+        
+        {consulta?.receta ? (
+            <div className="space-y-4">
+                {/* Diagnósticos */}
+                {consulta.receta.cie10_codes && (
+                    <div>
+                        <h5 className="font-medium text-gray-700 mb-2">Diagnósticos:</h5>
+                        <ul className="list-disc pl-5 space-y-1">
+                            {JSON.parse(consulta.receta.cie10_codes).map((code, index) => (
+                                <li key={index} className="text-gray-800">{code}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {/* Medicamentos */}
+                <div>
+    <h5 className="font-medium text-gray-700 mb-2">Medicamentos Recetados:</h5>
+    <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+                <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicamento</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Componente Activo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosis</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frecuencia</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duración</th>
+                </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+                {consulta.receta?.medicamentos?.length > 0 ? (
+                    consulta.receta.medicamentos.map((med, index) => (
+                        <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {med.nombre_comercial}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {med.farmaco?.nombre || med.componente_activo}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {med.cantidad}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {med.dosis}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {med.frecuencia}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {med.duracion}
+                            </td>
+                        </tr>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                            No se han registrado medicamentos
+                        </td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+                {/* Indicaciones generales */}
+                {consulta.receta.indicaciones_generales && (
+                    <div>
+                        <h5 className="font-medium text-gray-700 mb-2">Indicaciones Generales:</h5>
+                        <p className="whitespace-pre-wrap text-gray-800">{consulta.receta.indicaciones_generales}</p>
+                    </div>
+                )}
+            </div>
+        ) : (
+            <p className="text-gray-500">No se ha generado una receta para esta consulta.</p>
+        )}
+    </div>
+)}
                                         {/* 12. Plan */}
                                         {expandedSections.plan && (
                                             <div className="mb-6 p-4 border border-gray-200 rounded-md">
@@ -901,77 +1012,77 @@ export default function ConsultasShow({ auth, consulta }) {
                                             </div>
                                         )}
                                         {/* 13. Archivos CIIT */}
-{expandedSections.ciitArchivos && (
-  <div className="mb-6 p-4 border border-gray-200 rounded-md">
-    <h4 className="text-lg font-semibold mb-4">Archivos CIIT</h4>
-    <div className="p-4">
-      {ciitArchivos.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {ciitArchivos.map((file, index) => (
-            <div key={index} className="border rounded-md p-3 relative group hover:shadow-md transition-shadow">
-              {file.type === 'image' ? (
-                <img
-                  src={`/storage/${file.path}`}
-                  alt={`Archivo CIIT ${index + 1}`}
-                  className="w-full h-32 object-contain rounded-md mb-2"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '';
-                    e.target.parentElement.classList.add('bg-gray-200');
-                    e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-500">Imagen no disponible</div>';
-                  }}
-                />
-              ) : (
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-md mb-2">
-                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                </div>
-              )}
-              
-              <div className="absolute top-2 right-2 flex space-x-1">
-                <a
-                  href={`/storage/${file.path}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download={file.type !== 'image'}
-                  className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 transition-colors"
-                  title={file.type === 'image' ? "Ver" : "Descargar"}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {file.type === 'image' ? (
-                      <>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </>
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    )}
-                  </svg>
-                </a>
-              </div>
-              
-              <div className="text-sm truncate mt-1">{file.original_name || file.name}</div>
-              <div className="text-xs text-gray-500">
-                {file.type === 'image' ? 'Imagen' : 
-                file.type === 'compressed' ? 'Archivo comprimido' : 'Documento'}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-          <p className="mt-1 text-sm text-gray-600">No hay archivos CIIT adjuntos</p>
-        </div>
-      )}
-    </div>
-  </div>
-)}
+                                        {expandedSections.ciitArchivos && (
+                                        <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                            <h4 className="text-lg font-semibold mb-4">Archivos CIIT</h4>
+                                            <div className="p-4">
+                                            {ciitArchivos.length > 0 ? (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                                {ciitArchivos.map((file, index) => (
+                                                    <div key={index} className="border rounded-md p-3 relative group hover:shadow-md transition-shadow">
+                                                    {file.type === 'image' ? (
+                                                        <img
+                                                        src={`/storage/${file.path}`}
+                                                        alt={`Archivo CIIT ${index + 1}`}
+                                                        className="w-full h-32 object-contain rounded-md mb-2"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = '';
+                                                            e.target.parentElement.classList.add('bg-gray-200');
+                                                            e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-500">Imagen no disponible</div>';
+                                                        }}
+                                                        />
+                                                    ) : (
+                                                        <div className="flex flex-col h-full">
+                                                        <div className="flex-1 flex items-center justify-center bg-gray-100 rounded-md mb-2">
+                                                            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                            </svg>
+                                                        </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="absolute top-2 right-2 flex space-x-1">
+                                                        <a
+                                                        href={`/storage/${file.path}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        download={file.type !== 'image'}
+                                                        className="bg-blue-500 text-white p-1 rounded hover:bg-blue-600 transition-colors"
+                                                        title={file.type === 'image' ? "Ver" : "Descargar"}
+                                                        >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            {file.type === 'image' ? (
+                                                            <>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </>
+                                                            ) : (
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                            )}
+                                                        </svg>
+                                                        </a>
+                                                    </div>
+                                                    
+                                                    <div className="text-sm truncate mt-1">{file.original_name || file.name}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {file.type === 'image' ? 'Imagen' : 
+                                                        file.type === 'compressed' ? 'Archivo comprimido' : 'Documento'}
+                                                    </div>
+                                                    </div>
+                                                ))}
+                                                </div>
+                                            ) : (
+                                                <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                                                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                                <p className="mt-1 text-sm text-gray-600">No hay archivos CIIT adjuntos</p>
+                                                </div>
+                                            )}
+                                            </div>
+                                        </div>
+                                        )}
                                         {/* 14. Exámenes Indicados */}
                                         {expandedSections.examenesIndicados && (
                                             <div className="mb-6 p-4 border border-gray-200 rounded-md">

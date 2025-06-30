@@ -87,7 +87,7 @@ export default function Dashboard({ auth, initialTopCie10 }) {
     loadStats();
   };
 
-// Cargar estadísticas
+  // Cargar estadísticas
   const loadStats = async () => {
     try {
       setLoading(true);
@@ -337,7 +337,6 @@ export default function Dashboard({ auth, initialTopCie10 }) {
     loadStats();
     handleResetFilters();
   };
-
   // Efectos iniciales
   useEffect(() => {
     loadStats();

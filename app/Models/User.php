@@ -117,4 +117,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Cita::class, 'medico_id');
     }
+
+    public function consultas()
+    {
+        return $this->hasMany(Consulta::class,'consulta_id');
+    }
 }
