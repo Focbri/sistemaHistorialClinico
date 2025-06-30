@@ -91,7 +91,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     href={route('consultas.index')}
                                     active={route().current('consultas.index')}
                                 >
-                                    Consultas
+                                    Historial Clínico
                                 </NavLink>
                                 {isRecepcionistaAdmin && (
                                     <NavLink
@@ -252,7 +252,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             href={route('consultas.index')}
                             active={route().current('consultas.index')}
                         >
-                            Consultas
+                            Historiasl Clínico
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             href={route('citas.index')}

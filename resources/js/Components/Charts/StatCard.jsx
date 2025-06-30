@@ -20,25 +20,46 @@ const trendIcons = {
   none: null
 };
 
-export default function StatCard({ title, value, icon, trend = 'none' }) {
+export default function StatCard({ title, value, icon, trend = 'none', highlight = 'normal', onClick, clickable = false, compact = false }) {
+  // Definir las clases base del contenedor
+  const baseClasses = 'bg-white rounded-lg shadow overflow-hidden';
+  
+  // Clases para el highlight
+  const highlightClasses = {
+    normal: '',
+    warning: 'border-l-4 border-yellow-400',
+    danger: 'border-l-4 border-red-500',
+    success: 'border-l-4 border-green-500',
+    citas: 'bg-indigo-150 border-l-4 border-indigo-400'
+  };
+  
+  // Clases para tamaño compacto
+  const sizeClasses = compact ? 'p-3' : 'p-5';
+  
+  // Combinar todas las clases
+  const containerClasses = `${baseClasses} ${highlightClasses[highlight]} ${sizeClasses}`;
+
   return (
-    <div className="bg-white overflow-hidden shadow rounded-lg">
-      <div className="p-5">
+    <div 
+      onClick={onClick} 
+      className={`${containerClasses} ${clickable ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+    >
+      <div className={compact ? 'p-2' : 'p-4'}>
         <div className="flex items-center">
           <div className="flex-shrink-0">
             {icon}
           </div>
-          <div className="ml-5 w-0 flex-1">
+          <div className="ml-3 w-0 flex-1">
             <dl>
-              <dt className="text-sm font-medium text-gray-500 truncate">
+              <dt className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-500 truncate`}>
                 {title}
               </dt>
               <dd className="flex items-baseline">
-                <div className="text-2xl font-semibold text-gray-900">
+                <div className={`${compact ? 'text-lg' : 'text-2xl'} font-semibold text-gray-900`}>
                   {value}
                 </div>
                 {trend !== 'none' && (
-                  <div className="ml-2 flex items-baseline text-sm font-semibold">
+                  <div className="ml-1 flex items-baseline text-sm font-semibold">
                     {trendIcons[trend]}
                   </div>
                 )}

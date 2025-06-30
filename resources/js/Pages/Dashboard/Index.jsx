@@ -50,6 +50,23 @@ export default function Dashboard({ auth, initialTopCie10 }) {
     maxAge: '',
     procedencia: ''
   });
+
+  const [showAppointmentsModal, setShowAppointmentsModal] = useState(false);
+const [todaysAppointments, setTodaysAppointments] = useState([]);
+const [loadingAppointments, setLoadingAppointments] = useState(false);
+
+const fetchTodaysAppointments = async () => {
+  try {
+    setLoadingAppointments(true);
+    const response = await axios.get('/todays-appointments');
+    setTodaysAppointments(response.data);
+  } catch (error) {
+    console.error('Error fetching appointments:', error);
+    setError('Error al cargar las citas del día');
+  } finally {
+    setLoadingAppointments(false);
+  }
+};
   
   const [stats, setStats] = useState({
     patients: null,
@@ -783,11 +800,16 @@ export default function Dashboard({ auth, initialTopCie10 }) {
             icon={<UserIcon className="h-6 w-6 text-green-600" />}
             className="col-span-1"
           />
-          <StatCard 
+          <StatCard
             title="Citas Hoy" 
             value={loading ? '...' : (stats.appointments?.today || 0)} 
-            icon={<CalendarIcon className="h-6 w-6 text-indigo-600" />}
-            className="col-span-1"
+            icon={<CalendarIcon className="h-5 w-5 text-indigo-600" />}
+            onClick={() => {
+              setShowAppointmentsModal(true);
+              fetchTodaysAppointments();
+            }}
+            highlight='citas'
+            clickable
           />
           <StatCard 
             title="Total Fármacos" 
@@ -809,70 +831,70 @@ export default function Dashboard({ auth, initialTopCie10 }) {
           {/* Columna izquierda (3/5) */}
           <div className="lg:col-span-3 space-y-6">
             {/* Fármacos críticos */}
-{stats.farmacos?.count_criticos > 0 && (
-  <div className={`p-5 ${SECTION_STYLES.accent}`}>
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-lg font-medium text-gray-800 flex items-center">
-        <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500 mr-2" />
-        Fármacos con Stock Crítico (≤1 unidad)
-      </h3>
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-        {stats.farmacos.count_criticos} críticos
-      </span>
-    </div>
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {['Nombre', 'Componente', 'Visual', 'Insamed', 'S&P', 'Total', 'Acción'].map((header) => (
-                <th 
-                  key={header}
-                  className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {stats.farmacos.farmacos_criticos.map((farmaco, index) => (
-              <tr key={index} className="hover:bg-yellow-50">
-                <td className="px-3 py-3 text-xs font-medium text-gray-900 max-w-[150px] truncate" title={farmaco.nombre_comercial}>
-                  {farmaco.nombre_comercial}
-                </td>
-                <td className="px-3 py-3 text-xs text-gray-500 max-w-[150px] truncate" title={farmaco.componente_activo}>
-                  {farmaco.componente_activo}
-                </td>
-                <td className="px-3 py-3 text-xs text-gray-500 text-center">
-                  {farmaco.stock_visual}
-                </td>
-                <td className="px-3 py-3 text-xs text-gray-500 text-center">
-                  {farmaco.stock_insamed}
-                </td>
-                <td className="px-3 py-3 text-xs text-gray-500 text-center">
-                  {farmaco.stock_s_p}
-                </td>
-                <td className="px-3 py-3 text-xs font-bold text-center text-red-600">
-                  {farmaco.stock_total}
-                </td>
-                <td className="px-3 py-3 text-xs text-center whitespace-nowrap">
-                  <Link 
-                    href={route('farmacos.stock.manage', farmaco.id)}
-                    className="inline-flex items-center p-1.5 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                    title="Editar stock"
-                  >
-                    <PencilIcon className="h-3 w-3" />
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-)}
+            {stats.farmacos?.count_criticos > 0 && (
+              <div className={`p-5 ${SECTION_STYLES.accent}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-800 flex items-center">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500 mr-2" />
+                    Fármacos con Stock Crítico (≤1 unidad)
+                  </h3>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    {stats.farmacos.count_criticos} críticos
+                  </span>
+                </div>
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          {['Nombre', 'Componente', 'Visual', 'Insamed', 'S&P', 'Total', 'Acción'].map((header) => (
+                            <th 
+                              key={header}
+                              className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                            >
+                              {header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {stats.farmacos.farmacos_criticos.map((farmaco, index) => (
+                          <tr key={index} className="hover:bg-yellow-50">
+                            <td className="px-3 py-3 text-xs font-medium text-gray-900 max-w-[150px] truncate" title={farmaco.nombre_comercial}>
+                              {farmaco.nombre_comercial}
+                            </td>
+                            <td className="px-3 py-3 text-xs text-gray-500 max-w-[150px] truncate" title={farmaco.componente_activo}>
+                              {farmaco.componente_activo}
+                            </td>
+                            <td className="px-3 py-3 text-xs text-gray-500 text-center">
+                              {farmaco.stock_visual}
+                            </td>
+                            <td className="px-3 py-3 text-xs text-gray-500 text-center">
+                              {farmaco.stock_insamed}
+                            </td>
+                            <td className="px-3 py-3 text-xs text-gray-500 text-center">
+                              {farmaco.stock_s_p}
+                            </td>
+                            <td className="px-3 py-3 text-xs font-bold text-center text-red-600">
+                              {farmaco.stock_total}
+                            </td>
+                            <td className="px-3 py-3 text-xs text-center whitespace-nowrap">
+                              <Link 
+                                href={route('farmacos.stock.manage', farmaco.id)}
+                                className="inline-flex items-center p-1.5 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                title="Editar stock"
+                              >
+                                <PencilIcon className="h-3 w-3" />
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Top CIE10 */}
             <div className={`p-5 ${SECTION_STYLES.secondary}`}>
@@ -934,7 +956,6 @@ export default function Dashboard({ auth, initialTopCie10 }) {
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hoy</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Totales</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -946,9 +967,6 @@ export default function Dashboard({ auth, initialTopCie10 }) {
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500">
                               {item.citas_hoy}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
-                              {item.citas_totales}
                             </td>
                           </tr>
                         ))
@@ -1075,6 +1093,90 @@ export default function Dashboard({ auth, initialTopCie10 }) {
             </div>
           </div>
         </div>
+        {showAppointmentsModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-gray-800">
+          Citas para hoy ({new Date().toLocaleDateString()})
+        </h3>
+        <button 
+          onClick={() => setShowAppointmentsModal(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div className="p-4">
+        {loadingAppointments ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
+        ) : todaysAppointments.length === 0 ? (
+          <div className="text-center py-8">
+            <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay citas programadas para hoy</h3>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {todaysAppointments.map((appointment, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(appointment.fecha_hora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {appointment.paciente?.nombre_completo || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                      {appointment.medico?.name || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
+                      {appointment.motivo || 'No especificado'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        appointment.estado === 'programada' ? 'bg-blue-100 text-blue-800' :
+                        appointment.estado === 'completada' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {appointment.estado}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-4 border-t border-gray-200 flex justify-end">
+        <button
+          onClick={() => setShowAppointmentsModal(false)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </AuthenticatedLayout>
   );

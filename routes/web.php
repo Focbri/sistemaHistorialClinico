@@ -55,6 +55,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/farmaco-stats', [DashboardController::class, 'farmacoStats'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard.farmaco-stats');
+    Route::get('/todays-appointments', [DashboardController::class, 'getTodaysAppointments'])
+    ->middleware(['auth:sanctum', 'verified']);
     
     // Perfil de usuario
     Route::prefix('profile')->group(function () {

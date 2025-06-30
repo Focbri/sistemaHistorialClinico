@@ -403,4 +403,31 @@ public function farmacoStats()
         ], 500);
     }
 }
+public function getTodaysAppointments()
+{
+    $today = now()->format('Y-m-d');
+    
+    $appointments = Cita::with(['paciente', 'medico'])
+        ->whereDate('fecha_hora', $today)
+        ->where('sede', session('sede_actual'))
+        ->orderBy('fecha_hora')
+        ->get()
+        ->map(function($cita) {
+            return [
+                'id' => $cita->id,
+                'fecha_hora' => $cita->fecha_hora,
+                'motivo' => $cita->motivo,
+                'estado' => $cita->estado,
+                'paciente' => $cita->paciente ? [
+                    'nombre_completo' => $cita->paciente->nombre_completo,
+                    'dni' => $cita->paciente->dni
+                ] : null,
+                'medico' => $cita->medico ? [
+                    'name' => $cita->medico->name
+                ] : null
+            ];
+        });
+
+    return response()->json($appointments);
+}
 }

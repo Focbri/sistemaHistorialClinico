@@ -28,7 +28,7 @@ export default function Inicio({auth}) {
         >
             <Head title="Inicio" />
             
-            <div className="py-12 lg:py-10 xl:py-20 2xl:py-20">
+            <div className="py-12 lg:py-8 xl:py-16 2xl:py-20">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900 lg:p-0">                            

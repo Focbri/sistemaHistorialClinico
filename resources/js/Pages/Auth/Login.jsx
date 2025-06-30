@@ -54,7 +54,7 @@ export default function Login({ status, canResetPassword }) {
                         </SelectInput>
                         <InputError message={errors.sede} className="mt-2" />
                     </div>
-                    <InputLabel htmlFor="email" value="Email" /> 
+                    <InputLabel htmlFor="email" value="Email"  className='mt-2'/> 
 
                     <TextInput
                         id="email"
