@@ -8,6 +8,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import AdvancedFilters from '@/Components/AdvancedFilters';
 import Pagination from '@/Components/Pagination';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 export default function CitasIndex({ calendarData: initialCalendarData = [], medicos = [], citas = [] }) {
 
@@ -33,15 +34,22 @@ export default function CitasIndex({ calendarData: initialCalendarData = [], med
   const [activeTab, setActiveTab] = useState('calendario');
   const [errorMessage, setErrorMessage] = useState('');
   // Estados de UI (añade esto junto con los otros estados)
-  const [reportProcessing, setReportProcessing] = useState(false);
-  const [reportSuccess, setReportSuccess] = useState(null);
-  const [reportError, setReportError] = useState(null);
   const [reportStatus, setReportStatus] = useState({
   processing: false,
   success: null,
   error: null,
   message: null
 });
+
+  const [showQuickRegister, setShowQuickRegister] = useState(false);
+  const [quickRegisterProcessing, setQuickRegisterProcessing] = useState(false);
+  const [quickRegisterData, setQuickRegisterData] = useState({
+    nombres: '',
+    apellido_paterno: '',
+    apellido_materno: '',
+    telefono: '',
+    edad: ''
+  });
 
   const [showSimpleReportModal, setShowSimpleReportModal] = useState(false);
 
@@ -109,6 +117,32 @@ const handleSimpleReport = async () => {
       error: true,
       message: errorMessage
     });
+  }
+};
+
+//registro rapido
+const handleQuickRegister = async () => {
+  setQuickRegisterProcessing(true);
+  
+  try {
+    const response = await axios.post(route('pacientes.store-quick'), {
+      dni: data.dni,
+      ...quickRegisterData
+    });
+    
+    // Actualizar el estado con el nuevo paciente
+    setPacienteInfo(response.data.paciente);
+    setPacienteEncontrado(true);
+    setData('paciente_id', response.data.paciente.id);
+    setShowQuickRegister(false);
+    
+    // Mostrar mensaje de éxito
+    toast.success('Paciente registrado exitosamente');
+  } catch (error) {
+    console.error('Error al registrar paciente:', error);
+    toast.error('Error al registrar paciente: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setQuickRegisterProcessing(false);
   }
 };
 
@@ -441,7 +475,6 @@ const verificarDisponibilidad = () => {
     return {
       isValid: false,
       adjustedTime: null,
-      message: 'Para citas de hoy, la hora debe ser mayor a la hora actual'
     };
   }
 
@@ -749,123 +782,123 @@ const handleDelete = () => {
         </div>
 
         {activeTab === 'lista' ? (
-  <div className="bg-white rounded-lg shadow overflow-hidden">
-    <div className="mb-6 p-4 md:p-6">
-      <AdvancedFilters
-        initialFilters={filters}
-        onApplyFilters={handleApplyFilters}
-        onResetFilters={handleResetFilters}
-        disabledSections={{
-          all: activeTab === 'calendario',
-          terms: true
-        }}
-        exportEnabled={activeTab === 'lista'}
-        showActiveFilters={true}
-      />
-    </div>
-    
-    {/* Versión para desktop (se muestra en pantallas medianas/grandes) */}
-    <div className="hidden md:block">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {citas.map(cita => (
-            <tr key={cita.id}>
-              <td className="px-6 py-4 whitespace-nowrap">{cita.paciente.dni}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{cita.paciente.nombres} {cita.paciente.apellido_paterno}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{formatFecha(cita.fecha_hora)}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{cita.medico.name}</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 py-1 text-xs rounded-lg ${
-                  cita.estado === 'programada' ? 'bg-blue-100 text-blue-800' :
-                  cita.estado === 'completada' ? 'bg-green-100 text-green-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {cita.estado}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                <button onClick={() => openViewModal(cita)} className="text-blue-600 hover:text-blue-900">
-                  Ver
-                </button>
-                <button onClick={() => openEditModal(cita)} className="text-yellow-600 hover:text-yellow-900">
-                  Editar
-                </button>
-                <button onClick={() => openDeleteModal(cita)} className="text-red-600 hover:text-red-900">
-                  Eliminar
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    
-    {/* Versión para móvil (se muestra en pantallas pequeñas) */}
-    <div className="md:hidden">
-      <div className="divide-y divide-gray-200">
-        {citas.map(cita => (
-          <div key={cita.id} className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-medium text-gray-900">
-                  {cita.paciente.nombres} {cita.paciente.apellido_paterno}
-                </p>
-                <p className="text-sm text-gray-500">{cita.paciente.dni}</p>
-              </div>
-              <span className={`px-2 py-1 text-xs rounded-md ${
-                cita.estado === 'programada' ? 'bg-blue-100 text-blue-800' :
-                cita.estado === 'completada' ? 'bg-green-100 text-green-800' :
-                'bg-red-100 text-red-800'
-              }`}>
-                {cita.estado}
-              </span>
-            </div>
-            
-            <div className="mt-2 text-sm">
-              <p><span className="font-medium">Fecha:</span> {formatFecha(cita.fecha_hora)}</p>
-              <p><span className="font-medium">Médico:</span> {cita.medico.name}</p>
-            </div>
-            
-            <div className="mt-3 flex space-x-3 border-t pt-3">
-              <button 
-                onClick={() => openViewModal(cita)}
-                className="text-blue-600 hover:text-blue-900 text-sm"
-              >
-                Ver
-              </button>
-              <button 
-                onClick={() => openEditModal(cita)}
-                className="text-yellow-600 hover:text-yellow-900 text-sm"
-              >
-                Editar
-              </button>
-              <button 
-                onClick={() => openDeleteModal(cita)}
-                className="text-red-600 hover:text-red-900 text-sm"
-              >
-                Eliminar
-              </button>
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="mb-6 p-4 md:p-6">
+            <AdvancedFilters
+              initialFilters={filters}
+              onApplyFilters={handleApplyFilters}
+              onResetFilters={handleResetFilters}
+              disabledSections={{
+                all: activeTab === 'calendario',
+                terms: true
+              }}
+              exportEnabled={activeTab === 'lista'}
+              showActiveFilters={true}
+            />
+          </div>
+          
+          {/* Versión para desktop (se muestra en pantallas medianas/grandes) */}
+          <div className="hidden md:block">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {citas.map(cita => (
+                  <tr key={cita.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">{cita.paciente.dni}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{cita.paciente.nombres} {cita.paciente.apellido_paterno}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{formatFecha(cita.fecha_hora)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{cita.medico.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs rounded-lg ${
+                        cita.estado === 'programada' ? 'bg-blue-100 text-blue-800' :
+                        cita.estado === 'completada' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {cita.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                      <button onClick={() => openViewModal(cita)} className="text-blue-600 hover:text-blue-900">
+                        Ver
+                      </button>
+                      <button onClick={() => openEditModal(cita)} className="text-yellow-600 hover:text-yellow-900">
+                        Editar
+                      </button>
+                      <button onClick={() => openDeleteModal(cita)} className="text-red-600 hover:text-red-900">
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Versión para móvil (se muestra en pantallas pequeñas) */}
+          <div className="md:hidden">
+            <div className="divide-y divide-gray-200">
+              {citas.map(cita => (
+                <div key={cita.id} className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {cita.paciente.nombres} {cita.paciente.apellido_paterno}
+                      </p>
+                      <p className="text-sm text-gray-500">{cita.paciente.dni}</p>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-md ${
+                      cita.estado === 'programada' ? 'bg-blue-100 text-blue-800' :
+                      cita.estado === 'completada' ? 'bg-green-100 text-green-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {cita.estado}
+                    </span>
+                  </div>
+                  
+                  <div className="mt-2 text-sm">
+                    <p><span className="font-medium">Fecha:</span> {formatFecha(cita.fecha_hora)}</p>
+                    <p><span className="font-medium">Médico:</span> {cita.medico.name}</p>
+                  </div>
+                  
+                  <div className="mt-3 flex space-x-3 border-t pt-3">
+                    <button 
+                      onClick={() => openViewModal(cita)}
+                      className="text-blue-600 hover:text-blue-900 text-sm"
+                    >
+                      Ver
+                    </button>
+                    <button 
+                      onClick={() => openEditModal(cita)}
+                      className="text-yellow-600 hover:text-yellow-900 text-sm"
+                    >
+                      Editar
+                    </button>
+                    <button 
+                      onClick={() => openDeleteModal(cita)}
+                      className="text-red-600 hover:text-red-900 text-sm"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-    
-    {/* Paginación */}
-    <div className="mt-4 px-4 py-3 md:px-6">
-      <Pagination links={citas.links} />
-    </div>
-  </div>         
+          
+          {/* Paginación */}
+          <div className="mt-4 px-4 py-3 md:px-6">
+            <Pagination links={citas.links} />
+          </div>
+        </div>         
         ) : (
           <div className="bg-white p-4 rounded-lg shadow">
              <Calendar
@@ -886,334 +919,407 @@ const handleDelete = () => {
           </div>
         )}
         {/* Modal para Reporte Simple */}
-{showSimpleReportModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-      <div className="p-6">
-        <h2 className="text-xl font-bold mb-4">Reporte Rápido de Citas</h2>
-        
-        {/* Mostrar mensajes de estado */}
-        {reportStatus.message && (
-          <div className={`mb-4 p-3 rounded ${reportStatus.error ? 'bg-red-100 text-red-700' : reportStatus.success ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-            {reportStatus.message}
+        {showSimpleReportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+              <div className="p-6">
+                <h2 className="text-xl font-bold mb-4">Reporte Rápido de Citas</h2>
+                
+                {/* Mostrar mensajes de estado */}
+                {reportStatus.message && (
+                  <div className={`mb-4 p-3 rounded ${reportStatus.error ? 'bg-red-100 text-red-700' : reportStatus.success ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {reportStatus.message}
+                  </div>
+                )}
+                
+                <div className="mb-4">
+                  <p className="text-gray-600 mb-2">
+                    Se enviará un reporte con las últimas 100 citas de esta sede a tu correo electrónico.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    El reporte incluirá: fecha, paciente, médico y estado de cada cita.
+                  </p>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-medium mb-1">
+                    Correo Destino
+                  </label>
+                  <input
+                    type="email"
+                    value={simpleReportData.correo_destino}
+                    onChange={(e) => setSimpleReportData({
+                      ...simpleReportData,
+                      correo_destino: e.target.value
+                    })}
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setShowSimpleReportModal(false);
+                      setReportStatus({
+                        processing: false,
+                        success: null,
+                        error: null,
+                        message: null
+                      });
+                    }}
+                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSimpleReport}
+                    disabled={reportStatus.processing}
+                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-purple-300"
+                  >
+                    {reportStatus.processing ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Enviando...
+                      </span>
+                    ) : 'Generar Reporte'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-        
-        <div className="mb-4">
-          <p className="text-gray-600 mb-2">
-            Se enviará un reporte con las últimas 100 citas de esta sede a tu correo electrónico.
-          </p>
-          <p className="text-sm text-gray-500">
-            El reporte incluirá: fecha, paciente, médico y estado de cada cita.
-          </p>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-medium mb-1">
-            Correo Destino
-          </label>
-          <input
-            type="email"
-            value={simpleReportData.correo_destino}
-            onChange={(e) => setSimpleReportData({
-              ...simpleReportData,
-              correo_destino: e.target.value
-            })}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={() => {
-              setShowSimpleReportModal(false);
-              setReportStatus({
-                processing: false,
-                success: null,
-                error: null,
-                message: null
-              });
-            }}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSimpleReport}
-            disabled={reportStatus.processing}
-            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-purple-300"
-          >
-            {reportStatus.processing ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Enviando...
-              </span>
-            ) : 'Generar Reporte'}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
 
-        {/* Modal para nueva cita */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-lg relative">
               <div className="p-6">
                 <h2 className="text-xl font-bold mb-4">Nueva Cita</h2>
                 
-                {errorMessage && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-start">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-6 w-6 text-red-600 mr-2 flex-shrink-0" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-medium mb-1">DNI del Paciente</label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="number"
+                        value={data.dni}
+                        onChange={(e) => {
+                          setData('dni', e.target.value);
+                          if (e.target.value.length !== 8) {
+                            setPacienteEncontrado(false);
+                          }
+                        }}
+                        className="flex-1 p-2 border rounded sm:rounded-r-none"
+                        placeholder="Ingrese DNI (8 dígitos)"
+                        maxLength="8"
+                        disabled={buscandoPaciente || showQuickRegister}
+                      />
+                      <button
+                        type="button"
+                        onClick={buscarPaciente}
+                        disabled={!data.dni || data.dni.length !== 8 || buscandoPaciente || showQuickRegister}
+                        className={`px-4 py-2 rounded sm:rounded-l-none ${
+                          buscandoPaciente || showQuickRegister
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        }`}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div>
-                        <h4 className="font-medium text-red-800">No se puede programar la cita</h4>
-                        <div className="mt-1 text-red-700">
-                          {typeof errorMessage === 'string' ? (
-                            <p>{errorMessage}</p>
-                          ) : (
-                            errorMessage
-                          )}
+                        {buscandoPaciente ? (
+                          <span className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Buscando...
+                          </span>
+                        ) : 'Buscar'}
+                      </button>
+                    </div>
+                    {data.dni && data.dni.length !== 8 && (
+                      <p className="text-red-500 text-xs mt-1">El DNI debe tener 8 dígitos</p>
+                    )}
+                  </div>
+
+                  {pacienteEncontrado && pacienteInfo ? (
+                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div className="w-full">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-semibold text-green-800 text-sm">Paciente encontrado:</h4>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPacienteEncontrado(false);
+                                setPacienteInfo(null);
+                                setData('dni', '');
+                                setData('paciente_id', '');
+                              }}
+                              className="text-gray-500 hover:text-gray-700 ml-2"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-gray-800 text-sm mt-1">
+                            {pacienteInfo.nombres} {pacienteInfo.apellido_paterno} {pacienteInfo.apellido_materno}
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-2 text-xs">
+                            <div>
+                              <span className="font-medium">DNI:</span> {pacienteInfo.dni}
+                            </div>
+                            <div>
+                              <span className="font-medium">Teléfono:</span> {pacienteInfo.telefono}
+                            </div>
+                            <div>
+                              <span className="font-medium">Edad:</span> {pacienteInfo.edad}
+                            </div>
+                            <div>
+                              <span className="font-medium">Nacimiento:</span> {pacienteInfo.fecha_nacimiento}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => setErrorMessage('')}
-                      className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                  ) : (
+                    busquedaRealizada && data.dni && data.dni.length === 8 && !pacienteEncontrado && !buscandoPaciente && (
+                      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold text-yellow-800 text-sm">Paciente no encontrado</h4>
+                            <p className="text-gray-800 text-xs mt-1">
+                              No se encontró un paciente con DNI {data.dni} en el sistema.
+                            </p>
+                            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setShowQuickRegister(true)}
+                                className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block text-sm"
+                              >
+                                Registrar Paciente Rápidamente
+                              </button>
+                              <a
+                                href={route('pacientes.create', { dni: data.dni })}
+                                className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 inline-block text-sm text-center"
+                              >
+                                Formulario Completo
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  )}
+
+                  {/* Formulario de registro rápido */}
+                  {showQuickRegister && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="font-semibold text-blue-800 text-sm">Registro Rápido de Paciente</h4>
+                        <button
+                          type="button"
+                          onClick={() => setShowQuickRegister(false)}
+                          className="text-gray-500 hover:text-gray-700 ml-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-gray-700 text-xs font-medium mb-1">Nombres*</label>
+                          <input
+                            type="text"
+                            value={quickRegisterData.nombres}
+                            onChange={(e) => setQuickRegisterData({...quickRegisterData, nombres: e.target.value})}
+                            className="w-full p-2 border rounded text-sm"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-gray-700 text-xs font-medium mb-1">Apellido Paterno*</label>
+                            <input
+                              type="text"
+                              value={quickRegisterData.apellido_paterno}
+                              onChange={(e) => setQuickRegisterData({...quickRegisterData, apellido_paterno: e.target.value})}
+                              className="w-full p-2 border rounded text-sm"
+                              required
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-gray-700 text-xs font-medium mb-1">Apellido Materno</label>
+                            <input
+                              type="text"
+                              value={quickRegisterData.apellido_materno}
+                              onChange={(e) => setQuickRegisterData({...quickRegisterData, apellido_materno: e.target.value})}
+                              className="w-full p-2 border rounded text-sm"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-gray-700 text-xs font-medium mb-1">Teléfono*</label>
+                            <input
+                              type="tel"
+                              value={quickRegisterData.telefono}
+                              onChange={(e) => setQuickRegisterData({...quickRegisterData, telefono: e.target.value})}
+                              maxLength={9}
+                              className="w-full p-2 border rounded text-sm"
+                              required
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-gray-700 text-xs font-medium mb-1">Edad*</label>
+                            <input
+                              type="number"
+                              value={quickRegisterData.edad}
+                              onChange={(e) => setQuickRegisterData({...quickRegisterData, edad: e.target.value})}
+                              min="0"
+                              max="120"
+                              className="w-full p-2 border rounded text-sm"
+                              required
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end pt-2">
+                          <button
+                            type="button"
+                            onClick={handleQuickRegister}
+                            disabled={quickRegisterProcessing}
+                            className="px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 text-sm flex items-center"
+                          >
+                            {quickRegisterProcessing ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Guardando...
+                              </>
+                            ) : 'Guardar Paciente'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!showQuickRegister && (
+                    <>
+                      <div className='flex flex-col sm:flex-row gap-2'>
+                        <div className="mb-4 w-full sm:w-1/2">
+                          <label className="block text-gray-700 text-sm font-medium mb-1">Médico</label>
+                          <select
+                            value={data.medico_id}
+                            onChange={(e) => setData('medico_id', e.target.value)}
+                            className="w-full p-2 border rounded text-sm"
+                            required
+                          >
+                            <option value="">Seleccione un médico</option>
+                            {medicos.map(medico => (
+                              <option key={medico.id} value={medico.id}>
+                                {medico.name} {medico.role === 'medico_externo' ? '(Externo)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="mb-4 w-full sm:w-1/2">
+                          <label className="block text-gray-700 text-sm font-medium mb-1">Fecha y Hora</label>
+                          <input
+                            type="datetime-local"
+                            value={formatDateTimeWithoutSeconds(data.fecha_hora)}
+                            onChange={(e) => {
+                              const newDate = e.target.value;
+                              setData('fecha_hora', newDate);
+                              
+                              const now = new Date();
+                              const selectedDate = new Date(newDate);
+                              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                              const twoMonthsLater = new Date(today);
+                              twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
+                              
+                              const selectedDateOnly = new Date(
+                                selectedDate.getFullYear(), 
+                                selectedDate.getMonth(), 
+                                selectedDate.getDate()
+                              );
+
+                              if (selectedDateOnly < today) {
+                                setErrorMessage('No se pueden programar citas para fechas pasadas');
+                                return;
+                              }
+
+                              if (selectedDateOnly > twoMonthsLater) {
+                                setErrorMessage('Solo se pueden programar citas hasta 2 meses en el futuro');
+                                return;
+                              }
+
+                              if (data.medico_id) {
+                                const validation = verificarDisponibilidad();
+                                if (!validation.isValid) {
+                                  setErrorMessage(validation.message);
+                                } else {
+                                  setErrorMessage('');
+                                }
+                              }
+                            }}
+                            className="w-full p-2 border rounded text-sm"
+                            required
+                            step="60"
+                            min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                            max={format(new Date(new Date().setMonth(new Date().getMonth() + 2)), "yyyy-MM-dd'T'23:59")}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-medium mb-1">Motivo</label>
+                        <textarea
+                          value={data.motivo}
+                          onChange={(e) => setData('motivo', e.target.value)}
+                          className="w-full p-2 border rounded text-sm"
+                          rows="3"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowModal(false);
+                        reset();
+                        setPacienteEncontrado(false);
+                        setPacienteInfo(null);
+                        setShowQuickRegister(false);
+                        setErrorMessage('');
+                      }}
+                      className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-sm sm:text-base"
                     >
-                      Entendido
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!pacienteEncontrado || processing || showQuickRegister}
+                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300 text-sm sm:text-base"
+                    >
+                      {processing ? 'Guardando...' : 'Guardar Cita'}
                     </button>
                   </div>
-                )}
-                
-                <form onSubmit={handleSubmit}>
-  <div className="mb-4">
-    <label className="block text-gray-700 text-sm font-medium mb-1">DNI del Paciente</label>
-    <div className="flex flex-col sm:flex-row gap-2">
-      <input
-        type="number"
-        value={data.dni}
-        onChange={(e) => {
-          setData('dni', e.target.value);
-          if (e.target.value.length !== 8) {
-            setPacienteEncontrado(false);
-          }
-        }}
-        className="flex-1 p-2 border rounded sm:rounded-r-none"
-        placeholder="Ingrese DNI (8 dígitos)"
-        maxLength="8"
-        disabled={buscandoPaciente}
-      />
-      <button
-        type="button"
-        onClick={buscarPaciente}
-        disabled={!data.dni || data.dni.length !== 8 || buscandoPaciente}
-        className={`px-4 py-2 rounded sm:rounded-l-none ${
-          buscandoPaciente 
-            ? 'bg-gray-400 cursor-not-allowed' 
-            : 'bg-blue-500 hover:bg-blue-600 text-white'
-        }`}
-      >
-        {buscandoPaciente ? (
-          <span className="flex items-center justify-center">
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Buscando...
-          </span>
-        ) : 'Buscar'}
-      </button>
-    </div>
-    {data.dni && data.dni.length !== 8 && (
-      <p className="text-red-500 text-xs mt-1">El DNI debe tener 8 dígitos</p>
-    )}
-  </div>
-
-  {pacienteEncontrado && pacienteInfo ? (
-    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-      <div className="flex justify-between items-start">
-        <div className="w-full">
-          <div className="flex justify-between items-center">
-            <h4 className="font-semibold text-green-800 text-sm">Paciente encontrado:</h4>
-            <button
-              type="button"
-              onClick={() => {
-                setPacienteEncontrado(false);
-                setPacienteInfo(null);
-                setData('dni', '');
-                setData('paciente_id', '');
-              }}
-              className="text-gray-500 hover:text-gray-700 ml-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-          <p className="text-gray-800 text-sm mt-1">
-            {pacienteInfo.nombres} {pacienteInfo.apellido_paterno} {pacienteInfo.apellido_materno}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-2 text-xs">
-            <div>
-              <span className="font-medium">DNI:</span> {pacienteInfo.dni}
-            </div>
-            <div>
-              <span className="font-medium">Teléfono:</span> {pacienteInfo.telefono}
-            </div>
-            <div>
-              <span className="font-medium">Edad:</span> {pacienteInfo.edad}
-            </div>
-            <div>
-              <span className="font-medium">Nacimiento:</span> {pacienteInfo.fecha_nacimiento}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  ) : (
-    busquedaRealizada && data.dni && data.dni.length === 8 && !pacienteEncontrado && !buscandoPaciente && (
-      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <div className="flex justify-between items-start">
-          <div>
-            <h4 className="font-semibold text-yellow-800 text-sm">Paciente no encontrado</h4>
-            <p className="text-gray-800 text-xs mt-1">
-              No se encontró un paciente con DNI {data.dni} en el sistema.
-            </p>
-            <div className="mt-3">
-              <a
-                href={route('pacientes.create', { dni: data.dni })}
-                className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block text-sm"
-              >
-                Registrar Nuevo Paciente
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  )}
-
-  <div className='flex flex-col sm:flex-row gap-2'>
-    <div className="mb-4 w-full sm:w-1/2">
-      <label className="block text-gray-700 text-sm font-medium mb-1">Médico</label>
-      <select
-        value={data.medico_id}
-        onChange={(e) => setData('medico_id', e.target.value)}
-        className="w-full p-2 border rounded text-sm"
-        required
-      >
-        <option value="">Seleccione un médico</option>
-        {medicos.map(medico => (
-          <option key={medico.id} value={medico.id}>
-            {medico.name} {medico.role === 'medico_externo' ? '(Externo)' : ''}
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div className="mb-4 w-full sm:w-1/2">
-      <label className="block text-gray-700 text-sm font-medium mb-1">Fecha y Hora</label>
-      <input
-        type="datetime-local"
-        value={formatDateTimeWithoutSeconds(data.fecha_hora)}
-        onChange={(e) => {
-          const newDate = e.target.value;
-          setData('fecha_hora', newDate);
-          
-          const now = new Date();
-          const selectedDate = new Date(newDate);
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const twoMonthsLater = new Date(today);
-          twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
-          
-          const selectedDateOnly = new Date(
-            selectedDate.getFullYear(), 
-            selectedDate.getMonth(), 
-            selectedDate.getDate()
-          );
-
-          if (selectedDateOnly < today) {
-            setErrorMessage('No se pueden programar citas para fechas pasadas');
-            return;
-          }
-
-          if (selectedDateOnly > twoMonthsLater) {
-            setErrorMessage('Solo se pueden programar citas hasta 2 meses en el futuro');
-            return;
-          }
-
-          if (data.medico_id) {
-            const validation = verificarDisponibilidad();
-            if (!validation.isValid) {
-              setErrorMessage(validation.message);
-            } else {
-              setErrorMessage('');
-            }
-          }
-        }}
-        className="w-full p-2 border rounded text-sm"
-        required
-        step="60"
-        min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-        max={format(new Date(new Date().setMonth(new Date().getMonth() + 2)), "yyyy-MM-dd'T'23:59")}
-      />
-    </div>
-  </div>
-
-  <div className="mb-4">
-    <label className="block text-gray-700 text-sm font-medium mb-1">Motivo</label>
-    <textarea
-      value={data.motivo}
-      onChange={(e) => setData('motivo', e.target.value)}
-      className="w-full p-2 border rounded text-sm"
-      rows="3"
-      required
-    />
-  </div>
-
-  {errorMessage && (
-    <div className="mb-4 p-2 bg-red-50 text-red-600 text-xs rounded">
-      {errorMessage}
-    </div>
-  )}
-
-  <div className="flex flex-col sm:flex-row justify-end gap-2">
-    <button
-      type="button"
-      onClick={() => {
-        setShowModal(false);
-        reset();
-        setPacienteEncontrado(false);
-        setPacienteInfo(null);
-        setErrorMessage('');
-      }}
-      className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 text-sm sm:text-base"
-    >
-      Cancelar
-    </button>
-    <button
-      type="submit"
-      disabled={!pacienteEncontrado || processing}
-      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300 text-sm sm:text-base"
-    >
-      {processing ? 'Guardando...' : 'Guardar Cita'}
-    </button>
-  </div>
-</form>
+                </form>
               </div>
             </div>
           </div>

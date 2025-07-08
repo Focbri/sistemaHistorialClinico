@@ -53,10 +53,7 @@ export default function ConsultasEdit({ auth, consulta }) {
         antecedentes_personales_otros: consulta?.antecedentes_personales_otros || '',
         antecedentes_patologicos_familiares: consulta?.antecedentes_patologicos_familiares || '',
         cirugias_previas: consulta?.cirugias_previas || '',
-        motivo_consulta_inicio: consulta?.motivo_consulta_inicio || '',
-        motivo_consulta_signos: consulta?.motivo_consulta_signos || '',
-        motivo_consulta_enfermedad: consulta?.motivo_consulta_enfermedad || '',
-        motivo_consulta_otros: consulta?.motivo_consulta_otros || '',
+        motivo_consulta: consulta?.motivo_consulta || '',
         impresion_diagnostica: consulta?.impresion_diagnostica || '',
         tratamiento: Array.isArray(consulta?.tratamiento) ? 
         consulta.tratamiento.filter(item => typeof item === 'string') : 
@@ -1172,23 +1169,11 @@ useEffect(() => {
                                                 {expandedSections.motivoConsulta && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
                                                         <div className="p-4">
-                                                        <label>INICIO</label>
+                                                        <label>Motivo de la Consulta</label>
                                                         <TerminoMotivoConsultaSearch 
-                                                            initialValue={data.motivo_consulta_inicio}
-                                                            onSelectTerm={(terms) => setData('motivo_consulta_inicio', terms)}
-                                                        />
-                                                        <label>SIGNOS</label>
-                                                        <TerminoMotivoConsultaSearch
-                                                            initialValue={data.motivo_consulta_signos || ''}
-                                                            onSelectTerm={(value) => setData('motivo_consulta_signos', value)}/>
-                                                        <label>ENFERMEDAD</label>
-                                                        <TerminoMotivoConsultaSearch
-                                                            initialValue={data.motivo_consulta_enfermedad || ''}
-                                                            onSelectTerm={(value) => setData('motivo_consulta_enfermedad', value)}/>
-                                                        <label>OTROS</label>
-                                                        <TerminoMotivoConsultaSearch
-                                                            initialValue={data.motivo_consulta_otros || ''}
-                                                            onSelectTerm={(value) => setData('motivo_consulta_otros', value)}/>
+                                                            initialValue={data.motivo_consulta}
+                                                            onSelectTerm={(terms) => setData('motivo_consulta', terms)}
+                                                        />                                                        
                                                         </div>
                                                     </div>
                                                 )}

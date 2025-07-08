@@ -75,6 +75,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('pacientes/{paciente}/consultas', [PacienteController::class, 'consultas'])
         ->name('pacientes.consultas')
     ->middleware(['auth', 'verified']);
+
+    Route::post('/pacientes/quick', [PacienteController::class, 'storeQuick'])->name('pacientes.store-quick');
+    Route::put('/pacientes/{paciente}/update-codigo-historial', [PacienteController::class, 'updateCodigoHistorial'])
+    ->name('pacientes.update-codigo-historial');
     
     // Consultas
     Route::get('consultas/create', [ConsultaController::class, 'create'])

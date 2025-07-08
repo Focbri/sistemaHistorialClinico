@@ -5,6 +5,7 @@ import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react
 import Pagination from '@/Components/Pagination';
 import AdvancedFilters from '@/Components/AdvancedFilters';
 import axios from 'axios'; // Asegúrate de importar axios
+import { toast } from 'react-toastify'; // Asegúrate de importar toast para notificaciones
 
 export default function PacientesIndex({ auth, pacientes }) {
     const isAdmin = ['admin'].includes(auth.user.role);
@@ -16,6 +17,10 @@ export default function PacientesIndex({ auth, pacientes }) {
     const [error, setError] = useState(null);
     const isAdminMed = ['medico', 'admin'].includes(auth.user.role);
     const isAdminMedRec = ['recepcionista', 'admin', 'medico_externo', 'medico'].includes(auth.user.role);
+
+    const [editingCodigo, setEditingCodigo] = useState(null);
+    const [codigoValue, setCodigoValue] = useState('');
+    
 
     const [pacienteConsultas, setPacienteConsultas] = useState({
         nombres: '',
@@ -159,6 +164,43 @@ const handleResetFilters = async () => {
             consultas: []
         });
     };
+
+const handleEditCodigo = (paciente) => {
+    setEditingCodigo(paciente.id);
+    setCodigoValue(paciente.codigo_historial);
+};
+
+const handleCancelEdit = () => {
+    setEditingCodigo(null);
+    setCodigoValue('');
+};
+
+const handleSaveCodigo = async (pacienteId) => {
+    try {
+        const response = await axios.put(
+            route('pacientes.update-codigo-historial', pacienteId),
+            {
+                codigo_historial: codigoValue,
+                _token: document.querySelector('meta[name="csrf-token"]').content
+            }
+        );
+
+        if (response.data.success) {
+            toast.success(response.data.message);
+            // Recargar los datos usando Inertia
+            router.reload({ only: ['pacientes'] });
+        } else {
+            toast.error(response.data.message);
+        }
+    } catch (error) {
+        const errorMsg = error.response?.data?.errors?.codigo_historial?.[0] || 
+                        'Error al actualizar el código';
+        toast.error(errorMsg);
+        console.error('Error detallado:', error.response?.data || error);
+    } finally {
+        setEditingCodigo(null);
+    }
+};
 
     return (
         <AuthenticatedLayout
@@ -385,6 +427,45 @@ const handleResetFilters = async () => {
                                             </p>
                                             <p className="text-sm text-gray-500">DNI: {paciente.dni}</p>
                                         </div>
+                                        <div className="mt-2">
+                                            <p className="text-xs text-gray-500">Código:</p>
+                                            {editingCodigo === paciente.id ? (
+                                                <div className="flex items-center space-x-2 mt-1">
+                                                    <input
+                                                        type="text"
+                                                        value={codigoValue}
+                                                        onChange={(e) => setCodigoValue(e.target.value)}
+                                                        className="flex-1 px-2 py-1 border rounded text-sm"
+                                                    />
+                                                    <button 
+                                                        onClick={() => handleSaveCodigo(paciente.id)}
+                                                        className="text-green-600 hover:text-green-800"
+                                                    >
+                                                        ✓
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleCancelEdit}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        ✗
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center">
+                                                    <p className="text-sm">{paciente.codigo_historial}</p>
+                                                    {isAdminMed && (
+                                                        <button 
+                                                            onClick={() => handleEditCodigo(paciente)}
+                                                            className="ml-2 text-blue-600 hover:text-blue-800"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24">
+                                                                <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"/>
+                                                            </svg>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         <div className="flex space-x-2">
                                             <Link
                                                 href={route('pacientes.show', paciente.id)}
@@ -445,6 +526,7 @@ const handleResetFilters = async () => {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI/CE</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombres</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
@@ -456,6 +538,44 @@ const handleResetFilters = async () => {
                                     {pacientes.data.map((paciente) => (
                                         <tr key={paciente.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-4 py-4 text-sm text-gray-900">{paciente.dni}</td>
+                                            <td className="px-4 py-4 text-sm text-gray-900">
+                                                {editingCodigo === paciente.id ? (
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="text"
+                                                            value={codigoValue}
+                                                            onChange={(e) => setCodigoValue(e.target.value)}
+                                                            className="w-24 px-2 py-1 border rounded"
+                                                        />
+                                                        <button 
+                                                            onClick={() => handleSaveCodigo(paciente.id)}
+                                                            className="text-green-600 hover:text-green-800"
+                                                        >
+                                                            ✓
+                                                        </button>
+                                                        <button 
+                                                            onClick={handleCancelEdit}
+                                                            className="text-red-600 hover:text-red-800"
+                                                        >
+                                                            ✗
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center">
+                                                        <span>{paciente.codigo_historial}</span>
+                                                        {isAdminMed && (
+                                                            <button 
+                                                                onClick={() => handleEditCodigo(paciente)}
+                                                                className="ml-2 text-blue-600 hover:text-blue-800"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24">
+                                                                    <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.8 20.199A2.73 2.73 0 0 1 6.869 21H3v-3.844c0-.724.288-1.419.8-1.931m5 4.974l-5-4.974m5 4.974l9.974-9.978M3.8 15.225l9.984-9.995m0 0l1.426-1.428a2.733 2.733 0 0 1 3.867-.001l1.126 1.127a2.733 2.733 0 0 1 0 3.865l-1.428 1.428M13.783 5.23l4.991 4.991"/>
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-4 text-sm text-gray-900">{paciente.nombres}</td>
                                             <td className="px-4 py-4 text-sm text-gray-900">{paciente.apellido_paterno} {paciente.apellido_materno}</td>
                                             <td className="px-4 py-4 text-sm text-gray-900">{paciente.telefono}</td>

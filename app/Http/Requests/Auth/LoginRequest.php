@@ -29,7 +29,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'sede' => 'required|string|in:ate,pueblo_libre', // Validar la sede
+            'sede' => 'required|string|in:ate,pueblo_libre,abubillas', // Validar la sede
         ];
     }
 

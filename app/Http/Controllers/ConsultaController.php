@@ -291,10 +291,7 @@ class ConsultaController extends Controller
                 'cirugias_previas' => 'nullable|array',
                 'cirugias_previas.*' => 'string',
                 //
-                'motivo_consulta_inicio' => 'nullable|string',
-                'motivo_consulta_signos' => 'nullable|string',
-                'motivo_consulta_enfermedad' => 'nullable|string',
-                'motivo_consulta_otros' => 'nullable|string',
+                'motivo_consulta' => 'nullable|string',
                 //
                 'impresion_diagnostica' => 'nullable|string',
                 'tratamiento' => 'nullable|array',
@@ -561,10 +558,7 @@ class ConsultaController extends Controller
                 'antecedentes_personales_otros' => $request->antecedentes_personales_otros,
                 'antecedentes_patologicos_familiares' => $request->antecedentes_patologicos_familiares,
                 'cirugias_previas' => $request->cirugias_previas,
-                'motivo_consulta_inicio' => $request->motivo_consulta_inicio,
-                'motivo_consulta_signos' => $request->motivo_consulta_signos,
-                'motivo_consulta_enfermedad' => $request->motivo_consulta_enfermedad,
-                'motivo_consulta_otros' => $request->motivo_consulta_otros,
+                'motivo_consulta' => $request->motivo_consulta,
                 'impresion_diagnostica' => $request->impresion_diagnostica,
                 'tratamiento' => $request->tratamiento,
                 'plan' => $request->plan,
@@ -695,14 +689,12 @@ class ConsultaController extends Controller
 
             // Crear el examen
             $examen = Examen::create($examenData);
-
             if (!$examen) {
                 Log::error('Fallo al crear examen ocular');
                 throw new \Exception('No se pudo crear el registro del examen ocular');
             }
 
             //BIOMICROSCOPIA
-
             // 1. Verificar que la consulta existe y tiene ID
             if (!isset($consulta->id)) {
                 Log::error('No se puede guardar términos - Consulta no existe');
@@ -726,9 +718,7 @@ class ConsultaController extends Controller
                 'biomicroscopia_iris_oi',
                 'biomicroscopia_cristalino_oi'
             ];
-
             $terminosProcesados = [];
-
             foreach ($camposBiomicroscopia as $campo) {
                 if (!empty($request->$campo)) {
                     $terminos = array_map('trim', 
@@ -740,7 +730,6 @@ class ConsultaController extends Controller
 
             // 3. Filtrar y guardar términos únicos
             $terminosUnicos = array_unique(array_filter($terminosProcesados));
-
             foreach ($terminosUnicos as $termino) {
                 try {
                     TerminoBiomicroscopia::create([
@@ -769,7 +758,6 @@ class ConsultaController extends Controller
             }
 
             //MOTIVO CONSULTA
-
             // 1. Verificar que la consulta existe y tiene ID
             if (!isset($consulta->id)) {
                 Log::error('No se puede guardar términos MC - Consulta no existe');
@@ -778,10 +766,7 @@ class ConsultaController extends Controller
 
             // 2. Procesar términos de biomicroscopia
             $camposMotivoConsulta = [
-                'motivo_consulta_inicio',
-                'motivo_consulta_signos',
-                'motivo_consulta_enfermedad',
-                'motivo_consulta_otros',
+                'motivo_consulta',
             ];
 
             $terminosProcesados = [];
@@ -1623,6 +1608,7 @@ protected function normalizarUrlImagen($path)
                 'procedencia' => $consulta->paciente->procedencia,
                 'direccion' => $consulta->paciente->direccion,
                 'telefono' => $consulta->paciente->telefono,
+                'telefonoE' => $consulta->paciente->telefonoE,
                 'acompañante' => $consulta->paciente->acompañante,
                 'referido' => $consulta->paciente->referido,
                 'foto_perfil' => $this->normalizarUrlImagen($consulta->paciente->foto_perfil),
@@ -1636,10 +1622,7 @@ protected function normalizarUrlImagen($path)
                     'antecedentes_personales_otros',
                     'antecedentes_patologicos_familiares',
                     'cirugias_previas',
-                    'motivo_consulta_inicio',
-                    'motivo_consulta_signos',
-                    'motivo_consulta_enfermedad',
-                    'motivo_consulta_otros',
+                    'motivo_consulta',
                     'biomicroscopia_movoculares_od',
                     'biomicroscopia_parpados_od',
                     'biomicroscopia_cornea_od',

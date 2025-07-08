@@ -397,22 +397,38 @@ return (
                                 </div>
 
                                 <div className='flex flex-col'>
-                                    <div className="mb-4">
-                                        <label className="block text-sm uppercase font-medium text-gray-700">Teléfono</label>
-                                        <input
-                                            type="number"                                                
-                                            value={data.telefono}
-                                            max={9999999999}
-                                            maxLength={9}
-                                            onChange={(e) => {
-                                                if (e.target.value.length <= 10) {
-                                                    setData('telefono', e.target.value);
-                                                }
-                                            }}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                        />
-                                        {errors.telefono && <p className="text-sm text-red-500">{errors.telefono}</p>}
-                                    </div>
+                                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4'>
+                                            <div >
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Teléfono*</label> 
+                                                <input required
+                                                    type="tel"                                                
+                                                    value={data.telefono}
+                                                    max={9999999999}
+                                                    maxLength={10}
+                                                    onChange={(e) => {
+                                                        if (e.target.value.length <= 10) {
+                                                            setData('telefono', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Teléfono Emergencia</label>
+                                                <input required
+                                                    type="tel"                                                
+                                                    value={data.telefonoE}
+                                                    max={9999999999}
+                                                    maxLength={10}
+                                                    onChange={(e) => {
+                                                        if (e.target.value.length <= 10) {
+                                                            setData('telefonoE', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+                                                />
+                                            </div>
+                                        </div>
 
                                     <div className="mb-4">
                                         <label className="block text-sm uppercase font-medium text-gray-700">Acompañante</label>

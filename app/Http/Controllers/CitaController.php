@@ -396,16 +396,16 @@ class CitaController extends Controller
         $citasProgramadas = Cita::with(['paciente'])
             ->where('medico_id', Auth::id())
             ->where('sede', session('sede_actual'))
-            ->where('estado', 'programada')
-            ->orderBy('fecha_hora')
+            ->where('fecha_hora', '>=', now()->startOfDay()) // Solo citas de hoy o futuras
+            ->orderBy('fecha_hora', 'desc') // Orden ascendente (próximas primero)
             ->paginate(10); // 10 citas por página
 
         // Citas atendidas paginadas
-        $citasAtendidas = Cita::with(['paciente'])
+         $citasAtendidas = Cita::with(['paciente'])
             ->where('medico_id', Auth::id())
             ->where('sede', session('sede_actual'))
             ->where('estado', 'completada')
-            ->orderBy('fecha_hora', 'desc')
+            ->orderBy('fecha_hora', 'desc') // Orden descendente (más recientes primero)
             ->paginate(10);
 
         return Inertia::render('Citas/Asignadas', [

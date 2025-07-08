@@ -3,16 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-//use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Consulta;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class Paciente extends Model
 {
-
     protected $fillable = [
         'user_id',
         'apellido_paterno',
@@ -28,86 +25,105 @@ class Paciente extends Model
         'ocupacion',
         'direccion',
         'telefono',
+        'telefonoE',
         'email',
         'procedencia',
         'acompañante',
         'referido',
         'foto_perfil',
         'codigo_historial',
-        //asignar sede
-        'sede', // Agregar el campo 'sede'
+        'sede',
     ];
 
-protected static function booted()
+    protected $appends = ['foto_perfil_url', 'nombre_completo'];
+    
+    protected $dates = [
+        'created_at',
+        'updated_at',
+        'fecha_nacimiento'
+    ];
+
+    protected $casts = [
+        'fecha_nacimiento' => 'date:Y-m-d',
+    ];
+
+    protected static function boot()
 {
+    parent::boot();
+
     static::creating(function ($paciente) {
+        // Generar código de historial si no existe
         if (empty($paciente->codigo_historial)) {
-            // Usa lockForUpdate para evitar race conditions
-            $lastCode = self::lockForUpdate()
+            $sede = session('sede_actual');
+            $lastCode = self::where('sede', $sede)
                 ->orderBy('id', 'desc')
                 ->value('codigo_historial');
             
-            $nextNumber = 1; // Valor por defecto
-            
+            $nextNumber = 1;
             if ($lastCode && preg_match('/HCL-(\d+)/', $lastCode, $matches)) {
                 $nextNumber = (int)$matches[1] + 1;
             }
             
             $paciente->codigo_historial = 'HCL-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
         }
+
+        // Asignar usuario y sede
+        $paciente->user_id = Auth::id();
+        $paciente->sede = session('sede_actual');
+    });
+
+    static::updating(function ($paciente) {
+        // Actualizar códigos en consultas/cirugías si cambia el código
+        if ($paciente->isDirty('codigo_historial')) {
+            $codigoAnterior = $paciente->getOriginal('codigo_historial');
+            
+            $paciente->consultas()
+                ->where('codigo_historial', $codigoAnterior)
+                ->update(['codigo_historial' => $paciente->codigo_historial]);
+                
+            $paciente->cirugias()
+                ->where('codigo_historial', $codigoAnterior)
+                ->update(['codigo_historial' => $paciente->codigo_historial]);
+        }
     });
 }
 
-    /**
-     * Relación con el modelo Consulta (un paciente puede tener muchas consultas).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function consultas(): HasMany
     {
         return $this->hasMany(Consulta::class)->orderBy('created_at', 'desc');
     }
 
-    protected $appends = ['foto_perfil_url'];
+    public function cirugias(): HasMany
+    {
+        return $this->hasMany(Cirugia::class);
+    }
 
-public function getFotoPerfilUrlAttribute()
-{
-    if (!$this->foto_perfil) {
-        return null;
+    public function getFotoPerfilUrlAttribute()
+    {
+        if (!$this->foto_perfil) {
+            return null;
+        }
+        
+        if (filter_var($this->foto_perfil, FILTER_VALIDATE_URL)) {
+            return $this->foto_perfil;
+        }
+        
+        return Storage::url($this->foto_perfil);
     }
-    
-    // Si ya es una URL completa (por ejemplo, de un servicio externo)
-    if (filter_var($this->foto_perfil, FILTER_VALIDATE_URL)) {
-        return $this->foto_perfil;
-    }
-    
-    // Generar URL para archivos locales
-    return Storage::url($this->foto_perfil);
-}
 
     public function getNombreCompletoAttribute(): string 
     {
-        return "{$this->nombres} {$this->apellido_paterno} {$this->apellido_materno}";
+        return trim("{$this->nombres} {$this->apellido_paterno} {$this->apellido_materno}");
     }
 
-    /**
-     * Mutadores: Para asegurar que el nombre siempre se guarde con la primera letra en mayúscula.
-     *
-     * @param string $value
-     */
-    public function setNombreAttribute($value): void
+    public function setFotoPerfilAttribute($value)
     {
-        $this->attributes['nombre'] = $value ? ucfirst(strtolower($value)) : null;
-    }
-
-    /**
-     * Mutadores: Para asegurar que el apellido siempre se guarde con la primera letra en mayúscula.
-     *
-     * @param string $value
-     */
-    public function setApellidoAttribute($value): void
-    {
-        $this->attributes['apellido'] = $value ? ucfirst(strtolower($value)) : null;
+        if (is_string($value)) {
+            $this->attributes['foto_perfil'] = $value;
+        } elseif ($value instanceof \Illuminate\Http\UploadedFile) {
+            $path = $value->store('pacientes/fotos', 'public');
+            $this->attributes['foto_perfil'] = $path;
+        }
     }
 
     public static function rules(): array
@@ -116,58 +132,42 @@ public function getFotoPerfilUrlAttribute()
             'nombres' => 'required|string|max:255',
             'apellido_paterno' => 'required|string|max:255',
             'apellido_materno' => 'required|string|max:255',
-            'dni' => 'required|string|unique:pacientes,dni|max:20',
+            'tipo_documento' => 'required|in:dni,ce',
+            'dni' => [
+                'required',
+                'string',
+                Rule::when(request()->tipo_documento === 'dni', 'digits:8'),
+                Rule::when(request()->tipo_documento === 'ce', 'digits_between:9,12'),
+                Rule::unique('pacientes')->ignore(request()->id)
+            ],
             'telefono' => 'nullable|string|max:20',
-            'email' => 'nullable|email|unique:pacientes,email|max:255',
+            'email' => 'nullable|email|unique:pacientes,email,'.request()->id,
             'direccion' => 'nullable|string|max:255',
             'edad' => 'nullable|integer|min:0',
+            'sede' => 'required|string',
         ];
     }
-
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'fecha_nacimiento' => 'date:Y-m-d',
-    ];
 
     public static function messages(): array
     {
         return [
-            'nombre.required' => 'El nombre es requerido.',
-            'nombre.string' => 'El nombre debe ser un texto.',
-            'nombre.max' => 'El nombre no debe exceder los 255 caracteres.',
-            'apellido.required' => 'El apellido es requerido.',
-            'apellido.string' => 'El apellido debe ser un texto.',
-            'apellido.max' => 'El apellido no debe exceder los 255 caracteres.',
-            'dni.required' => 'El DNI es requerido.',
-            'dni.string' => 'El DNI debe ser un texto.',
-            'dni.unique' => 'El DNI ya está registrado.',
-            'dni.max' => 'El DNI no debe exceder los 8 caracteres.',
+            'nombres.required' => 'El nombre es requerido.',
+            'nombres.string' => 'El nombre debe ser un texto.',
+            'nombres.max' => 'El nombre no debe exceder los 255 caracteres.',
+            'apellido_paterno.required' => 'El apellido paterno es requerido.',
+            'apellido_paterno.string' => 'El apellido paterno debe ser un texto.',
+            'apellido_paterno.max' => 'El apellido paterno no debe exceder los 255 caracteres.',
+            'tipo_documento.required' => 'El tipo de documento es requerido.',
+            'tipo_documento.in' => 'El tipo de documento debe ser DNI o CE.',
+            'dni.required' => 'El número de documento es requerido.',
+            'dni.digits' => 'El DNI debe tener 8 dígitos.',
+            'dni.digits_between' => 'El CE debe tener entre 9 y 12 dígitos.',
+            'dni.unique' => 'Este número de documento ya está registrado.',
         ];
-    }
-
-    public function cirugias()
-    {
-        return $this->hasMany(Cirugia::class);
-    }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($paciente) {
-            // Usa el facade Auth en lugar del helper auth()
-            if (\Illuminate\Support\Facades\Auth::check()) {
-                $paciente->user_id = \Illuminate\Support\Facades\Auth::id();
-            } else {
-                throw new \Exception('No hay usuario autenticado al crear un paciente');
-            }
-        });
     }
 
     public function scopeDeSedeActual($query)
     {
-        // Usa la sede de la sesión en lugar de la del usuario
         return $query->where('sede', session('sede_actual'));
     }
 }

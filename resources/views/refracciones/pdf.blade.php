@@ -4,62 +4,54 @@
     <meta charset="UTF-8">
     <title>Examen de Refracción</title>
     <style>
+        @page {
+            margin: 1cm;
+            size: A4 portrait;
+        }
         body {
             font-family: 'Arial', sans-serif;
-            font-size: 12px;
-            line-height: 1.5;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0 10px 80px;
+            font-size: 10pt; /* Tamaño base para el PDF */
             color: #333;
-            padding: 20px;
-            max-width: 900px;
-            margin: 0 auto;
         }
         .header {
-            text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
             border-bottom: 2px solid #0066cc;
         }
         .header h1 {
-            font-size: 18px;
+            font-size: 14pt; /* Título principal */
             font-weight: bold;
-            margin-bottom: 5px;
+            margin: 0;
             color: #0066cc;
+            text-align: center;
             text-transform: uppercase;
         }
-        .header p {
-            margin: 3px 0;
-            color: #666;
-        }
         .patient-info {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             background: #f8f9fa;
-            padding: 12px;
+            padding: 10px;
             border-radius: 5px;
             border-left: 4px solid #0066cc;
-        }
-        .patient-info p {
-            display: flex;
-            align-items: center;  /* Alinea verticalmente el contenido */
-            min-height: 25px;     /* Altura mínima para evitar desbordamiento */
+            font-size: 10pt;
         }
         .patient-info strong {
-            min-width: 80px;
-            display: inline-block;
+            font-weight: bold;
             color: #555;
+            width: 120px;
+            display: inline-block;
         }
         .exam-container {
-            display: flex;
             margin-bottom: 15px;
-            gap: 20px;
-            flex-wrap: wrap;
         }
         .exam-column {
-            flex: 1;
-            min-width: 300px;
+            width: 100%;
             border: 1px solid #dee2e6;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
         }
         .exam-title {
             background-color: #0066cc;
@@ -67,25 +59,24 @@
             padding: 8px;
             text-align: center;
             font-weight: bold;
-            font-size: 13px;
-            text-transform: uppercase;
+            font-size: 11pt; /* Título de sección */
         }
         .exam-content {
-            padding: 15px;
+            padding: 12px;
         }
         .exam-subtitle {
             font-weight: bold;
-            margin: 15px 0 8px;
+            margin: 12px 0 6px;
             color: #0066cc;
-            font-size: 12px;
-            text-transform: uppercase;
+            font-size: 10.5pt; /* Subtítulos */
             border-bottom: 1px dashed #ddd;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
         }
         .exam-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+            font-size: 9.5pt; /* Tablas */
         }
         .exam-table th {
             background-color: #f1f5f9;
@@ -93,88 +84,135 @@
             padding: 6px;
             font-weight: bold;
             border: 1px solid #dee2e6;
+            font-size: 9.5pt;
         }
         .exam-table td {
             text-align: center;
             padding: 6px;
             border: 1px solid #dee2e6;
         }
-        .exam-table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .dip-field {
-            margin-top: 10px;
-            font-weight: bold;
-            text-align: center;
-            padding: 5px;
-            background-color: #f1f5f9;
-            border-radius: 4px;
-        }
         .notes-section {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         .notes-box {
             border: 1px solid #dee2e6;
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
-            min-height: 80px;
+            min-height: 70px;
             background-color: #f8f9fa;
-            margin-bottom: 16px ;
+            margin-bottom: 12px;
+            font-size: 9.5pt; /* Notas */
         }
         .notes-title {
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #0066cc;
             border-bottom: 1px solid #dee2e6;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
+            font-size: 10pt;
         }
-        .footer {
-            margin-top: 30px;
+        .footer-info {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 8px 0;
+            background-color: white;
+            border-top: 1px solid #ddd;
+            font-size: 9pt; /* Footer más pequeño */
+            text-align: center;
+        }
+        .signature-area {
+            margin-top: 96px;
             text-align: right;
-            padding-top: 15px;
-            border-top: 1px solid #dee2e6;
-        }
-        .footer p {
-            margin: 5px 0;
-            color: #666;
         }
         .signature-line {
             display: inline-block;
             width: 200px;
             border-top: 1px solid #333;
-            margin-top: 30px;
+            margin-bottom: 5px;
         }
+        .signature-text {
+            font-size: 10pt; /* Texto firma */
+            margin: 3px 0 0 0;
+        }
+        
+        /* Estilos específicos para tablas de datos */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+            font-size: 9.5pt;
+        }
+        .data-table td {
+            padding: 5px;
+            vertical-align: top;
+        }
+        .data-label {
+            font-weight: bold;
+            width: 120px;
+            color: #555;
+        }
+        
+        /* Ajustes para impresión */
         @media print {
             body {
-                padding: 0;
-                font-size: 11px;
+                padding: 0 10px 80px;
+                font-size: 10pt;
             }
             .exam-column {
                 page-break-inside: avoid;
+            }
+            .footer-info {
+                position: fixed;
+                bottom: 0;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Encabezado -->
     <div class="header">
-        <h1>Examen de Refracción</h1>
+        <table class="data-table" style="border: none;">
+            <tr>
+                <td style="width: 30%; text-align: left; border: none; vertical-align: middle;">
+                    <img src="{{ public_path('img/logoVisualOsf.png') }}" alt="Logo" style="max-width: 150px; max-height: 80px;">
+                </td>
+                <td style="width: 40%; text-align: center; border: none; vertical-align: middle;">
+                    <h1>EXAMEN DE REFRACCIÓN</h1>
+                </td>
+                <td style="width: 30%; text-align: right; border: none; vertical-align: middle;">
+                    <span style="font-size: 10pt;">Fecha: {{ \Carbon\Carbon::parse($refraccion->created_at)->format('d/m/Y') }}</span>
+                </td>
+            </tr>
+        </table>
     </div>
+
+    <!-- Información del paciente -->
     <div class="patient-info">
-        <p style="vertical-align: middle;"><strong style="vertical-align: middle;">Paciente:</strong> {{ $paciente->nombres }} {{ $paciente->apellido_paterno }} {{ $paciente->apellido_materno }}</p>
-        <p style="vertical-align: middle;"><strong style="vertical-align: middle;">DNI:</strong> {{ $paciente->dni }} </p>
-        <p style="vertical-align: middle;"><strong style="vertical-align: middle;">Edad:</strong> {{ $paciente->edad }} años</p>
+        <table class="data-table" style="border: none;">
+            <tr>
+                <td class="data-label">Paciente:</td>
+                <td>{{ $paciente->nombres }} {{ $paciente->apellido_paterno }} {{ $paciente->apellido_materno }}</td>
+                <td class="data-label">N° Historia:</td>
+                <td>{{ $paciente->codigo_historial }}</td>
+            </tr>
+            <tr>
+                <td class="data-label">DNI:</td>
+                <td>{{ $paciente->dni }}</td>
+                <td class="data-label">Edad:</td>
+                <td>{{ $paciente->edad }} años</td>
+            </tr>
+        </table>
     </div>
+
     @php
-        // Asegurarnos que la edad es un número válido
         $edadPaciente = is_numeric($paciente->edad) ? (int)$paciente->edad : 0;
         $mostrarCerca = $edadPaciente >= 30;
     @endphp
 
+    <!-- Contenido del examen -->
     <div class="exam-container">
-        <!-- Columna Examen Actual -->
         <div class="exam-column">
             <div class="exam-title">Examen Actual</div>
             <div class="exam-content">
@@ -182,11 +220,11 @@
                 <table class="exam-table">
                     <thead>
                         <tr>
-                            <th></th>
-                            <th>Esfera</th>
-                            <th>Cilindro</th>
-                            <th>Eje</th>
-                            <th>DIP</th>
+                            <th style="width: 15%;"></th>
+                            <th style="width: 25%;">Esfera</th>
+                            <th style="width: 25%;">Cilindro</th>
+                            <th style="width: 15%;">Eje</th>
+                            <th style="width: 20%;">DIP</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -211,11 +249,11 @@
                 <table class="exam-table">
                     <thead>
                         <tr>
-                            <th></th>
-                            <th>Esfera</th>
-                            <th>Cilindro</th>
-                            <th>Eje</th>
-                            <th>DIP</th>
+                            <th style="width: 15%;"></th>
+                            <th style="width: 25%;">Esfera</th>
+                            <th style="width: 25%;">Cilindro</th>
+                            <th style="width: 15%;">Eje</th>
+                            <th style="width: 20%;">DIP</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -238,19 +276,50 @@
             </div>
         </div>
     </div>
+
+    <!-- Notas e instrucciones -->
     <div class="notes-section">
-        <div class="notes-box">
-            <div class="notes-title">Instrucciones</div>
-            <div>{{ $refraccion->instrucciones ?? 'Ninguna' }}</div>
-        </div>
-        <div class="notes-box">
-            <div class="notes-title">Adiciones</div>
-            <div>{{ $refraccion->adiciones ?? 'Ninguna' }}</div>
-        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 48%; vertical-align: top; padding-right: 10px;">
+                    <div class="notes-box">
+                        <div class="notes-title">Instrucciones</div>
+                        <div>{{ $refraccion->instrucciones ?? 'Ninguna' }}</div>
+                    </div>
+                </td>
+                <td style="width: 48%; vertical-align: top; padding-left: 10px;">
+                    <div class="notes-box">
+                        <div class="notes-title">Adiciones</div>
+                        <div>{{ $refraccion->adiciones ?? 'Ninguna' }}</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
-    <div style="margin-top: 50px; text-align: right;">
-        <div>__________________________</div>
-        <div>Lic. Médico</div>
+
+    <!-- Firma -->
+    <div class="signature-area">
+        <div class="signature-line"></div>
+        <p class="signature-text">Lic. Médico</p>
+    </div>
+
+    <!-- Footer con información de contacto -->
+    <div class="footer-info">
+        <table style="border: none; width: 100%;">
+            <tr>
+                <td style="border: none; text-align: center;">
+                    <span>
+                        <img src="{{ public_path('img/ubicacion.png') }}" alt="Ubicación" style="width: 12px; height: 12px; vertical-align: middle;">
+                        Av Gral José María Egúsquiza, Córdova 835
+                    </span>
+                    <span style="margin: 0 10px;">|</span>
+                    <span>
+                        <img src="{{ public_path('img/phone.png') }}" alt="Teléfono" style="width: 12px; height: 12px; vertical-align: middle;">
+                        +51 999 495 085
+                    </span>
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>

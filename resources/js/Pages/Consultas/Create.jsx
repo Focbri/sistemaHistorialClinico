@@ -32,10 +32,7 @@ export default function ConsultasCreate({ auth, dni: dniProp, paciente: paciente
         antecedentes_personales_otros: '',
         antecedentes_patologicos_familiares: '',
         cirugias_previas: '',
-        motivo_consulta_inicio: '',
-        motivo_consulta_signos: '',
-        motivo_consulta_enfermedad: '',
-        motivo_consulta_otros: '',
+        motivo_consulta: '',        
         impresion_diagnostica: '',
         tratamiento: '',
         plan: '',
@@ -653,14 +650,7 @@ const buscarPaciente = async () => {
                 setErrorReceta(errorReceta);
                 toggleSection('recetas');
                 return;
-            }
-            
-            // Actualizar stock solo si hay medicamentos
-            const stockSuccess = await actualizarStockBackend(data.receta.medicamentos);
-            if (!stockSuccess) {
-                setErrorReceta('Error al actualizar el stock de medicamentos');
-                return;
-            }
+            }            
         }
         
         const formData = new FormData();
@@ -755,48 +745,6 @@ const buscarPaciente = async () => {
         
         return null;
     };
-    
-    const actualizarStockBackend = async (medicamentos) => {
-    try {
-        const medicamentosParaStock = medicamentos.filter(m => 
-            !m.es_manual && (m.farmaco_id || m.id) && m.cantidad > 0
-        );
-
-        if (medicamentosParaStock.length === 0) {
-            console.log('No hay medicamentos que afecten stock');
-            return true;
-        }
-
-        // Obtener el token CSRF actualizado
-        await axios.get('/sanctum/csrf-cookie'); // Esto actualiza el token CSRF
-
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (!csrfToken) {
-            throw new Error('No se pudo obtener el token CSRF');
-        }
-
-        const payload = {
-            medicamentos: medicamentosParaStock.map(m => ({
-                farmaco_id: m.farmaco_id || m.id,
-                cantidad: Math.max(1, parseInt(m.cantidad) || 1)
-            }))
-        };
-
-        const response = await axios.post('/farmacos/stock/actualizar-por-receta', payload, {
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            withCredentials: true
-        });
-
-        return response.data.success || false;
-    } catch (error) {
-        console.error('Error al actualizar stock:', error);
-        return false;
-    }
-};
 
     return (
         <AuthenticatedLayout
@@ -2161,23 +2109,11 @@ const buscarPaciente = async () => {
                                                 {expandedSections.motivoConsulta && (
                                                     <div className="mb-6 p-4 border border-gray-200 rounded-md">
                                                         <div className="p-4">
-                                                        <label>INICIO</label>
+                                                        <label>Motivo de la Consulta</label>
                                                         <TerminoMotivoConsultaSearch 
-                                                            initialValue={data.motivo_consulta_inicio}
-                                                            onSelectTerm={(terms) => setData('motivo_consulta_inicio', terms)}
-                                                        />
-                                                        <label>SIGNOS</label>
-                                                        <TerminoMotivoConsultaSearch
-                                                            initialValue={data.motivo_consulta_signos || ''}
-                                                            onSelectTerm={(value) => setData('motivo_consulta_signos', value)}/>
-                                                        <label>ENFERMEDAD</label>
-                                                        <TerminoMotivoConsultaSearch
-                                                            initialValue={data.motivo_consulta_enfermedad || ''}
-                                                            onSelectTerm={(value) => setData('motivo_consulta_enfermedad', value)}/>
-                                                        <label>OTROS</label>
-                                                        <TerminoMotivoConsultaSearch
-                                                            initialValue={data.motivo_consulta_otros || ''}
-                                                            onSelectTerm={(value) => setData('motivo_consulta_otros', value)}/>
+                                                            initialValue={data.motivo_consulta}
+                                                            onSelectTerm={(terms) => setData('motivo_consulta', terms)}
+                                                        />                                                        
                                                         </div>
                                                     </div>
                                                 )}

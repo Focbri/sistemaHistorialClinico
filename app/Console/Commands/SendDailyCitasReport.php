@@ -18,7 +18,7 @@ class SendDailyCitasReport extends Command
     {
         try {
             // Obtener todas las sedes activas
-            $sedes = ['ate', 'pueblo_libre']; // Asegúrate que coincidan con tus sedes en la BD
+            $sedes = ['ate', 'pueblo_libre', 'abubillas']; // Asegúrate que coincidan con tus sedes en la BD
             
             foreach ($sedes as $sede) {
                 // Obtener citas de la sede (últimas 100)

@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Consulta;
+use App\Models\Cirugia;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PacienteController extends Controller
@@ -85,9 +87,9 @@ class PacienteController extends Controller
             'nombres' => 'required|string|max:255',
             'apellido_paterno' => 'required|string|max:255',
             'apellido_materno' => 'required|string|max:255',
-            'tipo_documento' => 'required|in:dni,ce',
+            'tipo_documento' => 'nullable|in:dni,ce',
             'dni' => [
-                'required',
+                'nullable',
                 'string',
                 Rule::when($request->tipo_documento === 'dni', 'digits:8'),
                 Rule::when($request->tipo_documento === 'ce', 'digits_between:9,12'),
@@ -102,6 +104,7 @@ class PacienteController extends Controller
             'ocupacion' => 'nullable|string|max:100',
             'direccion' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:15',
+            'telefonoE' => 'nullable|string|max:15',
             'email' => 'nullable|email|max:255',
             'acompañante' => 'nullable|string|max:100',
             'referido' => 'nullable|string|max:100',
@@ -147,6 +150,84 @@ class PacienteController extends Controller
     }
 }
 
+public function storeQuick(Request $request)
+{
+    $validated = $request->validate([
+        'dni' => 'required|digits:8|unique:pacientes,dni',
+        'nombres' => 'required|string|max:100',
+        'apellido_paterno' => 'required|string|max:100',
+        'apellido_materno' => 'nullable|string|max:100',
+        'telefono' => 'required|string|max:15',
+        'edad' => 'required|integer|min:0|max:120',
+    ]);
+
+    // Agregar campos adicionales
+    $validated['sede'] = session('sede_actual');
+    $validated['user_id'] = Auth::id();
+
+    // No necesitamos generar el código aquí, el modelo lo hará automáticamente
+    
+    // Crear el paciente
+    $paciente = Paciente::create($validated);
+
+    return response()->json([
+        'success' => true,
+        'paciente' => $paciente
+    ]);
+}
+
+public function updateCodigoHistorial(Request $request, Paciente $paciente)
+{
+    $request->validate([
+        'codigo_historial' => [
+            'required',
+            'string',
+            'max:20',
+            Rule::unique('pacientes')
+                ->ignore($paciente->id)
+                ->where('sede', session('sede_actual')) // Validar por sede
+        ]
+    ]);
+
+    DB::beginTransaction();
+    
+    try {
+        $codigoAnterior = $paciente->codigo_historial;
+        
+        $paciente->update([
+            'codigo_historial' => $request->codigo_historial
+        ]);
+
+        // Actualizar consultas y cirugías relacionadas
+        if ($codigoAnterior !== $request->codigo_historial) {
+            Consulta::where('paciente_id', $paciente->id)
+                ->where('codigo_historial', $codigoAnterior)
+                ->update(['codigo_historial' => $request->codigo_historial]);
+                
+            Cirugia::where('paciente_id', $paciente->id)
+                ->where('codigo_historial', $codigoAnterior)
+                ->update(['codigo_historial' => $request->codigo_historial]);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Código de historial actualizado correctamente',
+            'nuevoCodigo' => $request->codigo_historial
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error al actualizar código de historial: '.$e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al actualizar el código: '.$e->getMessage()
+        ], 500);
+    }
+}
+
     public function show(Paciente $paciente)
     {
         $pacienteData = $this->preparePacienteData($paciente);
@@ -181,9 +262,9 @@ class PacienteController extends Controller
                 'nombres' => 'required|string|max:255',
                 'apellido_paterno' => 'required|string|max:255',
                 'apellido_materno' => 'required|string|max:255',
-                'tipo_documento' => 'required|in:dni,ce',
+                'tipo_documento' => 'nullable|in:dni,ce',
                 'dni' => [
-                    'required',
+                    'nullable',
                     'string',
                     Rule::when($request->tipo_documento === 'dni', 'digits:8'),
                     Rule::when($request->tipo_documento === 'ce', 'digits_between:9,12'),
@@ -198,8 +279,9 @@ class PacienteController extends Controller
                 'estado_civil' => 'nullable|string|max:50',
                 'ocupacion' => 'nullable|string|max:100',
                 'procedencia' => 'nullable|string|max:100',
-                'direccion' => 'string|max:255',
-                'telefono' => 'string|max:15',
+                'direccion' => 'nullable|string|max:255',
+                'telefono' => 'nullable|string|max:15',
+                'telefonoE' => 'nullable|string|max:15',
                 'email' => 'nullable|email|max:255',
                 'acompañante' => 'nullable|string|max:100',
                 'referido' => 'nullable|string|max:100',
@@ -337,11 +419,12 @@ class PacienteController extends Controller
             'edad' => 'integer',
             'peso' => 'numeric',
             'dni' => 'string|max:20|unique:pacientes,dni,'.$id,
-            'sexo' => 'in:M,F',
+            'sexo' => 'nullable|in:M,F',
             'estado_civil' => 'in:soltero,casado,divorciado,viudo',
             'ocupacion' => 'string|max:255',
-            'direccion' => 'string|max:255',
-            'telefono' => 'string|max:20',
+            'direccion' => 'nullable|string|max:255',
+            'telefono' => 'nullable|string|max:20',
+            'telefonoE' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'procedencia' => 'in:Ancon,Ate,Barranco,Breña,Carabayllo,Chaclacayo,Chorrillos,Cienegilla,Comas,El Agustino,Independencia,Jesús María,La Molina,La Victoria,Lima,Lince,Los Olivos,Lurigancho,Lurín,Magdalena del Mar,Miraflores,Pachacamac,Pucusana,Pueblo Libre,Puente Piedra,Punta Hermosa,Punta Negra,Rimac,San Bartolo,San Borja,San Isidro,San Juan de Lurigancho,San Juan de Miraflores,San Luis,San Martín de Porres,San Miguel,Santa Anita,Santa María del Mar,Santa Rosa,Santiago de Surco,Surquillo,Villa El Salvador,Villa María del Triunfo',
             'acompañante' => 'nullable|string|max:255',
@@ -657,6 +740,7 @@ class PacienteController extends Controller
                     'apellido_materno' => $paciente->apellido_materno,
                     'dni' => $paciente->dni,
                     'telefono' => $paciente->telefono,
+                    
                     'email' => $paciente->email,
                     'fecha_nacimiento' => $paciente->fecha_nacimiento ? $paciente->fecha_nacimiento->format('Y-m-d') : null,
                     'edad' => $paciente->edad,

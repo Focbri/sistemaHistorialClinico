@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useRef, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { te } from 'date-fns/locale';
 
 export default function PacientesCreate({ auth, dni }) {
     const fileInputRef = useRef(null);
@@ -24,6 +25,7 @@ export default function PacientesCreate({ auth, dni }) {
         ocupacion: '',
         direccion: '',
         telefono: '',
+        telefonoE: '', // Nuevo campo para teléfono de emergencia
         email: '',
         procedencia: '',
         acompañante: '',
@@ -60,51 +62,6 @@ export default function PacientesCreate({ auth, dni }) {
             fileInputRef.current.value = '';
         }
     };
-
-    // Manejar cambio de documentos adjuntos
-    const handleDocumentosChange = (e) => {
-        const files = Array.from(e.target.files);
-        
-        // Validar cantidad máxima (5 documentos)
-        if (files.length + documentos.length > 5) {
-            alert('Solo puedes subir un máximo de 5 documentos');
-            return;
-        }
-
-        const newDocumentos = files.map(file => {
-            // Validar tamaño máximo por documento (5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                alert(`El documento ${file.name} supera el límite de 5MB`);
-                return null;
-            }
-            return file;
-        }).filter(Boolean); // Filtrar los documentos que pasaron la validación
-
-        // Crear previsualizaciones para imágenes
-        const newPreviews = newDocumentos.map(file => ({
-            file,
-            preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
-            name: file.name
-        }));
-
-        setData('documentos', [...documentos, ...newDocumentos]);
-        setDocumentos([...documentos, ...newDocumentos]);
-        setDocumentosPreview([...documentosPreview, ...newPreviews]);
-    };
-
-    // Eliminar documento adjunto
-    const removeDocumento = (index) => {
-        const updatedDocumentos = [...documentos];
-        updatedDocumentos.splice(index, 1);
-
-        const updatedPreviews = [...documentosPreview];
-        updatedPreviews.splice(index, 1);
-
-        setData('documentos', updatedDocumentos);
-        setDocumentos(updatedDocumentos);
-        setDocumentosPreview(updatedPreviews);
-    };
-
 
     // Función para manejar el cambio de tipo de documento
     const handleTipoDocumentoChange = (e) => {
@@ -352,7 +309,7 @@ useEffect(() => {
                                             </div>
 
                                             <div className="mb-4">
-                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Tipo de Documento*</label>
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Tipo de Documento</label>
                                                 <select 
                                                     value={tipoDocumento}
                                                     onChange={handleTipoDocumentoChange}
@@ -368,7 +325,7 @@ useEffect(() => {
                                             <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">
                                                 {tipoDocumento === 'dni' ? 'DNI*' : 'Carnet de Extranjería*'}
                                             </label>
-                                            <input required
+                                            <input
                                                 type="text"
                                                 value={data.dni}
                                                 onChange={handleDocumentoChange}
@@ -468,7 +425,7 @@ useEffect(() => {
 
                                         <div className="mb-4">
                                             <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Domicilio*</label>
-                                            <input required
+                                            <input
                                                 type="text"
                                                 value={data.direccion}
                                                 onChange={(e) => setData('direccion', e.target.value)}
@@ -479,21 +436,37 @@ useEffect(() => {
                                     </div>
 
                                     <div className='flex flex-col'>
-                                        <div className="mb-4">
-                                            <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Teléfono/Celular*</label>
-                                            <input required
-                                                type="tel"                                                
-                                                value={data.telefono}
-                                                max={9999999999}
-                                                maxLength={10}
-                                                onChange={(e) => {
-                                                    if (e.target.value.length <= 10) {
-                                                        setData('telefono', e.target.value);
-                                                    }
-                                                }}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
-                                            />
-                                            {errors.telefono && <p className="text-xs sm:text-sm text-red-500">{errors.telefono}</p>}
+                                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4'>
+                                            <div >
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Teléfono*</label> 
+                                                <input required
+                                                    type="tel"                                                
+                                                    value={data.telefono}
+                                                    max={9999999999}
+                                                    maxLength={10}
+                                                    onChange={(e) => {
+                                                        if (e.target.value.length <= 10) {
+                                                            setData('telefono', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Teléfono Emergencia</label>
+                                                <input
+                                                    type="tel"                                                
+                                                    value={data.telefonoE}
+                                                    max={9999999999}
+                                                    maxLength={10}
+                                                    onChange={(e) => {
+                                                        if (e.target.value.length <= 10) {
+                                                            setData('telefonoE', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm sm:text-base"
+                                                />
+                                            </div>
                                         </div>
 
                                         <div className="mb-4">
@@ -533,7 +506,7 @@ useEffect(() => {
 
                                         <div className="mb-4">
                                             <label className="block text-xs sm:text-sm uppercase font-medium text-gray-700">Correo*</label>
-                                            <input required
+                                            <input
                                                 type="email"
                                                 value={data.email}
                                                 onChange={(e) => setData('email', e.target.value)}

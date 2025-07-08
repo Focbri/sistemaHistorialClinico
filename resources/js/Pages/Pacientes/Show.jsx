@@ -109,9 +109,15 @@ return (
                             </div>
 
                             <div className='space-y-3 sm:space-y-4'>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-                                    <p className="mt-1 text-gray-900">{paciente.telefono}</p>
+                                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4'>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                                        <p className="mt-1 text-gray-900">{paciente.telefono}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Teléfono de Emergencia</label>
+                                        <p className="mt-1 text-gray-900">{paciente.telefonoE}</p>
+                                    </div>
                                 </div>
 
                                 <div>

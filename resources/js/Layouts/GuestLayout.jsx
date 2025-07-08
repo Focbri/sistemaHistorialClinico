@@ -3,15 +3,13 @@ import { Link } from '@inertiajs/react';
 
 export default function GuestLayout({ children }) {
     return (
-        <div className="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0">
-            <div>
-                <Link href="/">
-                    <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
-                </Link>
-            </div>
-
-            <div className="mt-6 w-full overflow-hidden bg-[#7CDBFB] px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg">
-                {children}
+        <div className="relative flex flex-col items-center justify-center bg-gray-50 m-0 p-0 min-h-screen">            
+            {/* Contenedor principal que limita el ancho máximo */}
+            <div className="relative w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 ">
+                {/* Tarjeta contenedora */}
+                <div className="w-full overflow-hidden bg-white shadow-xl rounded-xl">
+                    {children}
+                </div>
             </div>
         </div>
     );

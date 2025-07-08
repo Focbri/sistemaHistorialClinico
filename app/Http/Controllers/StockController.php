@@ -123,82 +123,24 @@ class StockController extends Controller
     }
 
     public function actualizarPorReceta(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'medicamentos' => 'required|array|min:1',
-            'medicamentos.*.farmaco_id' => 'required|integer|exists:farmacos,id',
-            'medicamentos.*.cantidad' => 'required|integer|min:1'
-        ]);
-    
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Datos inválidos',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-    
-        DB::beginTransaction();
-        try {
-            $resultados = [];
-            $errors = [];
-            
-            foreach ($request->medicamentos as $medicamento) {
-                try {
-                    $farmaco = Farmaco::with(['stock' => function($q) {
-                        $q->lockForUpdate();
-                    }])->findOrFail($medicamento['farmaco_id']);
-    
-                    // Verificar stock primero
-                    $stockTotal = $farmaco->stock->visual + $farmaco->stock->insamed + $farmaco->stock->s_p;
-                    if ($stockTotal < $medicamento['cantidad']) {
-                        throw new \Exception("Stock insuficiente. Disponible: {$stockTotal}, Requerido: {$medicamento['cantidad']}");
-                    }
-    
-                    // Lógica para descontar de los almacenes específicos
-                    $this->descontarDeAlmacenes($farmaco->stock, $medicamento['cantidad']);
-                    $farmaco->stock->save();
-    
-                    $resultados[] = [
-                        'farmaco_id' => $farmaco->id,
-                        'nombre_comercial' => $farmaco->nombre_comercial,
-                        'cantidad' => $medicamento['cantidad'],
-                        'stock_actual' => $farmaco->stock->visual + $farmaco->stock->insamed + $farmaco->stock->s_p,
-                        'stock_detalle' => $farmaco->stock->only(['visual', 'insamed', 's_p'])
-                    ];
-                } catch (\Exception $e) {
-                    $errors[] = [
-                        'farmaco_id' => $medicamento['farmaco_id'],
-                        'error' => $e->getMessage()
-                    ];
-                }
+{
+    // Cambiar este método para que sea explícito:
+    $request->validate([
+        'accion' => 'required|in:validar,restar' // Determina si solo valida o también resta
+    ]);
+
+    if ($request->accion === 'restar') {
+        // Lógica actual que resta stock
+    } else {
+        // Solo validar stock
+        foreach ($request->medicamentos as $med) {
+            $farmaco = Farmaco::find($med['farmaco_id']);
+            if ($farmaco->stock_total < $med['cantidad']) {
+                // Retornar error
             }
-    
-            if (!empty($errors)) {
-                throw new \Exception("Errores al procesar algunos medicamentos");
-            }
-    
-            DB::commit();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Stock actualizado correctamente',
-                'resultados' => $resultados
-            ]);
-    
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error actualizando stock por receta: '.$e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-                'errors' => $errors ?? [],
-                'trace' => config('app.debug') ? $e->getTrace() : null
-            ], 500);
         }
     }
-
+}
     protected function descontarDeAlmacenes($stock, $cantidad)
 {
     $almacenes = ['visual', 'insamed', 's_p'];

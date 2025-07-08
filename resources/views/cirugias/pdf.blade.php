@@ -10,10 +10,10 @@
         }
         body { 
             font-family: 'Arial', sans-serif; 
-            line-height: 1.25;
+            line-height: 1.3;
             margin: 0;
             padding: 0 10px 60px;
-            font-size: 11pt;
+            font-size: 10pt; /* Tamaño base */
             color: #333;
         }
         .header { 
@@ -22,14 +22,14 @@
             padding-bottom: 5px;
         }
         .title { 
-            font-size: 14pt; 
+            font-size: 12pt; /* Título principal */
             font-weight: bold;
             margin: 0;
             color: #0066cc;
             text-align: center;
         }
         .section { 
-            margin-bottom: 8px; 
+            margin-bottom: 10px; 
         }
         .section-title { 
             font-weight: bold; 
@@ -38,18 +38,18 @@
             display: inline-block;
             margin-bottom: 8px;
             padding-bottom: 1px;
-            font-size: 12pt;
+            font-size: 11pt; /* Títulos de sección */
             margin-top: 10px;
         }
         table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin: 4px 0;
-            font-size: 10pt;
+            margin: 5px 0;
+            font-size: 9.5pt; /* Tablas más compactas */
         }
         th, td { 
             border: 1px solid #ddd; 
-            padding: 6px 5px; 
+            padding: 5px; 
             text-align: left; 
             vertical-align: top;
         }
@@ -58,6 +58,7 @@
             font-weight: bold;
             color: #0066cc;
             vertical-align: middle;
+            font-size: 9.5pt;
         }
         .footer-info {
             position: fixed;
@@ -67,35 +68,113 @@
             padding: 6px 0;
             background-color: #f8f8f8;
             border-top: 1px solid #ddd;
-            font-size: 9pt;
+            font-size: 8.5pt; /* Footer más pequeño */
             text-align: center;
         }
         .signature {
-            margin-top: 12px;
+            margin-top: 80px;
             text-align: right;
-        }
-        .compact-text {
-            font-size: 10pt;
-            line-height: 1.3;
-            padding: 5px;
-        }
-        .no-border {
-            border: none !important;
-        }
-        .logo {
-            height: 50px;
         }
         .text-box {
             border: 1px solid #ddd;
             border-radius: 3px;
-            padding: 6px;
-            min-height: 80px;
-            background-color: #f9f9f9;
+            padding: 8px;
+            min-height: 200px;
+            font-size: 9.5pt; /* Texto contenido */
+            line-height: 1.4;
+        }
+        .text-box-h {
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 8px;
+            font-size: 9.5pt; /* Texto contenido */
+            line-height: 1.4;
+        }
+        .logo {
+            height: 50px;
         }
         .highlight {
-            background-color: #fff;;
+            background-color: #f0f8ff;
             padding: 2px 4px;
             border-radius: 2px;
+            border: 1px solid #d0e0f0;
+            font-size: 9.5pt;
+        }
+        .data-label {
+            font-weight: bold;
+            color: #555;
+            font-size: 9.5pt;
+        }
+        .surgical-info {
+            font-size: 9.5pt;
+        }
+        .signature-line {
+            border-top: 1px solid #0066cc;
+            width: 250px;
+            margin-left: auto;
+        }
+        .signature-name {
+            font-size: 9.5pt;
+            color: #666;
+            margin: 3px 0 0 0;
+        }
+        .signature-title {
+            font-size: 8.5pt;
+            color: #999;
+            margin: 0;
+        }
+        
+        /* Estructuras tipo flexbox compatibles con dompdf */
+        .flex-container {
+            display: table;
+            width: 100%;
+        }
+        .flex-item {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .left-align {
+            text-align: left;
+        }
+        .right-align {
+            text-align: right;
+        }
+
+
+         .patient-data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .patient-data-table td {
+            padding: 3px 0;
+            vertical-align: top;
+            border: none;
+        }
+        .patient-data-row {
+            display: table;
+            width: 100%;
+        }
+        .patient-data-label {
+            width: 12%;
+            font-weight: bold;
+            color: #555;
+            font-size: 9.5pt;
+            display: table-cell;
+        }
+        .patient-data-value {
+            width: 38%;
+            font-size: 9.5pt;
+            display: table-cell;
+        }
+        
+        @media print {
+            body {
+                padding: 0 10px 60px;
+            }
+            .footer-info {
+                position: fixed;
+                bottom: 0;
+            }
         }
     </style>
 </head>
@@ -110,7 +189,7 @@
                 <td style="width: 50%; text-align: center; border: none; vertical-align: middle;">
                     <h1 class="title">INFORME OPERATORIO</h1>
                 </td>
-                <td style="width: 25%; text-align: right; border: none; vertical-align: middle; font-size: 10pt; background-color: #fff;">
+                <td style="width: 25%; text-align: right; border: none; vertical-align: middle;">
                     <span class="highlight">Fecha: {{ \Carbon\Carbon::parse($cirugia->created_at)->format('d/m/Y') }}</span>
                 </td>
             </tr>
@@ -118,35 +197,57 @@
     </div>
 
     <!-- Información del paciente -->
+    <!-- Información del paciente - Versión corregida -->
     <div class="section">
-        <div class="section-title">Datos del Paciente</div>
-        <table>
+        <table class="patient-data-table">
+            <!-- Fila 1: Paciente y H. Clínica -->
             <tr>
-                <td style="width: 15%; border: none;"><strong>Paciente:</strong></td>
-                <td style="width: 35%; border: none;">{{ $cirugia->paciente->apellido_paterno }} {{ $cirugia->paciente->apellido_materno }}, {{ $cirugia->paciente->nombres }}</td>
-                <td style="width: 15%; border: none;"><strong>H. Clínica:</strong></td>
-                <td style="width: 35%; border: none;">{{ $cirugia->codigo_historial }}</td>
+                <td>
+                    <div class="patient-data-row">
+                        <span class="patient-data-label">Paciente:</span>
+                        <span class="patient-data-value">{{ $cirugia->paciente->apellido_paterno }} {{ $cirugia->paciente->apellido_materno }}, {{ $cirugia->paciente->nombres }}</span>
+                        <span class="patient-data-label">H. Clínica:</span>
+                        <span class="patient-data-value">{{ $cirugia->codigo_historial }}</span>
+                    </div>
+                </td>
+            </tr>
+            <!-- Fila 2: Edad y DNI -->
+            <tr>
+                <td>
+                    <div class="patient-data-row">
+                        <span class="patient-data-label">Edad:</span>
+                        <span class="patient-data-value">{{ $cirugia->paciente->edad }} años</span>
+                        <span class="patient-data-label">DNI:</span>
+                        <span class="patient-data-value">{{ $cirugia->paciente->dni }}</span>
+                    </div>
+                </td>
             </tr>
         </table>
     </div>
 
     <!-- Datos de la cirugía -->
     <div class="section">
-        <div class="section-title">Datos Quirúrgicos</div>
+        <div class="flex-container">
+            <div class="flex-item left-align">
+                <div class="section-title">Datos Quirúrgicos</div>
+            </div>
+            <div class="flex-item right-align">
+                <span class="highlight">{{ date('d/m/Y', strtotime($cirugia->fecha_cirugia)) }}</span>
+                <span style="margin: 0 5px;">|</span>
+                <span class="highlight">{{ date('H:i', strtotime($cirugia->hora_inicio)) }} - {{ date('H:i', strtotime($cirugia->hora_fin)) }}</span>
+            </div>
+        </div>
+        
         <table class="table-header">
             <tr>
-                <th style="width: 15%;">Fecha</th>
-                <th style="width: 20%;">Horario</th>
-                <th style="width: 25%;">Procedimiento</th>
-                <th style="width: 20%;">Diagnóstico Pre-operatorio</th>
-                <th style="width: 20%;">Diagnóstico Post-operatorio</th>
+                <th style="width: 30%;">Cirugía</th>
+                <th style="width: 35%;">Diagnóstico Pre-operatorio</th>
+                <th style="width: 35%;">Diagnóstico Post-operatorio</th>
             </tr>
             <tr>
-                <td>{{ date('d/m/Y', strtotime($cirugia->fecha_cirugia)) }}</td>
-                <td>{{ date('H:i', strtotime($cirugia->hora_inicio)) }} - {{ date('H:i', strtotime($cirugia->hora_fin)) }}</td>
-                <td>{{ $cirugia->cirugia }}</td>
-                <td>{{ $cirugia->diagnostico_preoperatorio }}</td>
-                <td>{{ $cirugia->diagnostico_postoperatorio ?? 'N/A' }}</td>
+                <td class="surgical-info">{{ $cirugia->cirugia }}</td>
+                <td class="surgical-info">{{ $cirugia->diagnostico_preoperatorio }}</td>
+                <td class="surgical-info">{{ $cirugia->diagnostico_postoperatorio ?? 'N/A' }}</td>
             </tr>
         </table>
     </div>
@@ -163,19 +264,19 @@
             </tr>
             <tr>
                 <td><strong>Cirujano Principal</strong></td>
-                <td>{{ $cirugia->cirujano_principal }}</td>
+                <td class="surgical-info">{{ $cirugia->cirujano_principal }}</td>
                 <td><strong>Anestesista</strong></td>
-                <td>{{ $cirugia->anestesiologo }}</td>
+                <td class="surgical-info">{{ $cirugia->anestesiologo }}</td>
             </tr>
             <tr>
                 <td><strong>Cirujano Ayudante</strong></td>
-                <td>{{ $cirugia->cirujano_ayudante ?? 'N/A' }}</td>
+                <td class="surgical-info">{{ $cirugia->cirujano_ayudante ?? 'N/A' }}</td>
                 <td><strong>Tipo Anestesia</strong></td>
-                <td>{{ $cirugia->tipo_anestesia ?? 'N/A' }}</td>
+                <td class="surgical-info">{{ $cirugia->tipo_anestesia ?? 'N/A' }}</td>
             </tr>
             @if(!empty($personalEnfermeria))
             <tr>
-                <td colspan="4">
+                <td colspan="4" class="surgical-info">
                     <strong style="margin-right: 4px;">Personal de Enfermería:</strong> 
                     @foreach($personalEnfermeria as $enfermero)
                     {{ $enfermero }} &nbsp;
@@ -188,29 +289,22 @@
 
     <!-- Hallazgos y procedimiento -->
     <div class="section">
-        <table class="no-border">
-            <tr>
-                <td style="width: 50%; vertical-align: top; padding-right: 5px; border: none;">
-                    <div class="section-title">Hallazgos</div>
-                    <div class="text-box compact-text">
-                        {{ $cirugia->hallazgos }}
-                    </div>
-                </td>
-                <td style="width: 50%; vertical-align: top; padding-left: 5px; border: none;">
-                    <div class="section-title">Procedimiento</div>
-                    <div class="text-box compact-text">
-                        {{ $cirugia->procedimiento }}
-                    </div>
-                </td>
-            </tr>
-        </table>
+        <div class="section-title">Hallazgos</div>
+        <div class="text-box-h">
+            {{ $cirugia->hallazgos }}
+        </div>
+        
+        <div class="section-title">Procedimiento</div>
+        <div class="text-box">
+            {{ $cirugia->procedimiento }}
+        </div>
     </div>
 
     <!-- Firma -->
-    <div class="signature" style="margin-top: 96px;">
-        <div style="border-top: 1px solid #0066cc; width: 250px; margin-left: auto;"></div>
-        <p style="margin: 3px 0 0 0; font-size: 10pt; color: #666;">Lic. {{ $cirugia->cirujano_principal }}</p>
-        <p style="margin: 0; font-size: 9pt; color: #999;">Médico Cirujano</p>
+    <div class="signature">
+        <div class="signature-line"></div>
+        <p class="signature-name">Lic. {{ $cirugia->cirujano_principal }}</p>
+        <p class="signature-title">Médico Cirujano</p>
     </div>
 
     <!-- Información de contacto (footer) -->

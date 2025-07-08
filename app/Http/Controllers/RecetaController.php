@@ -69,40 +69,36 @@ class RecetaController extends Controller
         $receta = Receta::create($recetaData);
 
         // Procesar medicamentos solo si existen
-        $erroresStock = [];
-        if (!empty($validated['medicamentos'])) {
-            foreach ($validated['medicamentos'] as $medicamento) {
-                $medData = [
-                    'receta_id' => $receta->id,
-                    'nombre_comercial' => $medicamento['nombre_comercial'],
-                    'cantidad' => $medicamento['cantidad'],
-                    'dosis' => $medicamento['dosis'],
-                    'frecuencia' => $medicamento['frecuencia'],
-                    'duracion' => $medicamento['duracion'],
-                    'es_manual' => empty($medicamento['farmaco_id'])
-                ];
+        // Procesar medicamentos solo si existen
+    $erroresStock = [];
+    if (!empty($validated['medicamentos'])) {
+        foreach ($validated['medicamentos'] as $medicamento) {
+            $medData = [
+                'receta_id' => $receta->id,
+                'nombre_comercial' => $medicamento['nombre_comercial'],
+                'cantidad' => $medicamento['cantidad'],
+                'dosis' => $medicamento['dosis'],
+                'frecuencia' => $medicamento['frecuencia'],
+                'duracion' => $medicamento['duracion'],
+                'es_manual' => empty($medicamento['farmaco_id'])
+            ];
 
-                if (!empty($medicamento['farmaco_id'])) {
-                    $farmaco = Farmaco::with('stock')->find($medicamento['farmaco_id']);
-                    
-                    if (!$farmaco) {
-                        $erroresStock[] = "Medicamento no encontrado: {$medicamento['nombre_comercial']}";
-                        continue;
-                    }
+            if (!empty($medicamento['farmaco_id'])) {
+                $farmaco = Farmaco::with('stock')->find($medicamento['farmaco_id']);
+                
+                if (!$farmaco) {
+                    $erroresStock[] = "Medicamento no encontrado: {$medicamento['nombre_comercial']}";
+                    continue;
+                }
 
-                    $stockTotal = $farmaco->stock_disponible;
-                    if ($stockTotal < $medicamento['cantidad']) {
-                        $erroresStock[] = "Stock insuficiente para {$farmaco->nombre_comercial} (Stock: {$stockTotal}, Requerido: {$medicamento['cantidad']})";
-                        continue;
-                    }
-                    
-                    $medData['farmaco_id'] = $medicamento['farmaco_id'];
-                    
-                    // Actualizar stock
-                    if (!$this->actualizarStock($farmaco, $medicamento['cantidad'])) {
-                        $erroresStock[] = "Error al actualizar stock para {$farmaco->nombre_comercial}";
-                        continue;
-                    }
+                // Solo validar stock, no restar
+                $stockTotal = $farmaco->stock_disponible;
+                if ($stockTotal < $medicamento['cantidad']) {
+                    $erroresStock[] = "Stock insuficiente para {$farmaco->nombre_comercial} (Stock: {$stockTotal}, Requerido: {$medicamento['cantidad']})";
+                    continue;
+                }
+                
+                $medData['farmaco_id'] = $medicamento['farmaco_id'];                    
                 }
 
                 MedicamentoReceta::create($medData);

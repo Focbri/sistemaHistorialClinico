@@ -514,21 +514,9 @@ export default function ConsultasShow({ auth, consulta }) {
                                                 <h4 className="text-lg font-semibold mb-4">Motivo de Consulta</h4>
                                                 <div className="space-y-4">
                                                     <div>
-                                                        <label className="block text-sm font-medium text-gray-700">Inicio:</label>
-                                                        <p className="mt-1 p-2 bg-gray-50 rounded">{consulta.motivo_consulta_inicio || 'No especificado'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700">Signos:</label>
-                                                        <p className="mt-1 p-2 bg-gray-50 rounded">{consulta.motivo_consulta_signos || 'No especificado'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700">Enfermedad:</label>
-                                                        <p className="mt-1 p-2 bg-gray-50 rounded">{consulta.motivo_consulta_enfermedad || 'No especificado'}</p>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700">Otros:</label>
-                                                        <p className="mt-1 p-2 bg-gray-50 rounded">{consulta.motivo_consulta_otros || 'No especificado'}</p>
-                                                    </div>
+                                                        <label className="block text-sm font-medium text-gray-700">Motivo de la Consulta</label>
+                                                        <p className="mt-1 p-2 bg-gray-50 rounded">{consulta.motivo_consulta || 'No especificado'}</p>
+                                                    </div>                                                    
                                                 </div>
                                             </div>
                                         )}

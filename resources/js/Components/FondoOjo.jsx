@@ -470,24 +470,14 @@ const escalarCoordenadasParaPDF = (x, y) => {
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">LOCS tres OD</label>
+                        <label className="block text-sm font-medium text-gray-700">LOCS III OD</label>
                         <input
                             type="text"
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             value={data.f_o_locs_tres_od || ''}
                             onChange={(e) => safeSetData('f_o_locs_tres_od', e.target.value)}
                         />
-                    </div>
-                    
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Fundoscopia OD</label>
-                        <textarea
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            rows={3}
-                            value={data.f_o_fundoscopia_od || ''}
-                            onChange={(e) => safeSetData('f_o_fundoscopia_od', e.target.value)}
-                        />
-                    </div>
+                    </div>                
                 </div>
                 
                 <div className="space-y-4">
@@ -502,7 +492,7 @@ const escalarCoordenadasParaPDF = (x, y) => {
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">LOCS tres OI</label>
+                        <label className="block text-sm font-medium text-gray-700">LOCS III OI</label>
                         <input
                             type="text"
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -510,39 +500,6 @@ const escalarCoordenadasParaPDF = (x, y) => {
                             onChange={(e) => safeSetData('f_o_locs_tres_oi', e.target.value)}
                         />
                     </div>
-                    
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Fundoscopia OI</label>
-                        <textarea
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            rows={3}
-                            value={data.f_o_fundoscopia_oi || ''}
-                            onChange={(e) => safeSetData('f_o_fundoscopia_oi', e.target.value)}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Campos de conclusión y plan */}
-            <div className="w-full space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Conclusión</label>
-                    <textarea
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        rows={3}
-                        value={data.f_o_conclusion || ''}
-                        onChange={(e) => safeSetData('f_o_conclusion', e.target.value)}
-                    />
-                </div>
-                
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Plan</label>
-                    <textarea
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        rows={3}
-                        value={data.f_o_plan || ''}
-                        onChange={(e) => safeSetData('f_o_plan', e.target.value)}
-                    />
                 </div>
             </div>
 

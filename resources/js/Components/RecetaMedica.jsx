@@ -113,82 +113,76 @@ const [manualFarmaco, setManualFarmaco] = useState({
     setFarmacoError(null);
   };
 
-  // Búsqueda de fármacos
+  // Búsqueda de fármacos **********
   const searchFarmacos = useCallback(async (term) => {
-    if (!term?.trim()) {
-      setFarmacoResults([]);
-      return;
-    }
-  
-    setIsSearchingFarmaco(true);
-    setFarmacoError(null);
-  
-    try {
-      const response = await axios.get('/farmacos/buscar', {
-        params: { 
-          search: term || '',
-          with_stock: 1 // Enviar como booleano directo
-        },
-        paramsSerializer: params => {
-          // Serializador personalizado para manejar booleanos
-          return Object.entries(params)
-            .map(([key, value]) => {
-              // Convertir booleanos explícitamente
-              if (typeof value === 'boolean') {
-                return `${key}=${value ? 'true' : 'false'}`;
-              }
-              return `${key}=${encodeURIComponent(value)}`;
-            })
-            .join('&');
-        }
-      });
-  
-      console.log('Respuesta del servidor:', response.data);
-  
-      if (!response.data || !Array.isArray(response.data.data)) {
-        throw new Error('Formato de respuesta inesperado');
-      }
-  
-      const farmacosData = response.data.data;
-      
-      const farmacosConStock = farmacosData.map((farmaco) => {
-        const cantidadEnReceta = medicamentos
-        .filter(m => m.farmaco_id === farmaco.id)
-        .reduce((sum, m) => sum + m.cantidad, 0);
+  if (!term?.trim()) {
+    setFarmacoResults([]);
+    return;
+  }
 
-        const stockTotal = farmaco.stock?.total || 
-                         (farmaco.stock?.visual || 0) + 
-                         (farmaco.stock?.insamed || 0) + 
-                         (farmaco.stock?.s_p || 0);
-  
-        return {
-          id: farmaco.id,
-          farmaco_id: farmaco.id,  // Asegurar que farmaco_id está presente
-          nombre_comercial: farmaco.nombre_comercial,
-          componente_activo: farmaco.componente_activo,
-          presentacion: farmaco.presentacion,
-          concentracion: farmaco.concentracion,
-          stock_total: stockTotal,
-          stock_disponible: stockTotal - cantidadEnReceta,
-          stock_detalle: farmaco.stock || {
-            visual: 0,
-            insamed: 0,
-            s_p: 0
-          }
-        };
-      });
-  
-      setFarmacoResults(farmacosConStock);
-    } catch (err) {
-      console.error('Error en búsqueda de fármacos:', {
-        error: err,
-        response: err.response?.data
-      });
-      setFarmacoError(err.response?.data?.message || 'Error al buscar fármacos');
-    } finally {
-      setIsSearchingFarmaco(false);
+  setIsSearchingFarmaco(true);
+  setFarmacoError(null);
+
+  try {
+    const response = await axios.get('/farmacos/buscar', {
+      params: { 
+        search: term || '',
+        with_stock: 1
+      },
+      paramsSerializer: params => {
+        return Object.entries(params)
+          .map(([key, value]) => {
+            if (typeof value === 'boolean') {
+              return `${key}=${value ? 'true' : 'false'}`;
+            }
+            return `${key}=${encodeURIComponent(value)}`;
+          })
+          .join('&');
+      }
+    });
+
+    console.log('Respuesta del servidor:', response.data);
+
+    if (!response.data || !Array.isArray(response.data.data)) {
+      throw new Error('Formato de respuesta inesperado');
     }
-  }, [medicamentos]);
+
+    const farmacosData = response.data.data;
+    
+    const farmacosConStock = farmacosData.map((farmaco) => {
+      const stockTotal = farmaco.stock?.total || 
+                       (farmaco.stock?.visual || 0) + 
+                       (farmaco.stock?.insamed || 0) + 
+                       (farmaco.stock?.s_p || 0);
+
+      return {
+        id: farmaco.id,
+        farmaco_id: farmaco.id,
+        nombre_comercial: farmaco.nombre_comercial,
+        componente_activo: farmaco.componente_activo,
+        presentacion: farmaco.presentacion,
+        concentracion: farmaco.concentracion,
+        stock_total: stockTotal,
+        stock_disponible: stockTotal, // Mostrar el stock total sin restar
+        stock_detalle: farmaco.stock || {
+          visual: 0,
+          insamed: 0,
+          s_p: 0
+        }
+      };
+    });
+
+    setFarmacoResults(farmacosConStock);
+  } catch (err) {
+    console.error('Error en búsqueda de fármacos:', {
+      error: err,
+      response: err.response?.data
+    });
+    setFarmacoError(err.response?.data?.message || 'Error al buscar fármacos');
+  } finally {
+    setIsSearchingFarmaco(false);
+  }
+}, []);
 
   // Manejar selección de término CIE-10
   const handleSelectCie10Term = (term) => {
@@ -244,95 +238,86 @@ const [manualFarmaco, setManualFarmaco] = useState({
     updateReceta({ cie10_codes: newCodes });
   };
 
-  // Corregir handleUpdateCantidad
+  // Corregir handleUpdateCantidad  *********
 const handleUpdateCantidad = (index, e) => {
-    const value = e.target.value;
-    const cantidad = parseInt(value) || 0;
-    
-    if (cantidad < 1) {
-      setFarmacoError('La cantidad debe ser al menos 1');
+  const value = e.target.value;
+  const cantidad = parseInt(value) || 0;
+  
+  if (cantidad < 1) {
+    setFarmacoError('La cantidad debe ser al menos 1');
+    return;
+  }
+
+  const nuevosMedicamentos = [...medicamentos];
+  const medicamento = nuevosMedicamentos[index];
+  
+  if (medicamento.es_manual) {
+    nuevosMedicamentos[index] = {
+      ...medicamento,
+      cantidad: cantidad
+    };
+  } 
+  else {
+    // Validación de stock contra el total (sin considerar otras recetas)
+    if (cantidad > medicamento.stock_total) {
+      setFarmacoError(`Stock insuficiente para ${medicamento.nombre_comercial}`);
       return;
     }
-  
-    const nuevosMedicamentos = [...medicamentos];
-    const medicamento = nuevosMedicamentos[index];
-    
-    if (medicamento.es_manual) {
-      nuevosMedicamentos[index] = {
-        ...medicamento,
-        cantidad: cantidad
-      };
-    } 
-    else {
-      // Validación de stock solo para fármacos no manuales
-      const stockDisponible = medicamento.stock_total - 
-        medicamentos.reduce((sum, m, i) => 
-          i !== index && m.farmaco_id === medicamento.farmaco_id ? sum + m.cantidad : sum, 0);
-      
-      if (cantidad > stockDisponible) {
-        setFarmacoError(`Stock insuficiente para ${medicamento.nombre_comercial}`);
-        return;
-      }
-  
+
     nuevosMedicamentos[index] = {
       ...medicamento,
       cantidad: cantidad,
-      stock_disponible: stockDisponible - cantidad
+      stock_disponible: medicamento.stock_total // Seguir mostrando el total
     };
   }
     
-    setMedicamentos(nuevosMedicamentos);
-    setFarmacoError(null);
-    updateReceta({ medicamentos: nuevosMedicamentos });
-    
-    if (farmacoSearchTerm) {
-      searchFarmacos(farmacoSearchTerm);
-    }
+  setMedicamentos(nuevosMedicamentos);
+  setFarmacoError(null);
+  updateReceta({ medicamentos: nuevosMedicamentos });
+  
+  if (farmacoSearchTerm) {
+    searchFarmacos(farmacoSearchTerm);
+  }
 };
 
 
-  // Corregir handleAddMedicamento
+  // Corregir handleAddMedicamento ************
  const handleAddMedicamento = (farmaco) => {
-    try {
-      const cantidadEnReceta = medicamentos
-        .filter(m => m.farmaco_id === farmaco.id)
-        .reduce((sum, m) => sum + m.cantidad, 0);
-      
-      const stockDisponible = farmaco.stock_total - cantidadEnReceta;
-      
-      if (stockDisponible < 1) {
-        setFarmacoError(`Stock insuficiente para ${farmaco.nombre_comercial}`);
-        return;
-      }
-  
-      const nuevoMedicamento = {
-        id: farmaco.id,
-        farmaco_id: farmaco.id,
-        nombre_comercial: farmaco.nombre_comercial,
-        componente_activo: farmaco.componente_activo,
-        presentacion: farmaco.presentacion,
-        concentracion: farmaco.concentracion,
-        cantidad: 1,
-        dosis: '',
-        frecuencia: '',
-        duracion: '',
-        stock_total: farmaco.stock_total,
-        stock_disponible: stockDisponible - 1,
-        stock_detalle: farmaco.stock_detalle
-      };
-  
-      const nuevosMedicamentos = [...medicamentos, nuevoMedicamento];
-      setMedicamentos(nuevosMedicamentos);
-      updateReceta({ medicamentos: nuevosMedicamentos });
-      
-      setFarmacoSearchTerm('');
-      setFarmacoResults([]);
-      setFarmacoError(null);
-    } catch (err) {
-      console.error('Error al agregar medicamento:', err);
-      setFarmacoError('Error al agregar medicamento. Intente nuevamente.');
+  try {
+    // Validación de stock sin restar lo ya en receta
+    if (farmaco.stock_total < 1) {
+      setFarmacoError(`Stock insuficiente para ${farmaco.nombre_comercial}`);
+      return;
     }
-  };
+
+    const nuevoMedicamento = {
+      id: farmaco.id,
+      farmaco_id: farmaco.id,
+      nombre_comercial: farmaco.nombre_comercial,
+      componente_activo: farmaco.componente_activo,
+      presentacion: farmaco.presentacion,
+      concentracion: farmaco.concentracion,
+      cantidad: 1,
+      dosis: '',
+      frecuencia: '',
+      duracion: '',
+      stock_total: farmaco.stock_total,
+      stock_disponible: farmaco.stock_total, // Mantener el stock total
+      stock_detalle: farmaco.stock_detalle
+    };
+
+    const nuevosMedicamentos = [...medicamentos, nuevoMedicamento];
+    setMedicamentos(nuevosMedicamentos);
+    updateReceta({ medicamentos: nuevosMedicamentos });
+    
+    setFarmacoSearchTerm('');
+    setFarmacoResults([]);
+    setFarmacoError(null);
+  } catch (err) {
+    console.error('Error al agregar medicamento:', err);
+    setFarmacoError('Error al agregar medicamento. Intente nuevamente.');
+  }
+};
 
   // Actualizar detalles de medicamento
 const handleUpdateMedicamento = (index, field, value) => {
@@ -391,36 +376,20 @@ const handleUpdateMedicamento = (index, field, value) => {
     }
   };
 
-  // En RecetaMedica.jsx
-const updateReceta = useCallback((partialData = {}) => {
-  const newRecetaData = {
-    paciente_id: pacienteId,
-    medico_id: medicoId,
-    consulta_id: consultaId,
-    cie10_codes: partialData.cie10_codes !== undefined ? partialData.cie10_codes : cie10Codes,
-    medicamentos: partialData.medicamentos !== undefined ? 
-      partialData.medicamentos : 
-      medicamentos.map(m => ({
-        farmaco_id: m.farmaco_id,
-        nombre_comercial: m.nombre_comercial,
-        componente_activo: m.componente_activo || null,
-        presentacion: m.presentacion || null,
-        concentracion: m.concentracion || null,
-        cantidad: m.cantidad,
-        dosis: m.dosis,
-        frecuencia: m.frecuencia,
-        duracion: m.duracion,
-        stock_total: m.stock_total || 0,
-        stock_disponible: m.stock_disponible || 0,
-        es_manual: m.es_manual || false
-      })),
-    indicaciones_generales: partialData.indicaciones_generales !== undefined ? 
-      partialData.indicaciones_generales : indicacionesGenerales,
-    fecha: new Date().toISOString().split('T')[0]
-  };
+  // En RecetaMedica.jsx *******
+ const updateReceta = useCallback((partialData = {}) => {
+    const newRecetaData = {
+      paciente_id: pacienteId,
+      medico_id: medicoId,
+      consulta_id: consultaId,
+      cie10_codes: partialData.cie10_codes || cie10Codes,
+      medicamentos: partialData.medicamentos || medicamentos,
+      indicaciones_generales: partialData.indicaciones_generales || indicacionesGenerales,
+      fecha: new Date().toISOString().split('T')[0]
+    };
 
-  onRecetaChange(newRecetaData);
-}, [pacienteId, medicoId, consultaId, cie10Codes, medicamentos, indicacionesGenerales, onRecetaChange]);
+    onRecetaChange(newRecetaData);
+  }, [pacienteId, medicoId, consultaId, cie10Codes, medicamentos, indicacionesGenerales, onRecetaChange]);
 
   // Efectos para búsquedas con debounce
 useEffect(() => {
@@ -691,18 +660,12 @@ useEffect(() => {
         </button>
           {/* Resultados de búsqueda de fármacos */}
           {farmacoResults.length > 0 && (
-          <ul className="border border-gray-200 rounded-md max-h-60 overflow-y-auto">
-            {farmacoResults.map((farmaco) => {
-              console.log("Renderizando fármaco:", farmaco); // Para depuración
-              return (
+            <ul className="border border-gray-200 rounded-md max-h-60 overflow-y-auto">
+              {farmacoResults.map((farmaco) => (
                 <li
                   key={`farmaco-${farmaco.id}`}
-                  onClick={() => farmaco.stock_disponible > 0 && handleAddMedicamento(farmaco)}
-                  className={`p-2 cursor-pointer ${
-                    farmaco.stock_disponible <= 0 
-                      ? 'bg-red-50 text-red-500 cursor-not-allowed' 
-                      : 'hover:bg-blue-50'
-                  }`}
+                  onClick={() => handleAddMedicamento(farmaco)}
+                  className="p-2 hover:bg-blue-50 cursor-pointer"
                 >
                   <div className="font-medium">{farmaco.nombre_comercial}</div>
                   <div className="text-sm">
@@ -715,15 +678,11 @@ useEffect(() => {
                       Insamed: {farmaco.stock_detalle?.insamed || 0} | 
                       S&P: {farmaco.stock_detalle?.s_p || 0}
                     </div>
-                    <div className={farmaco.stock_disponible <= 0 ? 'text-red-600 font-bold' : 'text-green-600'}>
-                      Disponible para receta: {farmaco.stock_disponible}
-                    </div>
                   </div>
                 </li>
-              );
-            })}
-          </ul>
-        )}
+              ))}
+            </ul>
+          )}
 
           {/* Lista de medicamentos en receta */}
           <div className="mt-3">
@@ -741,8 +700,8 @@ useEffect(() => {
                         {/* Solo mostrar stock si NO es manual */}
                         {!med.es_manual && (
                           <p className="text-xs mt-1">
-                            <span className={med.cantidad > med.stock_disponible ? 'text-red-600 font-bold' : 'text-green-600'}>
-                              Disponible después de receta: {med.stock_disponible}
+                            <span className="text-green-600">
+                              Stock total disponible: {med.stock_disponible}
                             </span>
                           </p>
                         )}

@@ -118,6 +118,7 @@
                     <td style="width: 30%;  vertical-align: top; border: none">
                         <p><strong style="text-transform: uppercase;">{{ $paciente['tipo_documento'] }}:</strong> {{ $paciente['dni'] ?? 'No especificado' }}</p>
                         <p><strong>Sexo:</strong> {{ $paciente['sexo'] ?? '' }}</p>
+                        <p><strong>Teléfono:</strong> {{ $paciente['telefono'] ?? 'No especificado' }}</p>
                     </td>
                 </tr>
             </table>
@@ -131,7 +132,7 @@
                         <p><strong>Domicilio:</strong> {{ $paciente['direccion'] ?? 'No especificado' }}</p>
                     </td>
                     <td style="width: 30%;  vertical-align: top; border: none">
-                        <p><strong>Teléfono:</strong> {{ $paciente['telefono'] ?? 'No especificado' }}</p>
+                        <p><strong>Teléfono de Emergencia:</strong> {{ $paciente['telefonoE'] ?? 'No especificado' }}</p>
                         <p><strong>Acompañante:</strong> {{ $paciente['acompañante'] ?? 'No especificado' }}</p>
                         <p><strong>Referido por:</strong> {{ $paciente['referido'] ?? 'No especificado' }}</p>
                         <p><strong>Email:</strong> {{ $paciente['email'] ?? 'No especificado' }}</p>
@@ -170,29 +171,8 @@
             <div class="section-title espacio-titulo">CIRUGIAS PREVIAS</div>
             <p class="texto-parrafo">{{ is_array($consulta['cirugias_previas']) ? implode(', ', $consulta['cirugias_previas']) : $consulta['cirugias_previas'] ?? '' }}</p>
 
-        </div>
-
-        <!-- Motivo de Consulta SOLO INICIO -->
-        <div class="section">
-            <div class="section-title">MOTIVO DE CONSULTA</div>
-            <table class="exam-table" width="100%"> 
-                <thead>
-                    <tr>
-                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Inicio</th>
-                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Signos</th>
-                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Enfermedad</th>
-                        <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Otros</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['motivo_consulta_inicio']) ? implode(', ', $consulta['motivo_consulta_inicio']) : $consulta['motivo_consulta_inicio'] ?? '' }}</p></td>
-                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['motivo_consulta_signos']) ? implode(', ', $consulta['motivo_consulta_signos']) : $consulta['motivo_consulta_signos'] ?? '' }}</p></td>
-                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['motivo_consulta_enfermedad']) ? implode(', ', $consulta['motivo_consulta_enfermedad']) : $consulta['motivo_consulta_enfermedad'] ?? '' }}</p></td>
-                        <td width="25%" style="border-color: #000;"><p>{{ is_array($consulta['motivo_consulta_otros']) ? implode(', ', $consulta['motivo_consulta_otros']) : $consulta['motivo_consulta_otros'] ?? '' }}</p></td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="section-title espacio-titulo">MOTIVO DE CONSULTA</div>
+            <p class="texto-parrafo">{{ is_array($consulta['motivo_consulta']) ? implode(', ', $consulta['motivo_consulta']) : $consulta['motivo_consulta'] ?? '' }}</p>
         </div>
     @endif
 
@@ -205,29 +185,6 @@
     @endif
 
     <!-- Examen Ocular (AMBOS) -->
-    @if(!empty($consulta['examen']) && 
-    (isset($consulta['examen']['examen_av_sc_od']) || 
-     isset($consulta['examen']['examen_av_cae_od']) ||
-     isset($consulta['examen']['examen_av_cc_od']) ||
-     isset($consulta['examen']['examen_av_sc_oi']) ||
-     isset($consulta['examen']['examen_av_cae_oi']) ||
-     isset($consulta['examen']['examen_av_cc_oi']) ||
-     isset($consulta['examen']['examen_pi_tipo']) ||
-     isset($consulta['examen']['examen_pi_od']) ||
-     isset($consulta['examen']['examen_pi_oi']) ||
-     isset($consulta['examen']['examen_ar_sph_od']) ||
-     isset($consulta['examen']['examen_ar_cyl_od']) ||
-     isset($consulta['examen']['examen_ar_ax_od']) ||
-     isset($consulta['examen']['examen_ar_sph_oi']) ||
-     isset($consulta['examen']['examen_ar_cyl_oi']) ||
-     isset($consulta['examen']['examen_ar_ax_oi']) ||
-     isset($consulta['examen']['examen_keratometria_qd1_od']) ||
-     isset($consulta['examen']['examen_keratometria_qd2_od']) ||
-     isset($consulta['examen']['examen_keratometria_eje_od']) ||
-     isset($consulta['examen']['examen_keratometria_qd1_oi']) ||
-     isset($consulta['examen']['examen_keratometria_qd2_oi']) ||
-     isset($consulta['examen']['examen_keratometria_eje_oi']))
-    )
     <div class="section">
         <div class="section-title">EXAMEN OCULAR</div>
              <!-- Primera parte del examen ocular -->
@@ -391,23 +348,22 @@
             </tr>
         </table>           
     </div>
-    @endif
     <div class="page-break"></div>
 
     <!-- BIOMICROSCOPIA (AMBOS) -->
     <div class="section">
-        <div class="section-title">BIOMICROSCOPIA</div>
+        <div class="section-title" style="margin-bottom: 0;">BIOMICROSCOPIA</div>
         <table class="exam-table"> 
             <thead>
                 <tr>
-                    <th style="border-color: #000; width: 30%; background-color: #f2f2f2;"></th>
-                    <th class="texto-centrado" style="border-color: #000; width: 35%; background-color: #f2f2f2;">OD</th>
-                    <th class="texto-centrado" style="border-color: #000; width: 35%; background-color: #f2f2f2;">OI</th>
+                    <th style="border-color: #000; width: 10%; background-color: #f2f2f2; font-size: 12px;"></th>
+                    <th class="texto-centrado" style="border-color: #000; width: 45%; background-color: #f2f2f2; font-size: 12px;">OD</th>
+                    <th class="texto-centrado" style="border-color: #000; width: 45%; background-color: #f2f2f2; font-size: 12px;">OI</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="border-color: #000;">Movimientos Oculares</td>
+                    <td style="border-color: #000;">Mov. O.</td>
                     <td style="border-color: #000;">
                         <p>{{ is_array($consulta['biomicroscopia_movoculares_od']) ? implode(', ', $consulta['biomicroscopia_movoculares_od']) : $consulta['biomicroscopia_movoculares_od'] }}</p>
                     </td>
@@ -443,7 +399,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td style="border-color: #000;">Cámara Anterior</td>
+                    <td style="border-color: #000;">Cam. Ant.</td>
                     <td style="border-color: #000;">
                         <p>{{ is_array($consulta['biomicroscopia_ca_od']) ? implode(', ', $consulta['biomicroscopia_ca_od']) : $consulta['biomicroscopia_ca_od'] }}</p>
                     </td>
@@ -475,102 +431,143 @@
 
     <!-- FONDO DE OJO (AMBOS) -->
     <div class="section">
-        <div class="section-title">FONDO DE OJO</div>   
-        
-        <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px; border: none;">
-            <tr style="border:none;">
-                <!-- Ojo Derecho -->
-                <td width="50%" align="center" valign="top" style="border: none;">
-                    <div style="position: relative; width: 200px; height: 200px; margin: 0 auto; border: none; overflow: hidden;">
-                        <img src="{{ public_path('img/fondo_ojo_derecho.png') }}" 
-                            style="width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" 
-                            alt="Ojo Derecho">
-                        
-                        @php
-                            $posiciones = [];
-                            if (!empty($consulta['fondo_ojo_posiciones'])) {
-                                $posiciones = is_array($consulta['fondo_ojo_posiciones']) 
-                                    ? $consulta['fondo_ojo_posiciones'] 
-                                    : @json_decode($consulta['fondo_ojo_posiciones'], true);
-                            }
-                            $colores = ['#0000FF', '#FF0000', '#00AA00', '#800080', '#FFA500'];
-                            $scaleFactor = 0.5;
-                        @endphp
-                        
-                        @if(is_array($posiciones))
-                            @for($i = 1; $i <= 5; $i++)
-                                @if(!empty($posiciones["OD_$i"]) && is_array($posiciones["OD_$i"]))
-                                    @php
-                                        $x = ($posiciones["OD_$i"]['x'] ?? 0) * $scaleFactor;
-                                        $y = ($posiciones["OD_$i"]['y'] ?? 0) * $scaleFactor;
-                                    @endphp
-                                    <div style="
-                                        position: absolute;
-                                        width: 8px;
-                                        height: 8px;
-                                        border-radius: 50%;
-                                        background-color: {{ $colores[$i-1] ?? '#000000' }};
-                                        left: {{ $x }}px;
-                                        top: {{ $y }}px;
-                                        transform: translate(-50%, -50%);
-                                        border: 1px solid white;
-                                        box-shadow: 0 0 2px rgba(0,0,0,0.5);
-                                    "></div>
-                                @endif
-                            @endfor
-                        @endif
-                    </div>
-                </td>
-                
-                <!-- Ojo Izquierdo -->
-                <td width="50%" align="center" valign="top" style="border: none;">
-                    <div style="position: relative; width: 200px; height: 200px; margin: 0 auto; border: 1px solid #f0f0f0; overflow: hidden;">
-                        <img src="{{ public_path('img/fondo_ojo_izquierdo.png') }}" 
-                            style="width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" 
-                            alt="Ojo Izquierdo">
+    <div class="section-title" style="margin-bottom: 0;">FONDO DE OJO</div>         
+    <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 0; border: none;">
+        <tr style="border:none;">
+            <!-- Ojo Derecho -->
+            <td width="40%" align="center" valign="top" style="border: none;">
+                <div style="position: relative; width: 200px; height: 200px; margin: 0 auto; border: none; overflow: hidden;">
+                    <img src="{{ public_path('img/fondo_ojo_derecho.png') }}" 
+                        style="width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" 
+                        alt="Ojo Derecho">
+                    
+                    @php
+                        $posiciones = [];
+                        if (!empty($consulta['fondo_ojo_posiciones'])) {
+                            $posiciones = is_array($consulta['fondo_ojo_posiciones']) 
+                                ? $consulta['fondo_ojo_posiciones'] 
+                                : @json_decode($consulta['fondo_ojo_posiciones'], true);
+                        }
+                        $colores = ['#0000FF', '#FF0000', '#00AA00', '#800080', '#FFA500'];
+                        $scaleFactor = 0.5;
+                    @endphp
+                    
+                    @if(is_array($posiciones))
+                        @for($i = 1; $i <= 5; $i++)
+                            @if(!empty($posiciones["OD_$i"]) && is_array($posiciones["OD_$i"]))
+                                @php
+                                    $x = ($posiciones["OD_$i"]['x'] ?? 0) * $scaleFactor;
+                                    $y = ($posiciones["OD_$i"]['y'] ?? 0) * $scaleFactor;
+                                @endphp
+                                <div style="
+                                    position: absolute;
+                                    width: 8px;
+                                    height: 8px;
+                                    border-radius: 50%;
+                                    background-color: {{ $colores[$i-1] ?? '#000000' }};
+                                    left: {{ $x }}px;
+                                    top: {{ $y }}px;
+                                    transform: translate(-50%, -50%);
+                                    border: 1px solid white;
+                                    box-shadow: 0 0 2px rgba(0,0,0,0.5);
+                                "></div>
+                            @endif
+                        @endfor
+                    @endif
+                </div>
+            </td>
+            
+            <!-- Leyenda entre las imágenes -->
+            <td width="20%" align="center" valign="middle" style="border: none; vertical-align: middle;">
+                <table style="border-collapse: collapse; width: 100%; margin: 0 auto; background-color: #f8f9fa; border: 1px solid #dee2e6;">
+                    <tr>
+                        <th style="border: 1px solid #dee2e6; padding: 6px; text-align: center; background-color: #e9ecef; font-size: 12px; font-weight: bold;">
+                            LEYENDA
+                        </th>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #dee2e6; padding: 5px;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 4px 2px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
+                                        <div style="background-color: #0000FF; width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle;"></div>
+                                        <span style="font-size: 11px;">Vítreo</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 2px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
+                                        <div style="background-color: #FF0000; width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle;"></div>
+                                        <span style="font-size: 11px;">Mácula</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 2px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
+                                        <div style="background-color: #00AA00; width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle;"></div>
+                                        <span style="font-size: 11px;">Retina Periférica</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 2px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
+                                        <div style="background-color: #800080; width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle;"></div>
+                                        <span style="font-size: 11px;">Disco Óptico</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 2px; vertical-align: middle;">
+                                        <div style="background-color: #FFA500; width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle;"></div>
+                                        <span style="font-size: 11px;">Vasos Sanguíneos</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            
+            <!-- Ojo Izquierdo -->
+            <td width="40%" align="center" valign="top" style="border: none;">
+                <div style="position: relative; width: 200px; height: 200px; margin: 0 auto; border: 1px solid #f0f0f0; overflow: hidden;">
+                    <img src="{{ public_path('img/fondo_ojo_izquierdo.png') }}" 
+                        style="width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" 
+                        alt="Ojo Izquierdo">
 
-                        @if(is_array($posiciones))
-                            @for($i = 1; $i <= 5; $i++)
-                                @if(!empty($posiciones["OI_$i"]) && is_array($posiciones["OI_$i"]))
-                                    @php
-                                        $x = ($posiciones["OI_$i"]['x'] ?? 0) * $scaleFactor;
-                                        $y = ($posiciones["OI_$i"]['y'] ?? 0) * $scaleFactor;
-                                    @endphp
-                                    <div style="
-                                        position: absolute;
-                                        width: 8px;
-                                        height: 8px;
-                                        border-radius: 50%;
-                                        background-color: {{ $colores[$i-1] ?? '#000000' }};
-                                        left: {{ $x }}px;
-                                        top: {{ $y }}px;
-                                        transform: translate(-50%, -50%);
-                                        border: 1px solid white;
-                                        box-shadow: 0 0 2px rgba(0,0,0,0.5);
-                                    "></div>
-                                @endif
-                            @endfor
-                        @endif
-                    </div>
-                </td>
-            </tr>
-        </table>
+                    @if(is_array($posiciones))
+                        @for($i = 1; $i <= 5; $i++)
+                            @if(!empty($posiciones["OI_$i"]) && is_array($posiciones["OI_$i"]))
+                                @php
+                                    $x = ($posiciones["OI_$i"]['x'] ?? 0) * $scaleFactor;
+                                    $y = ($posiciones["OI_$i"]['y'] ?? 0) * $scaleFactor;
+                                @endphp
+                                <div style="
+                                    position: absolute;
+                                    width: 8px;
+                                    height: 8px;
+                                    border-radius: 50%;
+                                    background-color: {{ $colores[$i-1] ?? '#000000' }};
+                                    left: {{ $x }}px;
+                                    top: {{ $y }}px;
+                                    transform: translate(-50%, -50%);
+                                    border: 1px solid white;
+                                    box-shadow: 0 0 2px rgba(0,0,0,0.5);
+                                "></div>
+                            @endif
+                        @endfor
+                    @endif
+                </div>
+            </td>
+        </tr>
+    </table>
         
         <!-- Tabla de resultados -->
-        <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+        <table style="width: 100%; border-collapse: collapse; margin: 2px 0;">
             <tr>
-                <th style="border: 1px solid #000; padding: 5px; text-align: center; background-color: #f2f2f2;">
-                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #0000FF; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px;"></div>Vítreo</span>
-                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #FF0000; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Mácula</span>
-                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #00AA00; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Retina Periférica</span>
-                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #800080; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Disco Óptico</span>
-                    <span style="display:inline-block; margin-right: 8px"><div style="background-color: #FFA500; width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right: 3px"></div>Vasos Sanguíneos</span>
+                <th style="border: 1px solid #000; padding: 5px; text-align: center; background-color: #f2f2f2;">            
                 </th>
                 <th style="border: 1px solid #000; padding: 5px; text-align: center; background-color: #f2f2f2;">OD</th>
                 <th style="border: 1px solid #000; padding: 5px; text-align: center; background-color: #f2f2f2;">OI</th>
             </tr>
             <tr>
-                <td style="border: 1px solid #000; padding: 5px;">Vítreo</td>
+                <td style="border: 1px solid #000; padding: 5px; width: 15%;">Vítreo</td>
                 <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_vitreo_od'] ?? '' }}</td>
                 <td style="border: 1px solid #000; padding: 5px;">{{ $consulta['fondo_ojo_vitreo_oi'] ?? '' }}</td>
             </tr>
@@ -599,11 +596,14 @@
         <table width="100%" cellspacing="0" cellpadding="0" style="border: none;">
             <tr style="border: none;">
                 <!-- Primera tabla -->
-                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
+                <td valign="top" style="padding-right: 15px; border: none;">
                     <table class="exam-table" width="100%" style="border: none;">
                         <thead>
                             <tr>
-                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Dilatación Pupilar OD</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2; width: 25%;">Dilatación Pupilar OD</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2; width: 25%;">Dilatación Pupilar OI</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2; width: 25%;">LOCS III OD</th>
+                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2; width: 25%;">LOCS III OI</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -611,67 +611,12 @@
                                 <td style="border-color: #000;">
                                     <p>{{ is_array($consulta['f_o_dilat_pup_od']) ? implode(', ', $consulta['f_o_dilat_pup_od']) : $consulta['f_o_dilat_pup_od'] ?? '' }}</p>
                                 </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-                
-                <!-- Espacio entre tablas -->
-                <td width="4%" style="border: none;"></td>
-                
-                <!-- Segunda tabla -->
-                <td width="48%" valign="top" style="padding-left: 15px; border: none;">
-                    <table class="exam-table" width="100%" style="border: none;"> 
-                        <thead>
-                            <tr>
-                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Dilatación Pupilar OI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
                                 <td style="border-color: #000;">
                                     <p>{{ is_array($consulta['f_o_dilat_pup_oi']) ? implode(', ', $consulta['f_o_dilat_pup_oi']) : $consulta['f_o_dilat_pup_oi'] ?? '' }}</p>
                                 </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
-        </table>
-
-        <table width="100%" cellspacing="0" cellpadding="0" style="border: none;">
-            <tr style="border: none;">
-                <!-- Primera tabla -->
-                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
-                    <table class="exam-table" width="100%" style="border: none;">
-                        <thead>
-                            <tr>
-                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">LOCS tres OD</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
                                 <td style="border-color: #000;">
                                     <p>{{ is_array($consulta['f_o_locs_tres_od']) ? implode(', ', $consulta['f_o_locs_tres_od']) : $consulta['f_o_locs_tres_od'] ?? '' }}</p>
                                 </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-                
-                <!-- Espacio entre tablas -->
-                <td width="4%" style="border: none;"></td>
-                
-                <!-- Segunda tabla -->
-                <td width="48%" valign="top" style="padding-left: 15px; border: none;">
-                    <table class="exam-table" width="100%" style="border: none;"> 
-                        <thead>
-                            <tr>
-                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">LOCS tres OI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
                                 <td style="border-color: #000;">
                                     <p>{{ is_array($consulta['f_o_locs_tres_oi']) ? implode(', ', $consulta['f_o_locs_tres_oi']) : $consulta['f_o_locs_tres_oi'] ?? '' }}</p>
                                 </td>
@@ -681,57 +626,7 @@
                 </td>
             </tr>
         </table>
-
-        <table width="100%" cellspacing="0" cellpadding="0" style="border: none;">
-            <tr style="border: none;">
-                <!-- Primera tabla -->
-                <td width="48%" valign="top" style="padding-right: 15px; border: none;">
-                    <table class="exam-table" width="100%" style="border: none;">
-                        <thead>
-                            <tr>
-                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Fundoscopia OD</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td style="border-color: #000;">
-                                    <p>{{ is_array($consulta['f_o_fundoscopia_od']) ? implode(', ', $consulta['f_o_fundoscopia_od']) : $consulta['f_o_fundoscopia_od'] ?? '' }}</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-                
-                <!-- Espacio entre tablas -->
-                <td width="4%" style="border: none;"></td>
-                
-                <!-- Segunda tabla -->
-                <td width="48%" valign="top" style="padding-left: 15px; border: none;">
-                    <table class="exam-table" width="100%" style="border: none;">
-                        <thead>
-                            <tr>
-                                <th class="texto-centrado" style="border-color: #000; background-color: #f2f2f2;">Fundoscopia OI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td style="border-color: #000;">
-                                    <p>{{ is_array($consulta['f_o_fundoscopia_oi']) ? implode(', ', $consulta['f_o_fundoscopia_oi']) : $consulta['f_o_fundoscopia_oi'] ?? '' }}</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
-        </table>
-        <!-- Campos adicionales del fondo de ojo -->
-        <strong>Conclusión:</strong>
-        <p class="texto-parrafo">{{ is_array($consulta['f_o_conclusion']) ? implode(', ', $consulta['f_o_conclusion']) : $consulta['f_o_conclusion'] ?? '' }}</p>
-        <strong style="margin-top: 10px;">Plan:</strong>
-        <p class="texto-parrafo">{{ is_array($consulta['f_o_plan']) ? implode(', ', $consulta['f_o_plan']) : $consulta['f_o_plan'] ?? '' }}</p>
     </div>
-
-    <div class="page-break"></div>
 
     <!-- DIAGNOSTICO (AMBOS) -->
     <div class="section">

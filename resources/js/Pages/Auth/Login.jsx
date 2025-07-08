@@ -51,6 +51,7 @@ export default function Login({ status, canResetPassword }) {
                             <option value="">Seleccione una sede</option>
                             <option value="ate">Ate</option>
                             <option value="pueblo_libre">Pueblo Libre</option>
+                            <option value="abubillas">Abubillas</option>
                         </SelectInput>
                         <InputError message={errors.sede} className="mt-2" />
                     </div>
